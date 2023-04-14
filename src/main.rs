@@ -15,6 +15,7 @@ mod plugins;
 mod chunk;
 mod llm;
 mod config;
+mod commandrunner;
 
 pub use plugin::*;
 pub use parse::*;
@@ -24,6 +25,8 @@ pub use plugins::*;
 pub use chunk::*;
 pub use llm::*;
 pub use config::*;
+pub use commandrunner::*;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -183,6 +186,9 @@ async fn apply_process(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    test_runner();
+    return Ok(());
+
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config).await?;
 
