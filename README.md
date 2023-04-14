@@ -6,7 +6,7 @@ SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 
 
 ## Disclaimer
 
-SmartGPT isn't a ready-for-use application, it's an experiment by me, mostly for my own pleasure. It can also use a significant amount of tokens, and may run requests you didn't authorize, so it's not recommended to leave it running on its own for long periods of time.
+SmartGPT isn't a ready-for-use application, it's an experiment by me, mostly for my own pleasure. It can also use a significant amount of tokens, and may run requests you didn't authorize, so it's not recommended to leave it running on its own for long periods of time. You are also held liable to the constraints of any services used with SmartGPT, i.e. OpenAI's GPT3, Wolfram Alpha, etc, if toggled and used.
 
 ## Objectives
 
