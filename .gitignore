@@ -1,0 +1,5 @@
+/target
+secret-thing
+files/*
+resources/*
+config.yml

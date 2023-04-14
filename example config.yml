@@ -1,0 +1,33 @@
+name: VideoScriptGPT
+role: Create a fun, science video script for middle schoolers.
+goals:
+    - Find a suitable educational science topic for middle schoolers.
+    - Find out what makes a educational science script good, and write a rough draft of the script to the "rough_draft" file.
+    - Work with ChatGPT to find out what parts of your educational science script need improvement. Write your final draft to the "final_draft file.",
+    - Shutdown.
+llm:
+    # By ChatGPT, this means the llm works for any OpenAI chat model.
+    chatgpt:
+        api key: CHATGPT API KEY
+        model: gpt-3.5-turbo
+        embedding model: text-embedding-ada-002
+plugins:
+    browse: {}
+    google:
+        cse id: CSE ID
+        api key: API KEY
+    filesystem: {}
+    memory: {}
+    shutdown: {}
+    wolfram:
+        app id: WOLFRAM APP ID
+    # No matter what LLM you use, the ChatGPT plugin will always use the OpenAI key.
+    # Because of that, lot of the times, if your LLM and ChatGPT are the same, you'll have repetition.
+    chatgpt:
+        api key: CHATGPT API KEY
+    newsapi:
+        api key: NEWSAPI API KEY
+    wikipedia: {}
+    none: {}
+disabled commands:
+    - wikipedia-search

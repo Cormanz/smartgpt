@@ -1,0 +1,20 @@
+[package]
+name = "smartgpt"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-openai = "0.10.2"
+async-trait = "0.1.68"
+colored = "2.0.0"
+faiss = "0.12.0"
+regex = "1.7.3"
+reqwest = "0.11.16"
+select = "0.6.0"
+serde = { version = "1.0.159", features = [ "derive" ]}
+serde_json = "1.0.95"
+serde_yaml = "0.9.21"
+tokenizers = "0.13.3"
+tokio = { version = "1.27.0", features = ["macros", "io-util", "rt", "rt-multi-thread"] }
