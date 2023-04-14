@@ -22,7 +22,7 @@ pub struct Takeaway {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Objective {
     pub objective: String,
-    pub tasks: Vec<String>
+    #[serde(rename = "commands")] pub tasks: Vec<String>
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

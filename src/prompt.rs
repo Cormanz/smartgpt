@@ -29,12 +29,12 @@ PROCESS:
 You will have been assigned one or more endgoals. You will focus singularly on completing one endgoal before moving onto the next.
 You will divide that endgoal into three or more high-level objectives. These are overarching ideas to complete before finishing your endgoals.
 
-You will then divide that objective into tasks.
-A task represents a single command that you will be executing.
+You will then divide that objective into commands.
+A task represents a single command that you will be executing. This isn't the exact command, just which command you will be running and for what purpose.
 
-Once you have finished your tasks immediately switch to the next
+Once you have finished your command-tasks immediately switch to the next.
 
-Keep it simple! Minimize objectives and tasks unless needed.
+Keep it simple! Minimize objectives and commands.
 
 DO NOT MOVE ON PAST YOUR CURRENT ENDGOAL. SIMPLY SET "are all objectives complete" TO TRUE ONCE YOUR ENDGOAL IS DONE.
 
@@ -58,9 +58,9 @@ RESPONSES FORMAT:
         "objectives": [
             {
                 "objective": "Objective One",
-                "tasks": [
-                    "Task One",
-                    "Task Two
+                "commands": [
+                    "Command One used for Purpose One",
+                    "Command Two used for Purpose Two
                 ]
             }
         ],
