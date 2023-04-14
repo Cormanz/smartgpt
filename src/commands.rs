@@ -1,9 +1,9 @@
-use std::error::Error;
+use std::{error::Error, collections::HashMap};
 
 use reqwest::Client;
 use tokenizers::{Tokenizer, models::bpe::BPE};
 
-use crate::{Plugin, CommandContext, LLMResponse, NotFoundError, create_tokenizer};
+use crate::{Plugin, CommandContext, LLMResponse, NotFoundError, create_tokenizer, CommandRequest};
 
 pub fn parse_response(response: &str) -> Result<LLMResponse, Box<dyn Error>> {
     let response: LLMResponse = serde_json::from_str(response)?;
@@ -13,7 +13,11 @@ pub fn parse_response(response: &str) -> Result<LLMResponse, Box<dyn Error>> {
 pub async fn run_command(context: &mut CommandContext, response: &LLMResponse, plugins: &[Plugin]) -> Result<String, Box<dyn Error>> {
     let mut out = String::new();
 
-    let request = &response.command;
+    let none_request = CommandRequest {
+        name: "none".to_string(),
+        args: HashMap::new()
+    };
+    let request = response.command.as_ref().unwrap_or(&none_request);
 
     let plugin = plugins.iter().find(|plugin| plugin.commands.iter().any(|command| command.name == request.name))
         .ok_or(NotFoundError(format!("Could not find plugin from command name {}", request.name)))?;

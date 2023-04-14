@@ -24,7 +24,13 @@ pub use plugins::*;
 pub use chunk::*;
 pub use llm::*;
 pub use config::*;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+#[derive(Serialize, Deserialize)]
+pub struct NewEndGoal {
+    #[serde(rename = "new end goal")] new_end_goal: String
+}
 
 fn debug_yaml(results: &str) -> Result<(), Box<dyn Error>> {
     let json: Value = serde_json::from_str(&results)?;
@@ -81,6 +87,10 @@ async fn apply_process(
     }
     messages.insert(0, Message::User(prompt.to_string()));
 
+    if let Some(last) = messages.last_mut() {
+        last.set_content(&format!("{}\n\nEnsure the response can be parsed by Python json.loads", last.content()));
+    };
+
     let message: String = context.llm.model.get_response(&messages).await?;
     messages.push(Message::Assistant(message.clone()));
     let json = message.clone();
@@ -91,10 +101,6 @@ async fn apply_process(
 
         err
     })?;
-
-    if response.goal_information.current_objective.trim().len() < 4 {
-        return Err(Box::new(NoThoughtError));
-    }
 
     println!("{}: {}", "Findings".blue(), response.summary
         .iter()
@@ -108,25 +114,22 @@ async fn apply_process(
     );
 
     println!("{}: {}", "Current Endgoal".blue(), response.goal_information.current_endgoal);
-    println!("{}:", "Objectives".blue());
-    for objective in &response.goal_information.objectives {
-        println!("    {}: {}", "Objective".yellow(), objective.objective);
-        for task in &objective.tasks {
-            println!("        {} {}", "-".black(), task);
-        }
+    println!("{}:", "Planned Commands".blue());
+    for task in &response.goal_information.commands {
+        println!("    {} {}", "-".black(), task);
     }
-    println!("{}: {}", "Current Objective".blue(), response.goal_information.current_objective);
-    println!("{}: {}", "Current Task".blue(), response.goal_information.current_task);
     println!();
-    if let Some(idea) = &response.idea {
-        println!("{}: {}", "Idea".blue(), idea);
-    } else {
-        println!("{}: <None>", "Idea".blue());
-    }
 
     if response.goal_information.end_goal_complete {
         println!("{}", "End Goal is Complete. Moving onto next end goal...".yellow());
         context.end_goals.end_goal += 1;
+
+        let new_end_goal = NewEndGoal {
+            new_end_goal: context.end_goals.get()
+        };
+        let info = serde_json::to_string(&new_end_goal)?;
+
+        messages.push(Message::User(info));
         return Ok(());
     }
 
@@ -142,10 +145,16 @@ async fn apply_process(
     println!("{}", "-".black());
     println!();*/
 
-    let args = response.command.args.iter()
+
+    let none_request = CommandRequest {
+        name: "none".to_string(),
+        args: HashMap::new()
+    };
+    let command_request = response.command.as_ref().unwrap_or(&none_request);
+    let args = command_request.args.iter()
         .map(|(name, value)| format!(" [{name}: {value}]"))
         .collect::<Vec<_>>().join(" ");
-    let command = format!("{}{}", response.command.name, args);
+    let command = format!("{}{}", command_request.name, args);
     println!("{}: {}", "Command".blue(), command);
 
     let results = run_command(context, &response, plugins).await?;
@@ -161,7 +170,7 @@ async fn apply_process(
     };
     
     let mut command_result_content = "Command ".to_string();
-    command_result_content.push_str(&response.command.name);
+    command_result_content.push_str(&command_request.name);
     command_result_content.push_str(" returned: ");
     command_result_content.push_str(&results);
 
@@ -176,8 +185,6 @@ async fn apply_process(
 async fn main() -> Result<(), Box<dyn Error>> {
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config).await?;
-
-    print!("\x1B[2J\x1B[1;1H");
 
     println!("{}: {}", "AI Name".blue(), program.name);
     println!("{}: {}", "Role".blue(), program.role);

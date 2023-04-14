@@ -26,19 +26,10 @@ RESOURCES:
 
 
 PROCESS:
-You will have been assigned one or more endgoals. You will focus singularly on completing one endgoal before moving onto the next.
-You will divide that endgoal into three or more high-level objectives. These are overarching ideas to complete before finishing your endgoals.
+Break your current endgoal down into simple commands.
+Use the EXACT COMMAND NAME in your tasks.
 
-You will then divide that objective into tasks.
-A task represents a single command that you will be executing.
-
-Once you have finished your tasks immediately switch to the next
-
-Keep it simple! Minimize objectives and tasks unless needed.
-
-DO NOT MOVE ON PAST YOUR CURRENT ENDGOAL. SIMPLY SET "are all objectives complete" TO TRUE ONCE YOUR ENDGOAL IS DONE.
-
-Always have a current objective and current task.
+MINIMIZE THE NUMBER OF COMMANDS IN YOUR COMMANDS LIST. SIMPLE IS BETTER.
 
 You should only respond in JSON format as described below:
 
@@ -55,29 +46,18 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "objectives": [
-            {
-                "objective": "Objective One",
-                "tasks": [
-                    "Task One",
-                    "Task Two
-                ]
-            }
+        "commands": [
+            "Command for Reason"
         ],
-        "chosen objective": "Objective One",
-        "chosen task": "Task One",
-        "are all objectives complete": false
+        "are all commands complete": false
     }
-    "idea to complete current task": "Idea.", // can be null
-    "command": {
+    "chosen command from commands list": {
         "name": "command name",
         "args": {
             "arg-name": "arg"
         }
     }
-}
-
-Follow this exact format exactly. Make sure every field is included. Ensure the response can be parsed by Python json.loads"#;
+}"#;
 
 fn generate_goals(goals: &[String]) -> String {
     let mut out = String::new();
