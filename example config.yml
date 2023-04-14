@@ -16,7 +16,7 @@ plugins:
     google:
         cse id: CSE ID
         api key: API KEY
-    filesystem: {}
+    file system: {}
     memory: {}
     shutdown: {}
     wolfram:

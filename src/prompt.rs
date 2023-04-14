@@ -26,19 +26,11 @@ RESOURCES:
 
 
 PROCESS:
-You will have been assigned one or more endgoals. You will focus singularly on completing one endgoal before moving onto the next.
-You will divide that endgoal into three or more high-level objectives. These are overarching ideas to complete before finishing your endgoals.
-
-You will then divide that objective into commands.
-A task represents a single command that you will be executing. This isn't the exact command, just which command you will be running and for what purpose.
-
-Once you have finished your command-tasks immediately switch to the next.
-
-Keep it simple! Minimize objectives and commands.
-
-DO NOT MOVE ON PAST YOUR CURRENT ENDGOAL. SIMPLY SET "are all objectives complete" TO TRUE ONCE YOUR ENDGOAL IS DONE.
-
-Always have a current objective and current task.
+You have been assigned an endgoal.
+Break that endgoal down into simple tasks, about one command each. Minimize the number of tasks you need.
+Use the EXACT COMMAND NAME in your tasks.
+You will then choose the FIRST TASK from your ONGOING TASKS list, and choose that task.
+Once you are done with a task, move it to your COMPLETE TASKS list.
 
 You should only respond in JSON format as described below:
 
@@ -55,18 +47,14 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "objectives": [
-            {
-                "objective": "Objective One",
-                "commands": [
-                    "Command One used for Purpose One",
-                    "Command Two used for Purpose Two
-                ]
-            }
+        "complete tasks": [
+            "Command for Reason"
         ],
-        "chosen objective": "Objective One",
-        "chosen task": "Task One",
-        "are all objectives complete": false
+        "ongoing tasks": [
+            "Command for Reason"
+        ],
+        "chosen task": "Task One" // can be null,
+        "are all tasks complete": false
     }
     "idea to complete current task": "Idea.", // can be null
     "command": {

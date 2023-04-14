@@ -28,8 +28,7 @@ The main task loop of SmartGPT is as follows:
 
 - Focuses on the current **endgoal** (one of the final goals it was told to complete)
 - Records any findings from the **previous command**.
-- Generates a list of **objectives**, usually 2 or 3. Each objective then has a list of **tasks** (usually one command each) to carry out.
-- Chooses one **objective**, and particularly, one **task** from that objective to focus on.
+- Generates a list of **tasks** to carry out. Chooses the first task.
 - Generates an **idea** of what to do.
 - Runs a **command**.
 
