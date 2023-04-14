@@ -32,6 +32,13 @@ impl Message {
             Message::Assistant(content) => content
         }
     }
+
+    pub fn set_content(&mut self, new_content: &str) {
+        match self {
+            Message::User(content) => *content = new_content.to_string(),
+            Message::Assistant(content) => *content = new_content.to_string()
+        }
+    }
 }
 
 impl From<Message> for ChatCompletionRequestMessage {

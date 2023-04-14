@@ -87,6 +87,10 @@ async fn apply_process(
     }
     messages.insert(0, Message::User(prompt.to_string()));
 
+    if let Some(last) = messages.last_mut() {
+        last.set_content(&format!("{}\n\nEnsure the response can be parsed by Python json.loads", last.content()));
+    };
+
     let message: String = context.llm.model.get_response(&messages).await?;
     messages.push(Message::Assistant(message.clone()));
     let json = message.clone();
@@ -97,12 +101,6 @@ async fn apply_process(
 
         err
     })?;
-
-    if let Some(current_task) = response.goal_information.current_task.as_ref() {
-        if current_task.len() < 4 {
-            return Err(Box::new(NoThoughtError));
-        }
-    }
 
     println!("{}: {}", "Findings".blue(), response.summary
         .iter()
@@ -116,19 +114,11 @@ async fn apply_process(
     );
 
     println!("{}: {}", "Current Endgoal".blue(), response.goal_information.current_endgoal);
-    println!("{}:", "Ongoing Tasks".blue());
-    for task in &response.goal_information.ongoing_tasks {
+    println!("{}:", "Planned Commands".blue());
+    for task in &response.goal_information.commands {
         println!("    {} {}", "-".black(), task);
     }
-    let current_task = response.goal_information.current_task.clone();
-    let current_task = current_task.unwrap_or("<None>".to_string());
-    println!("{}: {}", "Current Task".blue(), current_task);
     println!();
-    if let Some(idea) = &response.idea {
-        println!("{}: {}", "Idea".blue(), idea);
-    } else {
-        println!("{}: <None>", "Idea".blue());
-    }
 
     if response.goal_information.end_goal_complete {
         println!("{}", "End Goal is Complete. Moving onto next end goal...".yellow());

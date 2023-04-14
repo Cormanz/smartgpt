@@ -26,11 +26,10 @@ RESOURCES:
 
 
 PROCESS:
-You have been assigned an endgoal.
-Break that endgoal down into simple tasks, about one command each. Minimize the number of tasks you need.
+Break your current endgoal down into simple commands.
 Use the EXACT COMMAND NAME in your tasks.
-You will then choose the FIRST TASK from your ONGOING TASKS list, and choose that task.
-Once you are done with a task, move it to your COMPLETE TASKS list.
+
+MINIMIZE THE NUMBER OF COMMANDS IN YOUR COMMANDS LIST. SIMPLE IS BETTER.
 
 You should only respond in JSON format as described below:
 
@@ -47,25 +46,18 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "complete tasks": [
+        "commands": [
             "Command for Reason"
         ],
-        "ongoing tasks": [
-            "Command for Reason"
-        ],
-        "chosen task": "Task One" // can be null,
-        "are all tasks complete": false
+        "are all commands complete": false
     }
-    "idea to complete current task": "Idea.", // can be null
-    "command": {
+    "chosen command from commands list": {
         "name": "command name",
         "args": {
             "arg-name": "arg"
         }
     }
-}
-
-Follow this exact format exactly. Make sure every field is included. Ensure the response can be parsed by Python json.loads"#;
+}"#;
 
 fn generate_goals(goals: &[String]) -> String {
     let mut out = String::new();
