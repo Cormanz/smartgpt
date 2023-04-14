@@ -2,7 +2,7 @@
 
 SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 and GPT-4) with the ability to complete complex tasks without user input by breaking them down into smaller problems, and collecting information using the internet and other external sources.
 
-https://www.youtube.com/watch?v=c9G1Cj_SCq0
+https://cdn.discordapp.com/attachments/999501511149236287/1096334639041355826/SmartGPT_Demo.mp4
 
 ## Disclaimer
 
