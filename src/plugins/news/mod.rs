@@ -38,6 +38,8 @@ pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<ScriptVal
             .collect::<Vec<_>>()
     }).await?;
 
+    println!("{}", json);
+
     Ok(serde_json::from_str(&json)?)
 }
 

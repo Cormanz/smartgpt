@@ -183,8 +183,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config).await?;
 
-    //test_runner().await?;
-    //return Ok(());
+    test_runner().await?;
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "AI Name".blue(), program.name);

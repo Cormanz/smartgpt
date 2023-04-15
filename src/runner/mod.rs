@@ -7,6 +7,7 @@ use std::{error::Error, collections::HashMap};
 pub use parse::*;
 pub use run::*;
 pub use convert::*;
+use serde_json::Value;
 
 pub async fn test_runner() -> Result<(), Box<dyn Error>> {
     let code = r#"
@@ -22,10 +23,7 @@ for path in files:
     };
     run_body(&mut ctx, program).await?;*/
     
-    let json = r#"{
-    "hello": 1,
-    "a": [ 1, 2, 3 ]        
-}"#;
+    let json = r#"null"#;
 
     let data: ScriptValue = serde_json::from_str(json)?;
     println!("{:?}", data);

@@ -76,6 +76,10 @@ impl<'de> Visitor<'de> for ScriptValueVisitor {
         Ok(ScriptValue::None)
     }
 
+    fn visit_unit<E>(self) -> Result<Self::Value, E> {
+        Ok(ScriptValue::None)
+    }
+
     fn visit_seq<V>(self, mut visitor: V) -> Result<ScriptValue, V::Error>
     where
         V: SeqAccess<'de>,

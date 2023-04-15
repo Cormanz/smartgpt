@@ -257,7 +257,10 @@ pub async fn get_value(ctx: &mut CommandContext, plugins: &[Plugin], expr: Expre
                 let args: Vec<Expression> = value_args.iter().map(|el| el.clone().into()).collect();
                 let expr = Expression::FunctionCall(name.clone(), args);
 
-                ctx.command_out.push(format!("Command {:?} was successful and returned: {:?}", expr, result));
+                let json = serde_json::to_string(&result)
+                    .map_err(|_| GPTRunError("Could not parse ScriptValue as JSON.".to_string()))?;
+
+                ctx.command_out.push(format!("Command {:?} was successful and returned:\n{}", expr, json));
             }
 
             Ok(result)
