@@ -82,6 +82,9 @@ async fn apply_process(
         &disabled_commands, &plugins, previous_prompt.as_deref()
     ).await?;
 
+    println!("{}", prompt);
+    process::exit(1);
+
     let mut messages: Vec<Message> = context.llm.message_history.clone();
 
     if messages.len() > 0 {
@@ -188,9 +191,6 @@ async fn apply_process(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    test_runner().await?;
-    return Ok(());
-
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config).await?;
 

@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions};
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, LLMResponse, apply_chunks, PluginData, ScriptValue};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, LLMResponse, apply_chunks, PluginData, ScriptValue, CommandArgument};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -134,32 +134,36 @@ pub fn create_filesystem() -> Plugin {
                 name: "file_write".to_string(),
                 purpose: "Override a file with content. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![ 
-                    ("path".to_string(), "The path of the file that is being written to.".to_string()),
-                    ("content".to_string(), "The content to be overriden in the file.".to_string())
+                    CommandArgument::new("path", "The path of the file that is being written to.", "String"),
+                    CommandArgument::new("content", "The content to be overriden in the file.", "String")
                 ],
+                return_type: "None".to_string(),
                 run: Box::new(FileWriteImpl)
             },
             Command {
                 name: "file_append".to_string(),
                 purpose: "Add content to an existing file. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![ 
-                    ("path".to_string(), "The path of the file that is being written to.".to_string()),
-                    ("content".to_string(), "The content to be appended to the file.".to_string())
+                    CommandArgument::new("path", "The path of the file that is being written to.", "String"),
+                    CommandArgument::new("content", "The content to be appended to the file.", "String")
                 ],
+                return_type: "None".to_string(),
                 run: Box::new(FileWriteImpl)
             },
             Command {
                 name: "file_list".to_string(),
                 purpose: "List all of your files.".to_string(),
                 args: vec![],
+                return_type: "String[]".to_string(),
                 run: Box::new(FileListImpl)
             },
             Command {
                 name: "file_read".to_string(),
                 purpose: "Read a file.".to_string(),
                 args: vec![ 
-                    ("path".to_string(), "The path of the file that is read.".to_string())
+                    CommandArgument::new("path", "The path of the file that is read.", "String")
                 ],
+                return_type: "String".to_string(),
                 run: Box::new(FileReadImpl)
             }
         ]

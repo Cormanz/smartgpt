@@ -8,7 +8,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, LLMResponse, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue};
+use crate::{Plugin, LLMResponse, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument};
 
 pub struct BrowseData {
     pub client: Client
@@ -146,8 +146,9 @@ pub fn create_browse() -> Plugin {
                 name: "browse_article".to_string(),
                 purpose: "Browse a website's paragraph-only content.".to_string(),
                 args: vec![
-                    ("url".to_string(), "The URL to browse.".to_string())
+                    CommandArgument::new("url", "The URL to browse.", "String")
                 ],
+                return_type: "String".to_string(),
                 run: Box::new(BrowseArticle)
             }
         ]

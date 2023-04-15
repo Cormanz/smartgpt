@@ -6,7 +6,7 @@ use select::{document::Document, predicate::Name};
 
 mod types;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, apply_chunks, CommandNoArgError, invoke, BrowseRequest, ScriptValue};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, apply_chunks, CommandNoArgError, invoke, BrowseRequest, ScriptValue, CommandArgument};
 
 pub use types::*;
 
@@ -119,16 +119,18 @@ pub fn create_wikipedia() -> Plugin {
                 name: "wikipedia_search".to_string(),
                 purpose: "Search for wikipedia articles.".to_string(),
                 args: vec![
-                    ("query".to_string(), "The query to search for.".to_string())
+                    CommandArgument::new("query", "The query to search for.", "String")
                 ],
+                return_type: "{ query: { pages: Map<String, { title: String, extract: String }> } }".to_string(),
                 run: Box::new(WikipediaSearchImpl)
             },
             Command {
                 name: "wikipedia_browse".to_string(),
                 purpose: "Browse a wikipedia article.".to_string(),
                 args: vec![
-                    ("article name".to_string(), "The name of the article (not the URL.)".to_string())
+                    CommandArgument::new("article_name", "The query to search for.", "String")
                 ],
+                return_type: "String".to_string(),
                 run: Box::new(WikipediaBrowseImpl)
             }
         ]

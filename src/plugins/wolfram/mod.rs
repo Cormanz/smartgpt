@@ -6,7 +6,7 @@ use select::{document::Document, predicate::Name};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, LLMResponse, PluginCycle, PluginDataNoInvoke, ScriptValue};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, LLMResponse, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;
@@ -119,8 +119,9 @@ pub fn create_wolfram() -> Plugin {
                 name: "wolfram".to_string(),
                 purpose: "Ask WolframAlpha to answer a query.".to_string(),
                 args: vec![
-                    ("query".to_string(), "The query to ask WolframAlpha.".to_string())
+                    CommandArgument::new("query", "The query to ask Wolfram Alpha", "String")
                 ],
+                return_type: "String".to_string(),
                 run: Box::new(WolframImpl)
             }
         ]

@@ -1,11 +1,11 @@
-use std::{error::Error, fmt::Display, collections::HashMap};
+use std::{error::Error, fmt::Display, collections::HashMap, process::CommandArgs};
 
 use async_openai::{types::{CreateChatCompletionRequest, CreateChatCompletionResponse, ChatCompletionRequestMessage, Role}, error::OpenAIError, Client};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, LLMResponse, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue};
+use crate::{CommandContext, CommandImpl, LLMResponse, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue, CommandArgument};
 
 use super::memory;
 
@@ -223,14 +223,16 @@ pub fn create_chatgpt() -> Plugin {
                 name: "ask_chatgpt".to_string(),
                 purpose: "Ask ChatGPT, a helpful assistant and large-language model, to help answer your question.".to_string(),
                 args: vec![
-                    ("query".to_string(), "The query to ask ChatGPT. Be detailed!".to_string())
+                    CommandArgument::new("query", "The query to ask ChatGPT. Be detailed!", "String")
                 ],
+                return_type: "String".to_string(),
                 run: Box::new(ChatGPTImpl)
             },
             Command {
                 name: "reset_chatgpt".to_string(),
                 purpose: "Reset the memory of ChatGPT.".to_string(),
                 args: vec![],
+                return_type: "None".to_string(),
                 run: Box::new(ResetChatGPTImpl)
             }
         ]

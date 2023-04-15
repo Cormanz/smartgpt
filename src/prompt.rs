@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{Plugin, CommandContext};
+use crate::{Plugin, CommandContext, CommandArgument};
 
 pub const PROMPT: &str = r#"<CONTEXT>NAME: <NAME>
 ROLE: <ROLE>
@@ -36,6 +36,7 @@ float = 2.5
 bool = False
 list = [ 1, 2 ]
 map = { "x": 1, "y": 2 }
+none = None
 
 content = file_read("a.txt")
 file_write("b.txt", content)
@@ -89,10 +90,16 @@ fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String
             if disabled_commands.contains(&command.name) {
                 continue;
             }
-            out.push_str(&format!("    {}:\n", command.name));
+
+            let arg_names: Vec<_> = command.args.iter()
+                .map(|el| format!("{}: {}", el.name, el.arg_type))
+                .collect();
+            let arg_str = arg_names.join(", ");
+
+            out.push_str(&format!("    def {}({arg_str}) -> {}:\n", command.name, command.return_type));
             out.push_str(&format!("        purpose: {}\n", command.purpose));
             out.push_str("        args: \n");
-            for (name, description) in &command.args {
+            for CommandArgument { name, description, .. } in &command.args {
                 out.push_str(&format!("            - {}: {}\n", name, description)); 
             }
         }

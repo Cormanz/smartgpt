@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 pub use types::*;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, LLMResponse, ScriptValue};
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, LLMResponse, ScriptValue, CommandArgument};
 
 #[derive(Debug, Clone)]
 pub struct GoogleNoQueryError;
@@ -126,8 +126,9 @@ pub fn create_google() -> Plugin {
                 name: "google_search".to_string(),
                 purpose: "Google Search".to_string(),
                 args: vec![
-                    ("query".to_string(), "The request to search. Create a short, direct query with keywords.".to_string())
+                    CommandArgument::new("query", "The request to search. Create a short, direct query with keywords.", "String")
                 ],
+                return_type: "{ items: { title: String, link: String, snippet: String }[] }".to_string(),
                 run: Box::new(GoogleImpl)
             }
         ]

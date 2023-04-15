@@ -2,7 +2,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, process};
 
 use async_trait::async_trait;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue, CommandArgument};
 use std::fs;
 
 #[derive(Debug, Clone)]
@@ -43,8 +43,9 @@ pub fn create_shutdown() -> Plugin {
                 name: "shutdown".to_string(),
                 purpose: "Shutdown the program with the output.".to_string(),
                 args: vec![
-                    ("output".to_string(), "The output that the program ends with".to_string())
+                    CommandArgument::new("output", "The output that the program ends with", "String")
                 ],
+                return_type: "None".to_string(),
                 run: Box::new(Shutodwn)
             }
         ]

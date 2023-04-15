@@ -29,6 +29,7 @@ pub fn create_none() -> Plugin {
                 name: "none".to_string(),
                 purpose: "Do nothing.".to_string(),
                 args: vec![],
+                return_type: "None".to_string(),
                 run: Box::new(NoneImpl)
             }
         ]

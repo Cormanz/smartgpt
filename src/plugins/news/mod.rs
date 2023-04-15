@@ -6,7 +6,7 @@ use select::{document::Document, predicate::Name};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, LLMResponse, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, LLMResponse, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument};
 
 #[derive(Debug, Clone)]
 pub struct NewsNoQueryError;
@@ -104,8 +104,9 @@ pub fn create_news() -> Plugin {
                 name: "news_search".to_string(),
                 purpose: "Search for news articles.".to_string(),
                 args: vec![
-                    ("query".to_string(), "The query to search for.".to_string())
+                    CommandArgument::new("query", "The query to search for.", "String")
                 ],
+                return_type: "{ articles: { source: { name: String }, author: String, title: String, content: String, url: String }[] }".to_string(),
                 run: Box::new(NewsImpl)
             }
         ]

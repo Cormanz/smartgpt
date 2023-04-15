@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, future::Future, pin:
 use async_openai::{Client as OpenAIClient, types::ChatCompletionRequestMessage};
 use async_trait::async_trait;
 use reqwest::Client;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{Serialize, de::DeserializeOwned, __private::de};
 use serde_json::Value;
 use tokenizers::Tokenizer;
 
@@ -117,10 +117,27 @@ impl PluginCycle for EmptyCycle {
     }
 }
 
+pub struct CommandArgument {
+    pub name: String,
+    pub description: String,
+    pub arg_type: String
+}
+
+impl CommandArgument {
+    pub fn new(name: &str, description: &str, arg_type: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            description: description.to_string(),
+            arg_type: arg_type.to_string()
+        }
+    }
+}
+
 pub struct Command {
     pub name: String,
     pub purpose: String,
-    pub args: Vec<(String, String)>,
+    pub return_type: String,
+    pub args: Vec<CommandArgument>,
     pub run: Box<dyn CommandImpl>
 }
 
