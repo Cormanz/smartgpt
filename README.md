@@ -38,7 +38,9 @@ Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/
 git clone https://github.com/Cormanz/smartgpt.git
 ```
 
-2. Run the Repository.
+2. Install FAISS as explained [here](https://github.com/Enet4/faiss-rs#installing-as-a-dependency)
+
+3. Run the Repository.
 ```
 cargo run --release
 
