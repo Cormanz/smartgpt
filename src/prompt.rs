@@ -26,10 +26,27 @@ RESOURCES:
 
 
 PROCESS:
-Break your current endgoal down into simple commands.
-Use the EXACT COMMAND NAME in your tasks.
+Break your current endgoal down into simple queries.
+MINIMIZE THE NUMBER OF QUERIES IN YOUR QUERIES LIST. SIMPLE IS BETTER.
 
-MINIMIZE THE NUMBER OF COMMANDS IN YOUR COMMANDS LIST. SIMPLE IS BETTER.
+GPTSCRIPT
+Python-like syntax, "-" allowed in var names
+```
+str = "A"
+int = 1
+float = 2.5
+bool = false
+list = [ 1, 2 ]
+map = { x: 1, y: 2 }
+
+content = file-read("a.txt")
+file-write("b.txt", content)
+
+for path in paths:
+    file-append("final.txt", file-read(path))
+```
+
+ALL OF YOUR COMMAND QUERIES WILL BE IN GPTSCRIPT
 
 You should only respond in JSON format as described below:
 
@@ -46,17 +63,9 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "commands": [
-            "Command for Reason"
-        ],
-        "are all commands complete": false
+        "are all queries complete": false
     }
-    "chosen command from commands list": {
-        "name": "command name",
-        "args": {
-            "arg-name": "arg"
-        }
-    }
+    "gptscript command query": ""
 }"#;
 
 fn generate_goals(goals: &[String]) -> String {

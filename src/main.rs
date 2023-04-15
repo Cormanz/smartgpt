@@ -15,7 +15,7 @@ mod plugins;
 mod chunk;
 mod llm;
 mod config;
-mod commandrunner;
+mod runner;
 
 pub use plugin::*;
 pub use parse::*;
@@ -25,7 +25,7 @@ pub use plugins::*;
 pub use chunk::*;
 pub use llm::*;
 pub use config::*;
-pub use commandrunner::*;
+pub use runner::*;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -117,10 +117,10 @@ async fn apply_process(
     );
 
     println!("{}: {}", "Current Endgoal".blue(), response.goal_information.current_endgoal);
-    println!("{}:", "Planned Commands".blue());
+    /*println!("{}:", "Planned Commands".blue());
     for task in &response.goal_information.commands {
         println!("    {} {}", "-".black(), task);
-    }
+    }*/
     println!();
 
     if response.goal_information.end_goal_complete {
@@ -148,8 +148,9 @@ async fn apply_process(
     println!("{}", "-".black());
     println!();*/
 
+    println!("{}", response.command_query);
 
-    let none_request = CommandRequest {
+    /*let none_request = CommandRequest {
         name: "none".to_string(),
         args: HashMap::new()
     };
@@ -179,15 +180,17 @@ async fn apply_process(
 
     messages.push(Message::User(command_result_content.clone()));
 
-    context.llm.message_history = messages;
+    context.llm.message_history = messages;*/
+
+    Err(NoLLMError)?;
 
     Ok(())
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    test_runner();
-    return Ok(());
+    //test_runner()?;
+    //return Ok(());
 
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config).await?;

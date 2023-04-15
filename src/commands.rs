@@ -17,7 +17,7 @@ pub async fn run_command(context: &mut CommandContext, response: &LLMResponse, p
         name: "none".to_string(),
         args: HashMap::new()
     };
-    let request = response.command.as_ref().unwrap_or(&none_request);
+    /*let request = response.command.as_ref().unwrap_or(&none_request);
 
     let plugin = plugins.iter().find(|plugin| plugin.commands.iter().any(|command| command.name == request.name))
         .ok_or(NotFoundError(format!("Could not find plugin from command name {}", request.name)))?;
@@ -28,5 +28,7 @@ pub async fn run_command(context: &mut CommandContext, response: &LLMResponse, p
     let results = command.run.invoke(context, request.args.clone()).await?;
     out.push_str(&results);
 
-    Ok(out.trim_end().to_string())
+    Ok(out.trim_end().to_string())*/
+
+    Ok("2".to_string())
 }
