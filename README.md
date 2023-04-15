@@ -38,16 +38,16 @@ Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/
 git clone https://github.com/Cormanz/smartgpt.git
 ```
 
-2. Install FAISS as explained [here](https://github.com/Enet4/faiss-rs#installing-as-a-dependency)
+2. Install Faiss _(if you don't use local long-term memory, you can skip this)_
+
+Install FAISS as explained [here](https://github.com/Enet4/faiss-rs#installing-as-a-dependency)
+
+If you still use the `memory` plugin without installing FAISS, it simply won't use the memory features. You'll know this because it won't log `Found Memories`.
 
 3. Run the Repository.
 ```
 cargo run --release
-
-# or alternatively
-
-cargo build --release
-target/release/smartgpt
+cargo run --release --features faiss
 ```
 
 And that's it. You're done.
