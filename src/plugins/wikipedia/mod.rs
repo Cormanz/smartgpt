@@ -71,9 +71,7 @@ pub async fn get_wikipedia(ctx: &mut CommandContext, name: &str) -> Result<Strin
         content
     };
 
-    let json = serde_json::to_string(&output)?;
-
-    Ok(format!("{json}"))
+    Ok(output.content.into())
 }
 
 pub async fn wikipedia_search(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {

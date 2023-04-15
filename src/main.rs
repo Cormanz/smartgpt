@@ -63,8 +63,8 @@ async fn apply_process(
     program: &mut ProgramInfo
 ) -> Result<(), Box<dyn Error>> {
     let ProgramInfo { 
-        name, role, goals, 
-        plugins, context, disabled_commands } = program;
+        name, role, goals, plugins,
+        context, disabled_commands } = program;
 
     let previous_prompt = if context.llm.message_history.len() > 1 {
         Some(context.llm.message_history.iter()
@@ -81,9 +81,6 @@ async fn apply_process(
         context, name, role, &end_goal,
         &disabled_commands, &plugins, previous_prompt.as_deref()
     ).await?;
-
-    println!("{}", prompt);
-    process::exit(1);
 
     let mut messages: Vec<Message> = context.llm.message_history.clone();
 
@@ -150,7 +147,22 @@ async fn apply_process(
     println!("{}", "-".black());
     println!();*/
 
+    println!("{}:", "Command Query".blue());
     println!("{}", response.command_query);
+    println!();
+    
+    context.command_out.clear();
+    let body = parse_gptscript(&response.command_query)?;
+    run_body(context, plugins, body).await?;
+
+    for item in &context.command_out {
+        println!("{}", item);
+    }
+
+    let mut command_result_content = context.command_out.join("\n");
+    messages.push(Message::User(command_result_content.clone()));
+
+    context.llm.message_history = messages;
 
     /*let none_request = CommandRequest {
         name: "none".to_string(),
@@ -183,8 +195,6 @@ async fn apply_process(
     messages.push(Message::User(command_result_content.clone()));
 
     context.llm.message_history = messages;*/
-
-    Err(NoLLMError)?;
 
     Ok(())
 }

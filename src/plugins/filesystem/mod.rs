@@ -19,7 +19,7 @@ impl Error for FilesNoQueryError {}
 
 pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
     let path: String = args.get(0).ok_or(FilesNoQueryError)?.clone().try_into()?;
-    let content: String = args.get(0).ok_or(FilesNoQueryError)?.clone().try_into()?;
+    let content: String = args.get(1).ok_or(FilesNoQueryError)?.clone().try_into()?;
 
     let path = match path.strip_prefix("files/") {
         Some(path) => path,

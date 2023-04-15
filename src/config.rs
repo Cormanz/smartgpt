@@ -78,6 +78,7 @@ pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
 
     let mut context = CommandContext {
         tokenizer: create_tokenizer(),
+        command_out: vec![],
         variables: HashMap::new(),
         plugin_data: crate::PluginStore(HashMap::new()),
         end_goals: EndGoals {

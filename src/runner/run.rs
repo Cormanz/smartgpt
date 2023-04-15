@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Display, error::Error};
 use async_recursion::async_recursion;
 
-use crate::{Statement, Expression, Primitive, CommandContext};
+use crate::{Statement, Expression, Primitive, CommandContext, Plugin};
 
 use super::Body;
 
@@ -163,7 +163,7 @@ impl From<HashMap<String, ScriptValue>> for ScriptValue {
 }
 
 #[async_recursion]
-pub async fn get_value(ctx: &mut CommandContext, expr: Expression, top_level: bool) -> Result<ScriptValue, GPTRunError> {
+pub async fn get_value(ctx: &mut CommandContext, plugins: &[Plugin], expr: Expression, top_level: bool) -> Result<ScriptValue, GPTRunError> {
     match expr {
         Expression::Name(name) => {
             let value = ctx.variables.get(&name)
@@ -182,7 +182,7 @@ pub async fn get_value(ctx: &mut CommandContext, expr: Expression, top_level: bo
         Expression::List(list) => {
             let mut out: Vec<ScriptValue> = vec![];
             for expr in list {
-                let expr = get_value(ctx, expr, false).await?;
+                let expr = get_value(ctx, plugins, expr, false).await?;
                 out.push(expr);
             }
             Ok(ScriptValue::List(out))          
@@ -191,7 +191,7 @@ pub async fn get_value(ctx: &mut CommandContext, expr: Expression, top_level: bo
             let mut map = HashMap::<String, ScriptValue>::new();
 
             for (key, value) in dict {
-                let expr = get_value(ctx, value, false).await?;
+                let expr = get_value(ctx, plugins, value, false).await?;
                 map.insert(key, expr);
             }
 
@@ -200,16 +200,22 @@ pub async fn get_value(ctx: &mut CommandContext, expr: Expression, top_level: bo
         Expression::FunctionCall(name, args) => {
             let mut value_args: Vec<ScriptValue> = vec![];
             for arg in args {
-                value_args.push(get_value(ctx, arg, false).await?);
+                value_args.push(get_value(ctx, plugins, arg, false).await?);
             }
 
-            let result = ScriptValue::String("Yay!".to_string());
+            let plugin = plugins.iter()
+                .find(|el| el.commands.iter().any(|el| el.name == name))
+                .ok_or(GPTRunError(format!("Could not find plugin from command {name}")))?;
+            let command = plugin.commands.iter().find(|el| el.name == name)
+                .ok_or(GPTRunError(format!("Could not find command {name}")))?;
+            let result = command.run.invoke(ctx, value_args.clone()).await
+                .map_err(|err| GPTRunError(format!("When running command {name}: {:?}", err)))?;
 
             if top_level {
                 let args: Vec<Expression> = value_args.iter().map(|el| el.clone().into()).collect();
                 let expr = Expression::FunctionCall(name.clone(), args);
 
-                println!("Command {:?} returned: {:?}", expr, result);
+                ctx.command_out.push(format!("Command {:?} returned: {:?}", expr, result));
             }
 
             Ok(result)
@@ -217,7 +223,7 @@ pub async fn get_value(ctx: &mut CommandContext, expr: Expression, top_level: bo
     }
 }
 
-pub fn assign(ctx: &mut CommandContext, name: Expression, target: ScriptValue) -> Result<(), GPTRunError> {
+pub fn assign(ctx: &mut CommandContext, plugins: &[Plugin], name: Expression, target: ScriptValue) -> Result<(), GPTRunError> {
     match name {
         Expression::Name(name) => {
             ctx.variables.insert(name, target);
@@ -226,7 +232,7 @@ pub fn assign(ctx: &mut CommandContext, name: Expression, target: ScriptValue) -
             match target {
                 ScriptValue::List(list) => {
                     for (name, item) in names.iter().zip(list) {
-                        assign(ctx, name.clone(), item)?
+                        assign(ctx, plugins, name.clone(), item)?
                     }
                 },
                 _ => {
@@ -243,18 +249,18 @@ pub fn assign(ctx: &mut CommandContext, name: Expression, target: ScriptValue) -
 }
 
 #[async_recursion]
-pub async fn run_body(ctx: &mut CommandContext, body: Body) -> Result<(), GPTRunError> {
+pub async fn run_body(ctx: &mut CommandContext, plugins: &[Plugin], body: Body) -> Result<(), GPTRunError> {
     for statement in body {
         match statement {
             Statement::Assign(name, target) => {
-                let value = get_value(ctx, target, false).await?;
-                assign(ctx, name, value)?;
+                let value = get_value(ctx, plugins, target, false).await?;
+                assign(ctx, plugins, name, value)?;
             }
             Statement::Expression(expr) => {
-                get_value(ctx, expr, true).await?;
+                get_value(ctx, plugins, expr, true).await?;
             }
             Statement::For(target, iter, body) => {
-                let iter = get_value(ctx, iter, false).await?;
+                let iter = get_value(ctx, plugins, iter, false).await?;
                 let list = match iter {
                     ScriptValue::List(list) => list.clone(),
                     ScriptValue::Dict(dict) => dict.iter()
@@ -268,8 +274,8 @@ pub async fn run_body(ctx: &mut CommandContext, body: Body) -> Result<(), GPTRun
                     }
                 };
                 for item in list {
-                    assign(ctx, target.clone(), item)?;
-                    run_body(ctx, body.clone()).await?;
+                    assign(ctx, plugins, target.clone(), item)?;
+                    run_body(ctx, plugins, body.clone()).await?;
                 }
             }
         }

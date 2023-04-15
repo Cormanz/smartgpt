@@ -71,7 +71,7 @@ RESPONSES FORMAT:
         "endgoal": "Current Endgoal.",
         "are all queries complete": false
     },
-    "gptscript command query": ""
+    "gptscript command query": "" // put "none()" if none
 }"#;
 
 fn generate_goals(goals: &[String]) -> String {
@@ -96,12 +96,12 @@ fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String
                 .collect();
             let arg_str = arg_names.join(", ");
 
-            out.push_str(&format!("    def {}({arg_str}) -> {}:\n", command.name, command.return_type));
-            out.push_str(&format!("        purpose: {}\n", command.purpose));
+            out.push_str(&format!("    def {}({arg_str}) -> {}\n", command.name, command.return_type));
+            /*out.push_str(&format!("        purpose: {}\n", command.purpose));
             out.push_str("        args: \n");
             for CommandArgument { name, description, .. } in &command.args {
                 out.push_str(&format!("            - {}: {}\n", name, description)); 
-            }
+            }*/
         }
     }
     out.trim_end().to_string()

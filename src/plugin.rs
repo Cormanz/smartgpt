@@ -54,7 +54,8 @@ pub struct CommandContext {
     pub tokenizer: Tokenizer,
     pub plugin_data: PluginStore,
     pub llm: LLM,
-    pub variables: HashMap<String, ScriptValue>
+    pub variables: HashMap<String, ScriptValue>,
+    pub command_out: Vec<String>
 }
 
 
@@ -87,12 +88,12 @@ pub async fn invoke<T : DeserializeOwned>(
 }
 
 #[async_trait]
-pub trait CommandImpl {
+pub trait CommandImpl : Send + Sync {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>>;
 }
 
 #[async_trait]
-pub trait PluginCycle {
+pub trait PluginCycle : Send + Sync {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>>;
 
     async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>>;
