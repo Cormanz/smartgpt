@@ -15,8 +15,8 @@ CONSTRAINTS
 3. If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.
 4. Exclusively use the commands listed in double quotes e.g. "command name"
 
-COMMANDS:
-Commands must be in lowercase. Use the exact command names and command arguments as described here. Always use at least one command.
+FUNCTIONS:
+Functions must be in lowercase. Use the exact function names and function arguments as described here.
 <COMMANDS>
             
 RESOURCES:
@@ -30,21 +30,29 @@ Break your current endgoal down into simple queries.
 MINIMIZE THE NUMBER OF QUERIES IN YOUR QUERIES LIST. SIMPLE IS BETTER.
 
 GPTSCRIPT
-Python-like syntax, "-" allowed in var names
+A subset of Python syntax
+You are only allowed to use the features shown in the example. Nothing else.
+Keep your scripts short and sweet.
 ```
 str = "A"
 int = 1
 float = 2.5
-bool = false
+bool = False
 list = [ 1, 2 ]
-map = { x: 1, y: 2 }
+map = { "x": 1, "y": 2 }
 
-content = file-read("a.txt")
-file-write("b.txt", content)
+content = file_read("a.txt")
+file_write("b.txt", content)
 
 for path in paths:
-    file-append("final.txt", file-read(path))
+    file_append("final.txt", file-read(path))
+
+for [ key, value ] in map:
+    file_write(concat("key", "a.txt"))
 ```
+These are the only things allowed. There are no operations (add, sub, etc), no methods, no classes, no defining new functions, etc.
+
+The only functions there are, are the functions provided to you earlier.
 
 ALL OF YOUR COMMAND QUERIES WILL BE IN GPTSCRIPT
 
@@ -64,7 +72,7 @@ RESPONSES FORMAT:
     "goal information": {
         "endgoal": "Current Endgoal.",
         "are all queries complete": false
-    }
+    },
     "gptscript command query": ""
 }"#;
 
