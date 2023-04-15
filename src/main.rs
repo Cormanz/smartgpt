@@ -189,7 +189,7 @@ async fn apply_process(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    test_runner()?;
+    test_runner().await?;
     return Ok(());
 
     let config = fs::read_to_string("config.yml")?;

@@ -24,14 +24,10 @@ RESOURCES:
 2. Long-term memory management.
 3. File management.
 
-
-PROCESS:
-Break your current endgoal down into simple queries.
-MINIMIZE THE NUMBER OF QUERIES IN YOUR QUERIES LIST. SIMPLE IS BETTER.
-
 GPTSCRIPT
 A subset of Python syntax
 You are only allowed to use the features shown in the example. Nothing else.
+Your function outputs will be logged if they are not in a statement, function argument, or datatype.
 Keep your scripts short and sweet.
 ```
 str = "A"
@@ -50,11 +46,12 @@ for path in paths:
 for [ key, value ] in map:
     file_write(concat("key", "a.txt"))
 ```
-These are the only things allowed. There are no operations (add, sub, etc), no methods, no classes, no defining new functions, etc.
 
+These are the only things allowed. There are no operations (add, sub, etc).
 The only functions there are, are the functions provided to you earlier.
 
 ALL OF YOUR COMMAND QUERIES WILL BE IN GPTSCRIPT
+TRY TO DO AS MUCH AS POSSIBLE IN ONE QUERY
 
 You should only respond in JSON format as described below:
 

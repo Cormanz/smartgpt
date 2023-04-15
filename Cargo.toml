@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 async-openai = "0.10.2"
+async-recursion = "1.0.4"
 async-trait = "0.1.68"
 colored = "2.0.0"
 faiss = "0.12.0"
