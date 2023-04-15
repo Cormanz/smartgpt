@@ -1,7 +1,6 @@
 use std::{error::Error, time::Duration, fmt::Display, mem::take, collections::HashMap, process, fs};
 
 use colored::Colorize;
-use faiss::{MetricType, index_factory, FlatIndex, IdMap};
 use reqwest::{self, Client, header::{USER_AGENT, HeaderMap}};
 use async_openai::{
     Client as OpenAIClient, types::{CreateCompletionRequestArgs, CreateChatCompletionRequest, ChatCompletionRequestMessage, Role, CreateCompletionResponse, CreateChatCompletionResponse}, error::OpenAIError,

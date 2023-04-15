@@ -9,7 +9,7 @@ edition = "2021"
 async-openai = "0.10.2"
 async-trait = "0.1.68"
 colored = "2.0.0"
-faiss = "0.12.0"
+faiss = { version = "0.12.0", optional = true }
 regex = "1.7.3"
 reqwest = "0.11.16"
 select = "0.6.0"

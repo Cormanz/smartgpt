@@ -2,7 +2,6 @@ use std::{collections::HashMap, error::Error, fmt::Display, future::Future, pin:
 
 use async_openai::{Client as OpenAIClient, types::ChatCompletionRequestMessage};
 use async_trait::async_trait;
-use faiss::{index::IndexImpl, IdMap, FlatIndex};
 use reqwest::Client;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
