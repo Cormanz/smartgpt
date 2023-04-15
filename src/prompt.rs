@@ -24,7 +24,7 @@ RESOURCES:
 2. Long-term memory management.
 3. File management.
 
-GPTSCRIPT
+GPTSCRIPT:
 A subset of Python syntax
 You are only allowed to use the features shown in the example. Nothing else.
 Your function outputs will be logged if they are not in a statement, function argument, or datatype.
@@ -42,7 +42,7 @@ content = file_read("a.txt")
 file_write("b.txt", content)
 
 for path in paths:
-    file_append("final.txt", file-read(path))
+    file_append("final.txt", file_read(path))
 
 for [ key, value ] in map:
     file_write(concat("key", "a.txt"))
@@ -51,8 +51,16 @@ for [ key, value ] in map:
 These are the only things allowed. There are no operations (add, sub, etc).
 The only functions there are, are the functions provided to you earlier.
 
+You should try to do the following all in one query:
+- Doing multiple commands at once
+- Providing the output of one command to another
+- For Loop: Doing multiple commands at once on a different input
+
 ALL OF YOUR COMMAND QUERIES WILL BE IN GPTSCRIPT
-TRY TO DO AS MUCH AS POSSIBLE IN ONE QUERY
+
+PROCESS:
+Break your current endgoal down into simple queries. Then, choose one query idea at a time, and turn it into GPTScript.
+MINIMIZE THE NUMBER OF QUERIES YOU NEED. IF YOU CAN GET IT ALL DONE IN ONE QUERY, GO FOR IT!
 
 You should only respond in JSON format as described below:
 
@@ -69,9 +77,14 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "are all queries complete": false
+        "plan": [
+            "Step One",
+            "Step Two"
+        ]
     },
-    "gptscript command query": "" // put "none()" if none
+    "query idea": "", // put "" if none
+    "gptscript command query": "", // put "none()" if none
+    "should I move onto the next endgoal once this query is done": false
 }"#;
 
 fn generate_goals(goals: &[String]) -> String {

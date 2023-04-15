@@ -27,6 +27,7 @@ pub use config::*;
 pub use runner::*;
 
 use serde::{Deserialize, Serialize};
+use tokio::time::sleep;
 use serde_json::Value;
 
 #[derive(Serialize, Deserialize)]
@@ -122,18 +123,12 @@ async fn apply_process(
     }*/
     println!();
 
-    if response.goal_information.end_goal_complete {
-        println!("{}", "End Goal is Complete. Moving onto next end goal...".yellow());
-        context.end_goals.end_goal += 1;
-
-        let new_end_goal = NewEndGoal {
-            new_end_goal: context.end_goals.get()
-        };
-        let info = serde_json::to_string(&new_end_goal)?;
-
-        messages.push(Message::User(info));
-        return Ok(());
+    println!("{}:", "Plan".blue());
+    for (ind, step) in response.goal_information.plan.iter().enumerate() {
+        println!("{}{} {}", (ind + 1).to_string().black(), ".".black(), step);
     }
+
+    println!("{}: {}", "Idea".blue(), response.idea);
 
     /*println!("{}: {}", "Current Goal".blue(), response.thought.current_goal);
     println!("{}:", "Plan".blue());
@@ -149,8 +144,13 @@ async fn apply_process(
 
     println!("{}:", "Command Query".blue());
     println!("{}", response.command_query);
-    println!();
     
+    sleep(Duration::from_secs(5)).await;
+
+    println!();
+    println!("{}", "Running Query".yellow());
+    println!();
+
     context.command_out.clear();
     let body = parse_gptscript(&response.command_query)?;
     run_body(context, plugins, body).await?;
@@ -159,42 +159,21 @@ async fn apply_process(
         println!("{}", item);
     }
 
-    let mut command_result_content = context.command_out.join("\n");
+    let command_result_content = context.command_out.join("\n");
     messages.push(Message::User(command_result_content.clone()));
+
+    if response.will_be_done {
+        println!("{}", "End Goal is Complete. Moving onto next end goal...".yellow());
+        context.end_goals.end_goal += 1;
+
+        let new_end_goal = NewEndGoal {
+            new_end_goal: context.end_goals.get()
+        };
+        let info = serde_json::to_string(&new_end_goal)?;
+        messages.push(Message::User(format!("You have moved onto your next endgoal: {}", new_end_goal.new_end_goal)));
+    }
 
     context.llm.message_history = messages;
-
-    /*let none_request = CommandRequest {
-        name: "none".to_string(),
-        args: HashMap::new()
-    };
-    let command_request = response.command.as_ref().unwrap_or(&none_request);
-    let args = command_request.args.iter()
-        .map(|(name, value)| format!(" [{name}: {value}]"))
-        .collect::<Vec<_>>().join(" ");
-    let command = format!("{}{}", command_request.name, args);
-    println!("{}: {}", "Command".blue(), command);
-
-    let results = run_command(context, &response, plugins).await?;
-
-    println!();
-    println!("{} \"{}\"", "Executed Command".blue(), command);
-
-    match debug_yaml(&results) {
-        Err(_) => {
-            println!("{results}");
-        },
-        _ => {}
-    };
-    
-    let mut command_result_content = "Command ".to_string();
-    command_result_content.push_str(&command_request.name);
-    command_result_content.push_str(" returned: ");
-    command_result_content.push_str(&results);
-
-    messages.push(Message::User(command_result_content.clone()));
-
-    context.llm.message_history = messages;*/
 
     Ok(())
 }
@@ -204,6 +183,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config).await?;
 
+    //test_runner().await?;
+    //return Ok(());
+
+    print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "AI Name".blue(), program.name);
     println!("{}: {}", "Role".blue(), program.role);
     println!("{}:", "Goals".blue());

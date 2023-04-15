@@ -16,11 +16,19 @@ for path in files:
     file_append("final.txt", content)
 "#;
 
-    let program = parse_gptscript(code)?;
+    //let program = parse_gptscript(code)?;
     /*let mut ctx = ScriptContext {
         variables: HashMap::new()
     };
     run_body(&mut ctx, program).await?;*/
+    
+    let json = r#"{
+    "hello": 1,
+    "a": [ 1, 2, 3 ]        
+}"#;
+
+    let data: ScriptValue = serde_json::from_str(json)?;
+    println!("{:?}", data);
 
     Ok(())
 }

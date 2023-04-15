@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use serde::{de::{Visitor, SeqAccess, MapAccess}, Deserializer, Deserialize, Serialize, Serializer, ser::{SerializeMap, SerializeSeq}};
+use serde::{de::{Visitor, SeqAccess, MapAccess, DeserializeSeed}, Deserializer, Deserialize, Serialize, Serializer, ser::{SerializeMap, SerializeSeq}};
+use serde_json::Value;
 
 use crate::ScriptValue;
 
@@ -55,6 +56,10 @@ impl<'de> Visitor<'de> for ScriptValueVisitor {
         Ok(ScriptValue::Bool(v))
     }
 
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E> {
+        Ok(ScriptValue::Int(v as i64))
+    }
+
     fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E> {
         Ok(ScriptValue::Int(v))
     }
@@ -71,25 +76,29 @@ impl<'de> Visitor<'de> for ScriptValueVisitor {
         Ok(ScriptValue::None)
     }
 
-    fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
+    fn visit_seq<V>(self, mut visitor: V) -> Result<ScriptValue, V::Error>
     where
         V: SeqAccess<'de>,
     {
-        let mut values = Vec::new();
-        while let Some(value) = seq.next_element()? {
-            values.push(value);
+        let mut vec = Vec::new();
+
+        while let Ok(Some(elem)) = visitor.next_element() {
+            vec.push(elem);
         }
-        Ok(ScriptValue::List(values))
+
+        Ok(ScriptValue::List(vec))
     }
 
-    fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+    fn visit_map<V>(self, mut visitor: V) -> Result<ScriptValue, V::Error>
     where
         V: MapAccess<'de>,
     {
-        let mut values = HashMap::new();
-        while let Some((key, value)) = map.next_entry()? {
-            values.insert(key, value);
+        let mut map = HashMap::new();
+
+        while let Ok(Some((key, value))) = visitor.next_entry() {
+            map.insert(key, value);
         }
-        Ok(ScriptValue::Dict(values))
+
+        Ok(ScriptValue::Dict(map))
     }
 }

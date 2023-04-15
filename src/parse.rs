@@ -8,8 +8,12 @@ pub struct LLMResponse {
     pub summary: Vec<Takeaway>,
     #[serde(rename = "goal information")]
     pub goal_information: GoalInformation,
+    #[serde(rename = "query idea")]
+    pub idea: String,
     #[serde(rename = "gptscript command query")]
-    pub command_query: String
+    pub command_query: String,
+    #[serde(rename = "should I move onto the next endgoal once this query is done")]
+    pub will_be_done: bool
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -27,7 +31,7 @@ pub struct Objective {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GoalInformation {
     #[serde(rename = "endgoal")] pub current_endgoal: String,
-    #[serde(rename = "are all queries complete")] pub end_goal_complete: bool
+    pub plan: Vec<String>
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

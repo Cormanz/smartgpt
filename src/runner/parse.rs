@@ -50,7 +50,8 @@ pub enum Expression {
     Primitive(Primitive),
     List(Vec<Expression>),
     Dict(HashMap<String, Expression>),
-    FunctionCall(String, Vec<Expression>)
+    FunctionCall(String, Vec<Expression>),
+    GetAttr(Box<Expression>, Box<Expression>)
 }
 
 impl Debug for Expression {
@@ -91,6 +92,9 @@ impl Debug for Expression {
                     }
                 }
                 write!(f, ")")
+            }
+            Expression::GetAttr(expr, attr) => {
+                write!(f, "{:?}[{:?}]", expr, attr)
             }
         }
     }

@@ -162,6 +162,14 @@ impl From<HashMap<String, ScriptValue>> for ScriptValue {
     }
 }
 
+fn get_with_negative_index<T>(vec: &Vec<T>, index: i64) -> Option<&T> {
+    if index >= 0 {
+        vec.get(index as usize)
+    } else {
+        vec.get((vec.len() as i64 + index) as usize)
+    }
+}
+
 #[async_recursion]
 pub async fn get_value(ctx: &mut CommandContext, plugins: &[Plugin], expr: Expression, top_level: bool) -> Result<ScriptValue, GPTRunError> {
     match expr {
@@ -197,6 +205,40 @@ pub async fn get_value(ctx: &mut CommandContext, plugins: &[Plugin], expr: Expre
 
             Ok(ScriptValue::Dict(map))
         },
+        Expression::GetAttr(expr, attr) => {
+            let value = get_value(ctx, plugins, *expr, top_level).await?;
+            let attribute = get_value(ctx, plugins, *attr, top_level).await?;
+            
+            match value {
+                ScriptValue::Dict(dict) => {
+                    match attribute {
+                        ScriptValue::String(prop) => {
+                            dict.get(&prop)
+                                .ok_or(GPTRunError(format!("Could not find prop {prop} from dict.")))
+                                .cloned()
+                        },
+                        _ => {
+                            return Err(GPTRunError(format!("Cannot get property {:?} from a dict", attribute)));
+                        }
+                    }
+                }
+                ScriptValue::List(list) => {
+                    match attribute {
+                        ScriptValue::Int(index) => {
+                            get_with_negative_index(&list, index)
+                            .ok_or(GPTRunError(format!("Could not find index {index} from list.")))
+                                .cloned()
+                        },
+                        _ => {
+                            return Err(GPTRunError(format!("Cannot get property {:?} from a dict", attribute)));
+                        }
+                    }
+                }
+                _ => {
+                    return Err(GPTRunError(format!("Cannot get property from {:?}", value)));
+                }
+            }
+        },
         Expression::FunctionCall(name, args) => {
             let mut value_args: Vec<ScriptValue> = vec![];
             for arg in args {
@@ -215,7 +257,7 @@ pub async fn get_value(ctx: &mut CommandContext, plugins: &[Plugin], expr: Expre
                 let args: Vec<Expression> = value_args.iter().map(|el| el.clone().into()).collect();
                 let expr = Expression::FunctionCall(name.clone(), args);
 
-                ctx.command_out.push(format!("Command {:?} returned: {:?}", expr, result));
+                ctx.command_out.push(format!("Command {:?} was successful and returned: {:?}", expr, result));
             }
 
             Ok(result)
