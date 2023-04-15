@@ -43,7 +43,7 @@ impl Format for Primitive {
                 for (ind, item) in data.iter().enumerate() {
                     out.push_str(&item.format(in_command, indent));
                     if ind < data.len() - 1 {
-                        out.push_str(", ");
+                        out.push_str(" ");
                     }
                 }
                 out.push_str(" ]");
@@ -91,7 +91,7 @@ impl Format for Expression {
             }
             Expression::Lambda { args, query } => {
                 let arg_str = args.iter()
-                    .map(|arg| format!("${arg}"))
+                    .map(|arg| format!("{arg}"))
                     .collect::<Vec<_>>()
                     .join(" ");
 
@@ -100,10 +100,10 @@ impl Format for Expression {
                 format!("|{arg_str}| {{\n{query_str}{}\n}}", gen_indent(indent))
             }
             Expression::Var(var) => {
-                format!("${var}")
+                format!("{var}")
             }
             Expression::SetVar { var, expression } => {
-                format!("${var} = {}", expression.format(in_command, indent))
+                format!("{var} = {}", expression.format(in_command, indent))
             }
             Expression::Primitive(primitive) => {
                 primitive.format(in_command, indent)
