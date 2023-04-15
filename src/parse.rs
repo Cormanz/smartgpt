@@ -8,9 +8,8 @@ pub struct LLMResponse {
     pub summary: Vec<Takeaway>,
     #[serde(rename = "goal information")]
     pub goal_information: GoalInformation,
-    #[serde(rename = "idea to complete current task")]
-    pub idea: Option<String>,
-    pub command: CommandRequest
+    #[serde(rename = "chosen command from commands list")]
+    pub command: Option<CommandRequest>
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,16 +21,14 @@ pub struct Takeaway {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Objective {
     pub objective: String,
-    pub tasks: Vec<String>
+    #[serde(rename = "commands")] pub tasks: Vec<String>
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GoalInformation {
     #[serde(rename = "endgoal")] pub current_endgoal: String,
-    #[serde(rename = "chosen objective")] pub current_objective: String,
-    #[serde(rename = "chosen task")] pub current_task: String,
-    pub objectives: Vec<Objective>,
-    #[serde(rename = "are all objectives complete")] pub end_goal_complete: bool
+    #[serde(rename = "commands")] pub commands: Vec<String>,
+    #[serde(rename = "are all commands complete")] pub end_goal_complete: bool
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

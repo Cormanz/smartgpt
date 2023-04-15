@@ -1,5 +1,6 @@
-use std::{collections::HashMap, error::Error, fmt::Display, ascii::AsciiExt};
+use std::{collections::HashMap, error::Error, fmt::Display, ascii::AsciiExt, process};
 
+use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use async_openai::Client as OpenAIClient;
@@ -90,6 +91,18 @@ pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
 
     let mut used_plugins: Vec<Plugin> = vec![];
     let plugins = list_plugins();
+    let mut exit = false;
+    for (name, _) in &config.plugins {
+        let plugin = plugins.iter().find(|el| el.name.to_ascii_lowercase() == name.to_ascii_lowercase());
+        if let None = plugin {
+            println!("{}: No plugin named \"{}\".", "Error".red(), name);
+            exit = true;
+        }
+    }
+    if exit {
+        process::exit(1);
+    }
+    
     for plugin in plugins {
         if let Some(plugin_info) = config.plugins.get(&plugin.name.to_lowercase()) {
             let data = plugin.cycle.create_data(plugin_info.clone()).await;

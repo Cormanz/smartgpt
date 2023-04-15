@@ -16,9 +16,7 @@ Although inspired significantly by [Auto-GPT](https://github.com/Torantulino/Aut
 
 2. **Prompting** - Part of the focus on SmartGPT is creating a single prompt that can allow the AI to easily run and exhibit complex behaviors and solve programs. Our prompting and the way we encode responses is meant to accomplish a few things.
 - The AI reports on exactly what it learns from every command, allowing that information to both help it contextualize its thoughts and serve as long-term memory.
-- The AI divides a problem into **objectives** and **tasks**, then focusing on one task at a time.
-
-This area still needs work, because it often makes the AI overcomplexify tasks that are much simpler, but it has shown very promising results.
+- The AI divides a problem into **planned commands** then focusing on one planned command at a time.
 
 3. **Easy Configuration Management** - It's incredibly easy to configure your plugins in SmartGPT, both on the user side and the developer side. Users can save a very readable `config.yml` file (an example is shown in the root of the project directory), and run their entire project. Developers can easily parse these configurations using [Serde](https://serde.rs/).
 
@@ -28,10 +26,8 @@ The main task loop of SmartGPT is as follows:
 
 - Focuses on the current **endgoal** (one of the final goals it was told to complete)
 - Records any findings from the **previous command**.
-- Generates a list of **objectives**, usually 2 or 3. Each objective then has a list of **tasks** (usually one command each) to carry out.
-- Chooses one **objective**, and particularly, one **task** from that objective to focus on.
-- Generates an **idea** of what to do.
-- Runs a **command**.
+- Generates a list of **planned commands** to carry out. Chooses the current planned command.
+- Runs the **command**.
 
 ## How To Use
 
@@ -42,7 +38,9 @@ Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/
 git clone https://github.com/Cormanz/smartgpt.git
 ```
 
-2. Run the Repository.
+2. Install FAISS as explained [here](https://github.com/Enet4/faiss-rs#installing-as-a-dependency)
+
+3. Run the Repository.
 ```
 cargo run --release
 
