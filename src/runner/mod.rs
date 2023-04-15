@@ -1,10 +1,12 @@
 mod parse;
 mod run;
+mod convert;
 
 use std::{error::Error, collections::HashMap};
 
 pub use parse::*;
 pub use run::*;
+pub use convert::*;
 
 pub async fn test_runner() -> Result<(), Box<dyn Error>> {
     let code = r#"
@@ -15,10 +17,10 @@ for path in files:
 "#;
 
     let program = parse_gptscript(code)?;
-    let mut ctx = ScriptContext {
+    /*let mut ctx = ScriptContext {
         variables: HashMap::new()
     };
-    run_body(&mut ctx, program).await?;
+    run_body(&mut ctx, program).await?;*/
 
     Ok(())
 }

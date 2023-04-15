@@ -8,7 +8,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, LLMResponse, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke};
+use crate::{Plugin, LLMResponse, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue};
 
 pub struct BrowseData {
     pub client: Client
@@ -60,11 +60,11 @@ pub struct NoContentError {
     help: String
 }
 
-pub async fn download_article(ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let browse_info = ctx.plugin_data.get_data("Browse")?;
 
     let params: [(&str, &str); 0] = [];
-    let url = args.get("url").ok_or(BrowseNoArgError)?;   
+    let url: String = args.get(0).ok_or(BrowseNoArgError)?.clone().try_into()?;   
 
     let res_result = invoke::<String>(browse_info, "browse", BrowseRequest {
         url: url.to_string(),
@@ -75,33 +75,38 @@ pub async fn download_article(ctx: &mut CommandContext, args: HashMap<String, St
     let body = match res_result {
         Ok(res) => {
             if res.len() < 5 {
-                return Ok(serde_json::to_string(&NoContentError {
-                    error: format!("The URL of \"{url}\" has no content."),
-                    help: "Try browsing another website.".to_string()
-                })?);
+                return Ok(ScriptValue::Dict(HashMap::from_iter([
+                    (
+                        "error".to_string(), 
+                        format!("The URL of \"{url}\" has no content.").into()
+                    )
+                ])));
             }
 
             res
         }
         Err(_) => {
-            return Ok(
-                format!("Could not browse the website link of \"{url}\". Are you sure this is a valid URL?")
-            )
+            return Ok(ScriptValue::Dict(HashMap::from_iter([
+                (
+                    "error".to_string(), 
+                    format!("Could not browse the website link of \"{url}\". Are you sure this is a valid URL?").into()
+                )
+            ])));
         }
     };
 
     let content = extract_text_from_html(&body);
     let (content, ..) = apply_chunks(&content, 1, 5000);
 
-    Ok(serde_json::to_string(&content)?)
+    Ok(content.into())
 }
 
 pub struct BrowseArticle;
 
 #[async_trait]
 impl CommandImpl for BrowseArticle {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
-        download_article(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+        browse_article(ctx, args).await
     }
 }
 
@@ -138,7 +143,7 @@ pub fn create_browse() -> Plugin {
         cycle: Box::new(BrowseCycle),
         commands: vec![
             Command {
-                name: "browse-article".to_string(),
+                name: "browse_article".to_string(),
                 purpose: "Browse a website's paragraph-only content.".to_string(),
                 args: vec![
                     ("url".to_string(), "The URL to browse.".to_string())

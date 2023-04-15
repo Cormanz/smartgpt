@@ -18,7 +18,8 @@ pub enum Primitive {
     String(String),
     Int(i64),
     Float(f64),
-    Bool(bool)
+    Bool(bool),
+    None
 }
 
 impl Debug for Primitive {
@@ -35,6 +36,9 @@ impl Debug for Primitive {
             }
             Primitive::Float(float) => {
                 write!(f, "{}", float)
+            }
+            Primitive::None => {
+                write!(f, "none")
             }
         }
     }

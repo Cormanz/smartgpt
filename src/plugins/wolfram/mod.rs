@@ -6,7 +6,7 @@ use select::{document::Document, predicate::Name};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, LLMResponse, PluginCycle, PluginDataNoInvoke};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, LLMResponse, PluginCycle, PluginDataNoInvoke, ScriptValue};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;
@@ -56,18 +56,18 @@ pub async fn ask_wolfram(ctx: &mut CommandContext, query: &str) -> Result<String
     Ok(extract_text_from_wolfram(&xml))
 }
 
-pub async fn wolfram(ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
-    let query = args.get("query").ok_or(WolframNoQueryError)?;
-    let response = ask_wolfram(ctx, query).await?;
+pub async fn wolfram(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    let query: String = args.get(0).ok_or(WolframNoQueryError)?.clone().try_into()?;
+    let response = ask_wolfram(ctx, &query).await?;
     
-    Ok(response)
+    Ok(response.into())
 }
 
 pub struct WolframImpl;
 
 #[async_trait]
 impl CommandImpl for WolframImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         wolfram(ctx, args).await
     }
 }

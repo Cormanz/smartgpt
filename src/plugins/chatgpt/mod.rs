@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, LLMResponse, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle};
+use crate::{CommandContext, CommandImpl, LLMResponse, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue};
 
 use super::memory;
 
@@ -159,25 +159,25 @@ pub async fn ask_chatgpt(context: &mut CommandContext, query: &str) -> Result<St
     Ok(content.clone())
 }
 
-pub async fn chatgpt(ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
-    let query = args.get("query").ok_or(CommandNoArgError("ask-chatgpt", "query"))?;
-    let response = ask_chatgpt(ctx, query).await?;
+pub async fn chatgpt(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    let query: String = args.get(0).ok_or(CommandNoArgError("ask-chatgpt", "query"))?.clone().try_into()?;
+    let response = ask_chatgpt(ctx, &query).await?;
     
-    Ok(response)
+    Ok(response.into())
 }
 
-pub async fn reset_chatgpt(ctx: &mut CommandContext, _: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+pub async fn reset_chatgpt(ctx: &mut CommandContext, _: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let chatgpt_info = ctx.plugin_data.get_data("ChatGPT")?;
     invoke::<bool>(chatgpt_info, "clear", true).await?;
     
-    Ok("Successful.".to_string())
+    Ok(ScriptValue::None)
 }
 
 pub struct ChatGPTImpl;
 
 #[async_trait]
 impl CommandImpl for ChatGPTImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         chatgpt(ctx, args).await
     }
 }
@@ -186,7 +186,7 @@ pub struct ResetChatGPTImpl;
 
 #[async_trait]
 impl CommandImpl for ResetChatGPTImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         reset_chatgpt(ctx, args).await
     }
 }
@@ -220,7 +220,7 @@ pub fn create_chatgpt() -> Plugin {
         cycle: Box::new(ChatGPTCycle),
         commands: vec![
             Command {
-                name: "ask-chatgpt".to_string(),
+                name: "ask_chatgpt".to_string(),
                 purpose: "Ask ChatGPT, a helpful assistant and large-language model, to help answer your question.".to_string(),
                 args: vec![
                     ("query".to_string(), "The query to ask ChatGPT. Be detailed!".to_string())
@@ -228,7 +228,7 @@ pub fn create_chatgpt() -> Plugin {
                 run: Box::new(ChatGPTImpl)
             },
             Command {
-                name: "reset-chatgpt".to_string(),
+                name: "reset_chatgpt".to_string(),
                 purpose: "Reset the memory of ChatGPT.".to_string(),
                 args: vec![],
                 run: Box::new(ResetChatGPTImpl)

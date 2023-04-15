@@ -29,7 +29,7 @@ impl<'a> Display for CommandNoArgError<'a> {
 
 impl<'a> Error for CommandNoArgError<'a> {}
 
-use crate::{LLMResponse, LLM};
+use crate::{LLMResponse, LLM, ScriptValue};
 
 #[async_trait]
 pub trait PluginData: Any + Send + Sync {
@@ -53,7 +53,8 @@ pub struct CommandContext {
     pub end_goals: EndGoals,
     pub tokenizer: Tokenizer,
     pub plugin_data: PluginStore,
-    pub llm: LLM
+    pub llm: LLM,
+    pub variables: HashMap<String, ScriptValue>
 }
 
 
@@ -87,7 +88,7 @@ pub async fn invoke<T : DeserializeOwned>(
 
 #[async_trait]
 pub trait CommandImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>>;
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>>;
 }
 
 #[async_trait]

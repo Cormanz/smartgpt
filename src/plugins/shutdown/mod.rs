@@ -2,7 +2,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, process};
 
 use async_trait::async_trait;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue};
 use std::fs;
 
 #[derive(Debug, Clone)]
@@ -16,8 +16,8 @@ impl Display for ShutdownNoOutputError {
 
 impl Error for ShutdownNoOutputError {}
 
-pub async fn shutdown(ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
-    let output = args.get("output").ok_or(ShutdownNoOutputError)?;
+pub async fn shutdown(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    let output: String = args.get(0).ok_or(ShutdownNoOutputError)?.clone().try_into()?;
 
     fs::write(format!("files/out"), output)?;
 
@@ -28,7 +28,7 @@ pub struct Shutodwn;
 
 #[async_trait]
 impl CommandImpl for Shutodwn {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         shutdown(ctx, args).await
     }
 }
