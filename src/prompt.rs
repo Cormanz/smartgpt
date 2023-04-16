@@ -19,11 +19,12 @@ Commands
 Commands must be in lowercase. Use the exact command names and command arguments as described here.
 <COMMANDS>
 
-A command query is a list of commands. You may use one command's output as the argument to another.
+A command query is a list of up commands. You may use one command's output as the argument to another.
 You should do the following in one query:
 - Running a command and saving the output to a file
 - Running multiple commands that don't depend on each other, like running a command to read each of three files
 - Providing the output of one command to another, like reading a file and asking ChatGPT to summarize it.            
+You may have up to three commands!
 
 RESOURCES:
 1. Internet access for searches and information gathering.

@@ -161,7 +161,7 @@ pub async fn ask_chatgpt(context: &mut CommandContext, query: &str) -> Result<St
 
 pub async fn chatgpt(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let prompt: String = args.get(0).ok_or(CommandNoArgError("ask-chatgpt", "prompt"))?.clone().try_into()?;
-    let response = ask_chatgpt(ctx, &format!("{}", prompt)).await?;
+    let response = ask_chatgpt(ctx, &prompt).await?;
     
     Ok(response.into())
 }
@@ -221,9 +221,8 @@ pub fn create_chatgpt() -> Plugin {
         commands: vec![
             Command {
                 name: "ask_chatgpt".to_string(),
-                purpose: "Ask ChatGPT to answer a prompt".to_string(),
+                purpose: "Ask ChatGPT to answer your prompt.".to_string(),
                 args: vec![
-                    CommandArgument::new("prerequisite_info", "ChatGPT does not know anything about what you have done. Provide ChatGPT with any info needed to complete the task, such as your progress and the content of files needed.", "String"),
                     CommandArgument::new("prompt", "The prompt to ask ChatGPT.", "String")
                 ],
                 return_type: "String".to_string(),

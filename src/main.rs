@@ -158,7 +158,14 @@ async fn apply_process(
     let query = parse_query(response.command_query);
     run_body(context, plugins, query).await?;
 
-    context.command_out.push(format!("\nAll commands have finished successfully. Continue."));
+    context.command_out.push(format!(
+"
+All commands have finished successfully.
+Remember that you can use multiple commands in one query, and you can use the output of one command in another.
+Take advantage of this! Try to do as much as possible in one query.
+You may have up to three commands!
+Continue."
+));
 
     for item in &context.command_out {
         println!("{}", item);
@@ -308,8 +315,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             if let Ok(_) = result {
                 break;
             }
-
-            result.as_ref().map_err(|err| println!("oh no..\n{:?}", err));
         }
 
         if let Err(_) = result {
