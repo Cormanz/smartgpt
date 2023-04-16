@@ -29,6 +29,7 @@ pub struct Objective {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GoalInformation {
     #[serde(rename = "endgoal")] pub current_endgoal: String,
+    #[serde(rename = "planned tasks")]
     pub plan: Vec<String>,
     #[serde(rename = "current step in plan")]
     pub step: usize

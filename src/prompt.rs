@@ -18,25 +18,19 @@ CONSTRAINTS
 Commands
 Commands must be in lowercase. Use the exact command names and command arguments as described here.
 <COMMANDS>
+
+You may use multiple commands, and you may use the output of one command as an argument to another.
+Try to maximize the amount of commands you do at once.
             
 RESOURCES:
 1. Internet access for searches and information gathering.
 2. Long-term memory management.
 3. File management.
 
-QUERIES
-Queries are simply a series of commands in function-call syntax.
-```
-file_write("a.txt", file_read("b.txt"))
-file_write("c.txt", """Hello.\nI am.\.Cool.")
-```
-Each command's result will be given.
-You will only use " " double-quoted strings.
-Try to use as many commands in one query as possible.
-
 PROCESS:
-Break your current endgoal down into simple queries. Then, choose one query idea at a time, and turn it into GPTScript.
-MINIMIZE THE NUMBER OF QUERIES YOU NEED. IF YOU CAN GET IT ALL DONE IN ONE QUERY, GO FOR IT!
+Break your current endgoal down into a set of tasks.
+Each task contains multiple commands that can use other commands as their output.
+MINIMIZE THE NUMBER OF TASKS YOU NEED. ONE IS BEST!!!
 
 You should only respond in JSON format as described below:
 
@@ -53,14 +47,27 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "plan": [
-            "Step One",
-            "Step Two",
-            "Final Step: Save to a file."
+        "planned tasks": [
+            "Step One"
         ],
         "current step in plan": 0
     },
-    "command query": "",
+    "commands": [
+        {
+            name: "file_append",
+            args: [
+                {
+                    Data: "file-name.txt"
+                },
+                {
+                    Command: {
+                        name: "file-read",
+                        args; "other-file.txt"
+                    }
+                }
+            ]
+        }
+    ],
     "will I be completely done with the step after this one step (true) or do I have more work to do (false)": false,
     "will I be completely done with the plan after this one query (true) or do I have more work to do (false)": false
 }"#;
