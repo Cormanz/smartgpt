@@ -84,7 +84,7 @@ impl From<Message> for ChatCompletionRequestMessage {
 pub trait LLMModel : Send + Sync {
     async fn get_response(&self, messages: &[Message]) -> Result<String, Box<dyn Error>>;
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
-    fn get_token_count(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
+    fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
 }
 
 #[async_trait]
@@ -100,12 +100,12 @@ pub struct LLM {
 }
 
 impl LLM {
-    pub fn get_token_count(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
-        self.model.get_token_count(messages)
+    pub fn get_tokens_remaining(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
+        self.model.get_tokens_remaining(messages)
     }
 
-    pub fn crop_to_tokens(&mut self, token_count: usize) -> Result<(), Box<dyn Error>> {
-        while self.get_token_count(&self.get_messages())? > token_count {
+    pub fn crop_to_tokens(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
+        while token_buffer > self.get_tokens_remaining(&self.get_messages())? {
             self.message_history.pop();
         }
 
@@ -154,7 +154,7 @@ impl LLMModel for ChatGPT {
         Ok(embeddings.data[0].embedding.clone())
     }
 
-    fn get_token_count(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
+    fn get_tokens_remaining(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
         let messages: Vec<ChatCompletionRequestMessage> = messages
             .iter()
             .map(|el| el.clone().into())

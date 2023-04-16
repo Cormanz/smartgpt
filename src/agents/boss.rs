@@ -36,6 +36,8 @@ Your Employee is not meant to do detailed work, but simply to help you find info
     println!("{task_list}");
     println!();
 
+    let mut new_prompt = true;
+
     loop {
         let ProgramInfo { context, .. } = program;
         let Agents { boss, .. } = &mut context.agents;
@@ -54,7 +56,8 @@ Your Employee is not meant to do detailed work, but simply to help you find info
         println!("{boss_request}");
         println!();
 
-        let employee_response = run_employee(program, &boss_request, true).await?;
+        let employee_response = run_employee(program, &boss_request, new_prompt).await?;
+        new_prompt = false;
 
         let output = format!(
 r#"The Employee has responded:

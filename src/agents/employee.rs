@@ -13,7 +13,9 @@ pub async fn try_again_employee(
 
         let queries_left = 3 - (i + 1);
         let prompt = format!(
-            "You have {} command queries left, so finish up shortly. Please continue and write another command query.",
+r"You have {} command queries left, so finish up shortly. Please continue and write another command query.
+
+Do not surround your response in code-blocks. Respond with pure YAML only.",
             queries_left
         ).trim().to_string();
         
@@ -50,19 +52,19 @@ pub async fn try_again_employee(
         println!();
 
         let output = format!(
-    "{}
+    r#"{}
 
-    You now have three choices.
-    A. My query was successful, and I am done. I will provide my response to The Boss.
-    B. My query was successful, but I am not done. I will continue with another query.
-    C. My query was not successful, so I will continue with another query.
+You now have three choices.
+A. My query was successful, and I am done. I will provide my response to The Boss.
+B. My query was successful, but I am not done. I will continue with another query.
+C. My query was not successful, so I will continue with another query.
 
-    Provide your response in this format:
-    ```yml
-    reasoning: Reasoning
-    choice: Choice # A, B, C
-    ```
-    ",
+Provide your response in this format:
+```yml
+reasoning: Reasoning
+choice: Choice # "A", "B", or "C" exactly.
+```
+"#,
             context.command_out.join("\n")
     );
 
@@ -110,22 +112,21 @@ You have access to these commands:
 {}
 
 You will write a command query in this format.
-```yml
+
 name: command_name
 args:
 - !Data Arg
-```
 
 Always use the `!Data` annotation, no matter the datatype.
 
 Your task is {:?}
-Please write a command query for it, in the given format above. Ensure it can be parsed by serde_yaml.```
-", commands, task
+Please write a command query for it, in the given format above.
+Respond with pure YAML only.", commands, task
         );
     
         employee.prompt.push(Message::User(prompt));
     } else {
-        employee.prompt.push(Message::User(
+        employee.message_history.push(Message::User(
             format!("
 The Boss has assigned a new task: {:?}
 
