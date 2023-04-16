@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use async_openai::Client as OpenAIClient;
 
-use crate::{CommandContext, create_tokenizer, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_memory, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt};
+use crate::{CommandContext, create_tokenizer, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_memory, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel};
 
 #[derive(Debug, Clone)]
 pub struct NoLLMError;
@@ -20,11 +20,19 @@ impl<'a> Error for NoLLMError {}
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AgentLLMs {
+    manager: HashMap<String, Value>,
+    boss: HashMap<String, Value>,
+    employee: HashMap<String, Value>
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Config {
     pub name: String,
     pub role: String,
-    pub goals: Vec<String>,
-    pub llm: HashMap<String, Value>,
+    pub task: String,
+    pub agents: AgentLLMs,
     pub plugins: HashMap<String, Value>,
     #[serde(rename = "disabled commands")] pub disabled_commands: Vec<String>
 }
@@ -41,7 +49,7 @@ pub struct Llm {
 pub struct ProgramInfo {
     pub name: String,
     pub role: String,
-    pub goals: Vec<String>,
+    pub task: String,
     pub plugins: Vec<Plugin>,
     pub context: CommandContext,
     pub disabled_commands: Vec<String>
@@ -68,26 +76,44 @@ pub fn create_providers() -> Vec<Box<dyn LLMProvider>> {
     ]
 }
 
-pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
-    let config: Config = serde_yaml::from_str(config)?;
-    let (model_name, model_config) = config.llm.iter().next().ok_or(NoLLMError)?;
+pub async fn create_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
+    let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_providers();
     let model = providers.iter()
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoLLMError)?;
 
+    Ok(model.create(model_config.clone()).await?)
+}
+
+pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
+    let config: Config = serde_yaml::from_str(config)?;
+    let manager = create_model(config.agents.manager).await?;
+    let boss = create_model(config.agents.boss).await?;
+    let employee = create_model(config.agents.employee).await?;
+
     let mut context = CommandContext {
+        task: config.task.clone(),
         tokenizer: create_tokenizer(),
         command_out: vec![],
         variables: HashMap::new(),
         plugin_data: crate::PluginStore(HashMap::new()),
-        end_goals: EndGoals {
-            end_goal: 0,
-            end_goals: config.goals.clone()
-        },
-        llm: LLM {
-            message_history: vec![],
-            model: model.create(model_config.clone()).await?
+        agents: Agents {
+            manager: LLM {
+                prompt: vec![],
+                message_history: vec![],
+                model: manager
+            },
+            boss: LLM {
+                prompt: vec![],
+                message_history: vec![],
+                model: boss
+            },
+            employee: LLM {
+                prompt: vec![],
+                message_history: vec![],
+                model: employee
+            }
         }
     };
 
@@ -119,7 +145,7 @@ pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     Ok(ProgramInfo {
         name: config.name,
         role: config.role,
-        goals: config.goals,
+        task: config.task.clone(),
         plugins: used_plugins,
         context,
         disabled_commands: config.disabled_commands

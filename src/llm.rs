@@ -4,11 +4,13 @@ use async_openai::{Client, types::{CreateChatCompletionResponse, CreateChatCompl
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
+use tiktoken_rs::async_openai::get_chat_completion_max_tokens;
 
 #[derive(Clone)]
 pub enum Message {
     User(String),
-    Assistant(String)
+    Assistant(String),
+    System(String)
 }
 
 impl Message {
@@ -25,18 +27,27 @@ impl Message {
             _ => false
         }
     }
+    
+    pub fn is_system(&self) -> bool {
+        match self {
+            Message::System(_) => true,
+            _ => false
+        }
+    }
 
     pub fn content(&self) -> &str {
         match self {
             Message::User(content) => content,
-            Message::Assistant(content) => content
+            Message::Assistant(content) => content,
+            Message::System(content) => content
         }
     }
 
     pub fn set_content(&mut self, new_content: &str) {
         match self {
             Message::User(content) => *content = new_content.to_string(),
-            Message::Assistant(content) => *content = new_content.to_string()
+            Message::Assistant(content) => *content = new_content.to_string(),
+            Message::System(content) => *content = new_content.to_string()
         }
     }
 }
@@ -57,6 +68,13 @@ impl From<Message> for ChatCompletionRequestMessage {
                     content: text,
                     name: None
                 }
+            },
+            Message::System(text) => {
+                ChatCompletionRequestMessage {
+                    role: Role::System,
+                    content: text,
+                    name: None
+                }
             }
         }
     }
@@ -66,6 +84,7 @@ impl From<Message> for ChatCompletionRequestMessage {
 pub trait LLMModel : Send + Sync {
     async fn get_response(&self, messages: &[Message]) -> Result<String, Box<dyn Error>>;
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
+    fn get_token_count(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
 }
 
 #[async_trait]
@@ -75,8 +94,29 @@ pub trait LLMProvider {
 }
 
 pub struct LLM {
+    pub prompt: Vec<Message>,
     pub message_history: Vec<Message>,
     pub model: Box<dyn LLMModel>
+}
+
+impl LLM {
+    pub fn get_token_count(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
+        self.model.get_token_count(messages)
+    }
+
+    pub fn crop_to_tokens(&mut self, token_count: usize) -> Result<(), Box<dyn Error>> {
+        while self.get_token_count(&self.get_messages())? > token_count {
+            self.message_history.pop();
+        }
+
+        Ok(())
+    }
+
+    pub fn get_messages(&self) -> Vec<Message> {
+        let mut messages = self.prompt.clone();
+        messages.extend(self.message_history.clone());
+        messages
+    }
 }
 
 pub struct ChatGPT {
@@ -112,6 +152,16 @@ impl LLMModel for ChatGPT {
         }).await?;
     
         Ok(embeddings.data[0].embedding.clone())
+    }
+
+    fn get_token_count(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
+        let messages: Vec<ChatCompletionRequestMessage> = messages
+            .iter()
+            .map(|el| el.clone().into())
+            .collect::<Vec<_>>();
+
+        let tokens = get_chat_completion_max_tokens(&self.model, &messages)?;
+        Ok(tokens)
     }
 }
 

@@ -49,11 +49,17 @@ impl EndGoals {
     }
 }
 
+pub struct Agents {
+    pub manager: LLM,
+    pub boss: LLM,
+    pub employee: LLM,
+}
+
 pub struct CommandContext {
-    pub end_goals: EndGoals,
+    pub task: String,
     pub tokenizer: Tokenizer,
     pub plugin_data: PluginStore,
-    pub llm: LLM,
+    pub agents: Agents,
     pub variables: HashMap<String, ScriptValue>,
     pub command_out: Vec<String>
 }

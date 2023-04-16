@@ -239,6 +239,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3d4260bcc2e8fc9df1eac4919a720effeb63a3f0952f5bf4944adfa18897f09"
+dependencies = [
+ "memchr",
+ "once_cell",
+ "regex-automata",
+ "serde",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -712,6 +724,16 @@ name = "faiss-sys"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54c3ddf096a623ad11f807ff00725e9e243aa999187cb60f6ecaea83baa6a6e0"
+
+[[package]]
+name = "fancy-regex"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b95f7c0680e4142284cf8b22c14a476e87d61b004a3a0861872b32ef7ead40a2"
+dependencies = [
+ "bit-set",
+ "regex",
+]
 
 [[package]]
 name = "fastrand"
@@ -2025,7 +2047,7 @@ checksum = "81870eb757460989d43ce41e069f1a01d0292b33011b23b0455d0a6394e4c77a"
 dependencies = [
  "bincode",
  "bitflags",
- "bstr",
+ "bstr 0.2.17",
  "itertools 0.10.5",
  "lz4_flex",
  "num-bigint",
@@ -2248,6 +2270,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "tiktoken-rs",
  "tokenizers",
  "tokio",
 ]
@@ -2410,6 +2433,22 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.13",
+]
+
+[[package]]
+name = "tiktoken-rs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb22485be61c6206171beb39fbc39104b31850025296710ff42ae60c1f9123c4"
+dependencies = [
+ "anyhow",
+ "async-openai",
+ "base64 0.21.0",
+ "bstr 1.4.0",
+ "fancy-regex",
+ "lazy_static",
+ "parking_lot",
+ "rustc-hash",
 ]
 
 [[package]]

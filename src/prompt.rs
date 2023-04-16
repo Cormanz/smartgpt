@@ -90,7 +90,7 @@ fn generate_goals(goals: &[String]) -> String {
     out.trim().to_string()
 }
 
-fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String {
+pub fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String {
     let mut out = String::new();
     for plugin in plugins {
         for command in &plugin.commands {
@@ -104,16 +104,16 @@ fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String
             let arg_str = arg_names.join(", ");
 
             out.push_str(&format!("    {}({arg_str}) -> {}\n", command.name, command.return_type));
-            out.push_str(&format!("        {}\n", command.purpose));
+            /*out.push_str(&format!("        {}\n", command.purpose));
             for CommandArgument { name, description, .. } in &command.args {
                 out.push_str(&format!("            - {}: {}\n", name, description)); 
-            }
+            }*/
         }
     }
     out.trim_end().to_string()
 }
 
-async fn generate_context(context: &mut CommandContext, plugins: &[Plugin], previous_prompt: Option<&str>) -> Result<String, Box<dyn Error>> {
+pub async fn generate_context(context: &mut CommandContext, plugins: &[Plugin], previous_prompt: Option<&str>) -> Result<String, Box<dyn Error>> {
     let mut out: Vec<String> = vec![];
     for plugin in plugins {
         let context = plugin.cycle.create_context(context, previous_prompt).await?;

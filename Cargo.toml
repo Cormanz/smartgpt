@@ -21,3 +21,4 @@ serde_json = "1.0.95"
 serde_yaml = "0.9.21"
 tokenizers = "0.13.3"
 tokio = { version = "1.27.0", features = ["macros", "io-util", "rt", "rt-multi-thread"] }
+tiktoken-rs = { version = "0.4.1", features = ["async-openai"] }
