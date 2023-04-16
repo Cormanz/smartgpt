@@ -3,7 +3,7 @@ use std::error::Error;
 use crate::{Plugin, CommandContext, CommandArgument};
 
 pub const PROMPT: &str = r#"<CONTEXT>NAME: <NAME>
-ROLE: <ROLE>
+PERSONALITY: <ROLE>
 
 CURRENT ENDGOAL: <ENDGOAL>
 
@@ -15,8 +15,8 @@ CONSTRAINTS
 3. If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.
 4. Exclusively use the commands listed in double quotes e.g. "command name"
 
-FUNCTIONS:
-Functions must be in lowercase. Use the exact function names and function arguments as described here.
+Commands
+Commands must be in lowercase. Use the exact command names and command arguments as described here.
 <COMMANDS>
             
 RESOURCES:
@@ -24,39 +24,15 @@ RESOURCES:
 2. Long-term memory management.
 3. File management.
 
-GPTSCRIPT:
-A subset of Python syntax
-You are only allowed to use the features shown in the example. Nothing else.
-Your function outputs will be logged if they are not in a statement, function argument, or datatype.
-Keep your scripts short and sweet.
+QUERIES
+Queries are simply a series of commands in function-call syntax.
 ```
-str = "A"
-int = 1
-float = 2.5
-bool = False
-list = [ 1, 2 ]
-map = { "x": 1, "y": 2 }
-none = None
-
-content = file_read("a.txt")
-file_write("b.txt", content)
-
-for path in paths:
-    file_append("final.txt", file_read(path))
-
-for [ key, value ] in map:
-    file_write(concat("key", "a.txt"))
+file_write("a.txt", file_read("b.txt"))
+file_write("c.txt", """Hello.\nI am.\.Cool.")
 ```
-
-These are the only things allowed. There are no operations (add, sub, etc).
-The only functions there are, are the functions provided to you earlier.
-
-You should try to do the following all in one query:
-- Doing multiple commands at once
-- Providing the output of one command to another
-- For Loop: Doing multiple commands at once on a different input
-
-ALL OF YOUR COMMAND QUERIES WILL BE IN GPTSCRIPT
+Each command's result will be given.
+You will only use " " double-quoted strings.
+Try to use as many commands in one query as possible.
 
 PROCESS:
 Break your current endgoal down into simple queries. Then, choose one query idea at a time, and turn it into GPTScript.
@@ -79,12 +55,14 @@ RESPONSES FORMAT:
         "endgoal": "Current Endgoal.",
         "plan": [
             "Step One",
-            "Step Two"
-        ]
+            "Step Two",
+            "Final Step: Save to a file."
+        ],
+        "current step in plan": 0
     },
-    "query idea": "", // put "" if none
-    "gptscript command query": "", // put "none()" if none
-    "should I move onto the next endgoal once this query is done": false
+    "command query": "",
+    "will I be completely done with the step after this one step (true) or do I have more work to do (false)": false,
+    "will I be completely done with the plan after this one query (true) or do I have more work to do (false)": false
 }"#;
 
 fn generate_goals(goals: &[String]) -> String {
@@ -109,9 +87,9 @@ fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String
                 .collect();
             let arg_str = arg_names.join(", ");
 
-            out.push_str(&format!("    def {}({arg_str}) -> {}\n", command.name, command.return_type));
-            /*out.push_str(&format!("        purpose: {}\n", command.purpose));
-            out.push_str("        args: \n");
+            out.push_str(&format!("    {}({arg_str}) -> {}\n", command.name, command.return_type));
+            out.push_str(&format!("        {}\n", command.purpose));
+            /*out.push_str("        args: \n");
             for CommandArgument { name, description, .. } in &command.args {
                 out.push_str(&format!("            - {}: {}\n", name, description)); 
             }*/

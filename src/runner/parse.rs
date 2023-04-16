@@ -138,6 +138,12 @@ pub fn to_expr(node: ExprKind) -> Result<Expression, GPTParseError> {
 
             Ok(Expression::FunctionCall(func, arguments))
         }
+        ExprKind::Subscript { value, slice, ctx } => {
+            let value = to_expr(value.node.clone())?;
+            let slice = to_expr(slice.node.clone())?;
+
+            Ok(Expression::GetAttr(Box::new(value), Box::new(slice)))
+        }
         ExprKind::Constant { value, .. } => {
             match value {
                 Constant::Bool(bool) => Ok(bool.into()),

@@ -1,3 +1,5 @@
+mod types;
+
 use std::{error::Error, fmt::Display, collections::HashMap};
 use async_trait::async_trait;
 use regex::Regex;
@@ -7,6 +9,8 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, LLMResponse, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument};
+
+pub use types::*;
 
 #[derive(Debug, Clone)]
 pub struct NewsNoQueryError;
@@ -26,7 +30,7 @@ pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<ScriptVal
 
     let params = [
         ("apiKey", api_key),
-        ("pageSize", "7"),
+        ("pageSize", "4"),
         ("q", query)
     ];
     
@@ -38,7 +42,8 @@ pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<ScriptVal
             .collect::<Vec<_>>()
     }).await?;
 
-    println!("{}", json);
+    let json: News = serde_json::from_str(&json)?;
+    let json = serde_json::to_string(&json.articles)?;
 
     Ok(serde_json::from_str(&json)?)
 }
@@ -108,7 +113,7 @@ pub fn create_news() -> Plugin {
                 args: vec![
                     CommandArgument::new("query", "The query to search for.", "String")
                 ],
-                return_type: "{ articles: { source: { name: String }, author: String, title: String, content: String, url: String }[] }".to_string(),
+                return_type: "{ title: String, description: String, url: String }[]".to_string(),
                 run: Box::new(NewsImpl)
             }
         ]

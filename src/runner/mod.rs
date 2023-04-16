@@ -11,13 +11,15 @@ use serde_json::Value;
 
 pub async fn test_runner() -> Result<(), Box<dyn Error>> {
     let code = r#"
-files = [ "a.txt", "b.txt", "c.txt" ]
-for path in files:
-    content = file_read(path)
-    file_append("final.txt", content)
-"#;
+news_results = news_search('biology news')
+for article in news_results['articles']:
+    print('Title:', article['title'])
+    print('Author:', article['author'])
+    print('Description:', article['description'])
+    print('URL:', article['url'])
+    print()"#;
 
-    //let program = parse_gptscript(code)?;
+    let program = parse_gptscript(code)?;
     /*let mut ctx = ScriptContext {
         variables: HashMap::new()
     };

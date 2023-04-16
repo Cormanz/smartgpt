@@ -91,7 +91,10 @@ async fn apply_process(
     messages.insert(0, Message::User(prompt.to_string()));
 
     if let Some(last) = messages.last_mut() {
-        last.set_content(&format!("{}\n\nEnsure the response can be parsed by Python json.loads", last.content()));
+        last.set_content(&format!(
+            "{}\n\nYour current endgoal is {:?} Ensure the response can be parsed by Python json.loads", 
+            last.content(), end_goal
+        ));
     };
 
     let message: String = context.llm.model.get_response(&messages).await?;
@@ -127,8 +130,7 @@ async fn apply_process(
     for (ind, step) in response.goal_information.plan.iter().enumerate() {
         println!("{}{} {}", (ind + 1).to_string().black(), ".".black(), step);
     }
-
-    println!("{}: {}", "Idea".blue(), response.idea);
+    println!("{}: {}", "Current Step".blue(), response.goal_information.plan[response.goal_information.step]);
 
     /*println!("{}: {}", "Current Goal".blue(), response.thought.current_goal);
     println!("{}:", "Plan".blue());
@@ -145,15 +147,20 @@ async fn apply_process(
     println!("{}:", "Command Query".blue());
     println!("{}", response.command_query);
     
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(3)).await;
 
     println!();
     println!("{}", "Running Query".yellow());
     println!();
 
     context.command_out.clear();
+
+    let old_out: Option<ScriptValue> = context.variables.get("out").cloned();
+
     let body = parse_gptscript(&response.command_query)?;
     run_body(context, plugins, body).await?;
+
+    context.command_out.push(format!("\nAll commands have finished successfully. Continue."));
 
     for item in &context.command_out {
         println!("{}", item);
@@ -161,8 +168,7 @@ async fn apply_process(
 
     let command_result_content = context.command_out.join("\n");
     messages.push(Message::User(command_result_content.clone()));
-
-    if response.will_be_done {
+    if response.will_be_done_with_plan {
         println!("{}", "End Goal is Complete. Moving onto next end goal...".yellow());
         context.end_goals.end_goal += 1;
 
@@ -184,6 +190,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut program = load_config(&config).await?;
 
     test_runner().await?;
+    //return Ok(());
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "AI Name".blue(), program.name);
