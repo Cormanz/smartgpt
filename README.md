@@ -31,7 +31,7 @@ The main task loop of SmartGPT is as follows:
 
 ## How To Use
 
-Note: Installing only seems to work on Linux due to some of the crate dependencies. Consider using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install) for Windows.
+Note: Installing only seems to work on Linux due to some of the crate dependencies. Consider using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install) for Windows, or run SmartGPT in Github Codespaces.
 
 Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 
