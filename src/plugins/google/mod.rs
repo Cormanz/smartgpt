@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 pub use types::*;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, LLMResponse};
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, LLMResponse, ScriptValue, CommandArgument};
 
 #[derive(Debug, Clone)]
 pub struct GoogleNoQueryError;
@@ -21,7 +21,7 @@ impl Display for GoogleNoQueryError {
 
 impl Error for GoogleNoQueryError {}
 
-pub async fn google(ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+pub async fn google(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let wolfram_info = ctx.plugin_data.get_data("Google")?;
 
     let api_key = invoke::<String>(wolfram_info, "get api key", true).await?;
@@ -30,12 +30,12 @@ pub async fn google(ctx: &mut CommandContext, args: HashMap<String, String>) -> 
     let cse_id = invoke::<String>(wolfram_info, "get cse id", true).await?;
     let cse_id: &str = &cse_id;
 
-    let query = args.get("query").ok_or(GoogleNoQueryError)?;
+    let query: String = args.get(0).ok_or(GoogleNoQueryError)?.clone().try_into()?;
 
     let params = [
         ("key", api_key),
         ("cx", cse_id),
-        ("q", query),
+        ("q", &query),
         ("num", "7")
     ];
     
@@ -56,25 +56,21 @@ pub async fn google(ctx: &mut CommandContext, args: HashMap<String, String>) -> 
         Err(err) => {
             println!("{:?}", err);
             println!("{}", body);
-            return Ok(format!("Unable to parse your Google request for \"{query}\" Try modifying your query or waiting a bit."));
+            return Ok(ScriptValue::Dict(HashMap::from_iter([
+                ("error".to_string(), format!("Unable to parse your Google request for \"{query}\" Try modifying your query or waiting a bit.").into())
+            ])));
         }
     };
     let text: String = serde_json::to_string(&json)?;
-    
-    let text = format!(
-"{text}
 
-You may want to consider using 'browse-article' to browse the searched websites."
-    );
-
-    Ok(text)
+    Ok(serde_json::from_str(&text)?)
 }
 
 pub struct GoogleImpl;
 
 #[async_trait]
 impl CommandImpl for GoogleImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         google(ctx, args).await
     }
 }
@@ -127,11 +123,12 @@ pub fn create_google() -> Plugin {
         cycle: Box::new(GoogleCycle),
         commands: vec![
             Command {
-                name: "google".to_string(),
+                name: "google_search".to_string(),
                 purpose: "Google Search".to_string(),
                 args: vec![
-                    ("query".to_string(), "The request to search. Create a short, direct query with keywords.".to_string())
+                    CommandArgument::new("query", "The request to search. Create a short, direct query with keywords.", "String")
                 ],
+                return_type: "{ items: { title: String, link: String, snippet: String }[] }".to_string(),
                 run: Box::new(GoogleImpl)
             }
         ]

@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, future::Future, pin:
 use async_openai::{Client as OpenAIClient, types::ChatCompletionRequestMessage};
 use async_trait::async_trait;
 use reqwest::Client;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{Serialize, de::DeserializeOwned, __private::de};
 use serde_json::Value;
 use tokenizers::Tokenizer;
 
@@ -29,7 +29,7 @@ impl<'a> Display for CommandNoArgError<'a> {
 
 impl<'a> Error for CommandNoArgError<'a> {}
 
-use crate::{LLMResponse, LLM};
+use crate::{LLMResponse, LLM, ScriptValue};
 
 #[async_trait]
 pub trait PluginData: Any + Send + Sync {
@@ -53,7 +53,9 @@ pub struct CommandContext {
     pub end_goals: EndGoals,
     pub tokenizer: Tokenizer,
     pub plugin_data: PluginStore,
-    pub llm: LLM
+    pub llm: LLM,
+    pub variables: HashMap<String, ScriptValue>,
+    pub command_out: Vec<String>
 }
 
 
@@ -86,12 +88,12 @@ pub async fn invoke<T : DeserializeOwned>(
 }
 
 #[async_trait]
-pub trait CommandImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>>;
+pub trait CommandImpl : Send + Sync {
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>>;
 }
 
 #[async_trait]
-pub trait PluginCycle {
+pub trait PluginCycle : Send + Sync {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>>;
 
     async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>>;
@@ -116,10 +118,27 @@ impl PluginCycle for EmptyCycle {
     }
 }
 
+pub struct CommandArgument {
+    pub name: String,
+    pub description: String,
+    pub arg_type: String
+}
+
+impl CommandArgument {
+    pub fn new(name: &str, description: &str, arg_type: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            description: description.to_string(),
+            arg_type: arg_type.to_string()
+        }
+    }
+}
+
 pub struct Command {
     pub name: String,
     pub purpose: String,
-    pub args: Vec<(String, String)>,
+    pub return_type: String,
+    pub args: Vec<CommandArgument>,
     pub run: Box<dyn CommandImpl>
 }
 

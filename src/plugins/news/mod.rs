@@ -1,3 +1,5 @@
+mod types;
+
 use std::{error::Error, fmt::Display, collections::HashMap};
 use async_trait::async_trait;
 use regex::Regex;
@@ -6,7 +8,9 @@ use select::{document::Document, predicate::Name};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, LLMResponse, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, LLMResponse, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument};
+
+pub use types::*;
 
 #[derive(Debug, Clone)]
 pub struct NewsNoQueryError;
@@ -19,14 +23,14 @@ impl Display for NewsNoQueryError {
 
 impl Error for NewsNoQueryError {}
 
-pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<String, Box<dyn Error>> {
+pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<ScriptValue, Box<dyn Error>> {
     let wolfram_info = ctx.plugin_data.get_data("NewsAPI")?;
     let api_key = invoke::<String>(wolfram_info, "get api key", true).await?;
     let api_key: &str = &api_key;
 
     let params = [
         ("apiKey", api_key),
-        ("pageSize", "7"),
+        ("pageSize", "4"),
         ("q", query)
     ];
     
@@ -38,12 +42,15 @@ pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<String, B
             .collect::<Vec<_>>()
     }).await?;
 
-    Ok(json.clone())
+    let json: News = serde_json::from_str(&json)?;
+    let json = serde_json::to_string(&json.articles)?;
+
+    Ok(serde_json::from_str(&json)?)
 }
 
-pub async fn news(ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
-    let query = args.get("query").ok_or(NewsNoQueryError)?;
-    let response = ask_news(ctx, query).await?;
+pub async fn news(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    let query: String = args.get(0).ok_or(NewsNoQueryError)?.clone().try_into()?;
+    let response = ask_news(ctx, &query).await?;
     
     Ok(response)
 }
@@ -52,7 +59,7 @@ pub struct NewsImpl;
 
 #[async_trait]
 impl CommandImpl for NewsImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         news(ctx, args).await
     }
 }
@@ -101,11 +108,12 @@ pub fn create_news() -> Plugin {
         cycle: Box::new(NewsCycle),
         commands: vec![
             Command {
-                name: "news-search".to_string(),
+                name: "news_search".to_string(),
                 purpose: "Search for news articles.".to_string(),
                 args: vec![
-                    ("query".to_string(), "The query to search for.".to_string())
+                    CommandArgument::new("query", "The query to search for.", "String")
                 ],
+                return_type: "{ title: String, description: String, url: String }[]".to_string(),
                 run: Box::new(NewsImpl)
             }
         ]

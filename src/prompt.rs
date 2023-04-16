@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use crate::{Plugin, CommandContext};
+use crate::{Plugin, CommandContext, CommandArgument};
 
 pub const PROMPT: &str = r#"<CONTEXT>NAME: <NAME>
-ROLE: <ROLE>
+PERSONALITY: <ROLE>
 
 CURRENT ENDGOAL: <ENDGOAL>
 
@@ -15,27 +15,31 @@ CONSTRAINTS
 3. If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.
 4. Exclusively use the commands listed in double quotes e.g. "command name"
 
-COMMANDS:
-Commands must be in lowercase. Use the exact command names and command arguments as described here. Always use at least one command.
+Commands
+Commands must be in lowercase. Use the exact command names and command arguments as described here.
 <COMMANDS>
-            
+
+A command query is a list of up commands. You may use one command's output as the argument to another.
+You should do the following in one query:
+- Running a command and saving the output to a file
+- Running multiple commands that don't depend on each other, like running a command to read each of three files
+- Providing the output of one command to another, like reading a file and asking ChatGPT to summarize it.            
+You may have up to three commands!
+
 RESOURCES:
 1. Internet access for searches and information gathering.
 2. Long-term memory management.
 3. File management.
 
-
 PROCESS:
-Break your current endgoal down into simple commands.
-Use the EXACT COMMAND NAME in your tasks.
-
-MINIMIZE THE NUMBER OF COMMANDS IN YOUR COMMANDS LIST. SIMPLE IS BETTER.
+Break your current endgoal down into a set of tasks.
+Each task represents one command query.
 
 You should only respond in JSON format as described below:
 
 RESPONSES FORMAT:
 {
-    "important takeaways: what was learned from the previous command, SPECIFIC and DETAILED": [ // just put [] if no previous command
+    "important takeaways: what was learned from the previous command, SPECIFIC and DETAILED": [
         {
             takeaway: "Takeaway One",
             points: [
@@ -46,17 +50,35 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "commands": [
-            "Command for Reason"
+        "completed tasks": [
+            "Step One"
         ],
-        "are all commands complete": false
-    }
-    "chosen command from commands list": {
-        "name": "command name",
-        "args": {
-            "arg-name": "arg"
+        "planned tasks": [
+            "Step Two"
+        ],
+        "current step in plan": "Step Two"
+    },
+    "commands": [
+        {
+            name: "file_append",
+            args: [
+                {
+                    Data: "file-name.txt"
+                },
+                {
+                    Command: {
+                        name: "file_read",
+                        args: [
+                            {
+                                Data: "other-file.txt"
+                            }
+                        ]
+                    }
+                }
+            ]
         }
-    }
+    ],
+    "will I be completely done with the plan after this one query (true) or do I have more work to do (false)": false
 }"#;
 
 fn generate_goals(goals: &[String]) -> String {
@@ -75,10 +97,15 @@ fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String
             if disabled_commands.contains(&command.name) {
                 continue;
             }
-            out.push_str(&format!("    {}:\n", command.name));
-            out.push_str(&format!("        purpose: {}\n", command.purpose));
-            out.push_str("        args: \n");
-            for (name, description) in &command.args {
+
+            let arg_names: Vec<_> = command.args.iter()
+                .map(|el| format!("{}: {}", el.name, el.arg_type))
+                .collect();
+            let arg_str = arg_names.join(", ");
+
+            out.push_str(&format!("    {}({arg_str}) -> {}\n", command.name, command.return_type));
+            out.push_str(&format!("        {}\n", command.purpose));
+            for CommandArgument { name, description, .. } in &command.args {
                 out.push_str(&format!("            - {}: {}\n", name, description)); 
             }
         }

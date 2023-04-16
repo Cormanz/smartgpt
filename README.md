@@ -117,13 +117,57 @@ pub trait PluginCycle {
 
 We take in our plugin data of `chatgpt_info`, tell it to `push` a new message, and it will return a `bool`. It's not the prettiest syntax, but decoupling plugin data from the rest of SmartGPT was one of the goals of the product, so this compromise was necessary (unless there's a better way to do this in Rust.)
 
+# GPTScript
+
+One of the most unique and promising areas of SmartGPT development is what's known as **GPTScript.** When using SmartGPT, you may have noticed it may output queries that look like this:
+
+```yml
+- name: file_write
+    args:
+    - !Data a.txt
+    - !Command
+        name: file_read
+        args:
+        - !Data b.txt
+    - !Command
+        name: file_read
+        args:
+        - !Data c.txt
+```
+
+This is GPTScript. GPTScript allows for the SmartGPT commands system to be integrated into a runtime environment with these features:
+
+- Running multiple commands at once
+- Providing one command's output as the value to another
+- Variables
+- Datatypes: String, Int, Float, Bool, None, List, Dict
+- For Loops
+
+Only the first two (running up to 3 commands and providing one command as the output to another) are currently implemented, though.
+
+This is because, at least with GPT3.5, providing it with too much information on the query-system leads to it getting confused and being inconsistent.
+
+However, GPTScript does support the other three features, and in the future, they could be trivially implemented.
+
 # Areas of Development
 
 This project isn't done as there's many more areas of development worth implementing:
 
-- **Prompt Refining**: Ideally, I'd like for SmartGPT to more efficiently complete its tasks and not waste time on unnecessary queries. I'd also like to avoid having it gain tunnel-vision or repeat the same commands.
-- **Implement More Plugins**: I'd like to implement more plugins for common features to make AI queries much easier.
-- **Safe Terminal Access**: If this is possible, it would be very useful for running tasks on your computer.
+**GPTScript Complexity**
+If possible, I'd like to give SmartGPT the ability to formulate more complex queries, such as saving variables, and what-not.
+
+**Implementing More LLMs**
+I'd like to add more variety in terms of LLMs. In particular, I'd like to integrate this with the [llama](https://github.com/rustformers/llama-rs) Rust crate.
+
+**Prompt Refining**
+Ideally, I'd like for SmartGPT to more efficiently complete its tasks and not waste time on unnecessary queries. I'd also like to avoid having it gain tunnel-vision or repeat the same commands.
+
+**Implement More Plugins**
+I'd like to implement more plugins for common features to make AI queries much easier.
+Alternatively, I'd also like to add a single plugin that would allow it to hook into many more plugins.
+
+**Safe Terminal Access**
+If this is possible, it would be very useful for running tasks on your computer.
 
 # License
 
