@@ -130,7 +130,7 @@ async fn apply_process(
     for (ind, step) in response.goal_information.plan.iter().enumerate() {
         println!("{}{} {}", (ind + 1).to_string().black(), ".".black(), step);
     }
-    println!("{}: {}", "Current Step".blue(), response.goal_information.plan[response.goal_information.step]);
+    println!("{}: {}", "Current Step".blue(), response.goal_information.step);
 
     /*println!("{}: {}", "Current Goal".blue(), response.thought.current_goal);
     println!("{}:", "Plan".blue());
@@ -145,7 +145,7 @@ async fn apply_process(
     println!();*/
 
     println!("{}:", "Command Query".blue());
-    println!("{}", response.command_query);
+    println!("{}", serde_yaml::to_string(&response.command_query)?);
     
     sleep(Duration::from_secs(3)).await;
 
@@ -155,10 +155,8 @@ async fn apply_process(
 
     context.command_out.clear();
 
-    let old_out: Option<ScriptValue> = context.variables.get("out").cloned();
-
-    let body = parse_gptscript(&response.command_query)?;
-    run_body(context, plugins, body).await?;
+    let query = parse_query(response.command_query);
+    run_body(context, plugins, query).await?;
 
     context.command_out.push(format!("\nAll commands have finished successfully. Continue."));
 

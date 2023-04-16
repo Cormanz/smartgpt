@@ -19,9 +19,12 @@ Commands
 Commands must be in lowercase. Use the exact command names and command arguments as described here.
 <COMMANDS>
 
-You may use multiple commands, and you may use the output of one command as an argument to another.
-Try to maximize the amount of commands you do at once.
-            
+A command query is a list of commands. You may use one command's output as the argument to another.
+You should do the following in one query:
+- Running a command and saving the output to a file
+- Running multiple commands that don't depend on each other, like running a command to read each of three files
+- Providing the output of one command to another, like reading a file and asking ChatGPT to summarize it.            
+
 RESOURCES:
 1. Internet access for searches and information gathering.
 2. Long-term memory management.
@@ -29,14 +32,13 @@ RESOURCES:
 
 PROCESS:
 Break your current endgoal down into a set of tasks.
-Each task contains multiple commands that can use other commands as their output.
-MINIMIZE THE NUMBER OF TASKS YOU NEED. ONE IS BEST!!!
+Each task represents one command query.
 
 You should only respond in JSON format as described below:
 
 RESPONSES FORMAT:
 {
-    "important takeaways: what was learned from the previous command, SPECIFIC and DETAILED": [ // just put [] if no previous command
+    "important takeaways: what was learned from the previous command, SPECIFIC and DETAILED": [
         {
             takeaway: "Takeaway One",
             points: [
@@ -47,10 +49,13 @@ RESPONSES FORMAT:
     ],
     "goal information": {
         "endgoal": "Current Endgoal.",
-        "planned tasks": [
+        "completed tasks": [
             "Step One"
         ],
-        "current step in plan": 0
+        "planned tasks": [
+            "Step Two"
+        ],
+        "current step in plan": "Step Two"
     },
     "commands": [
         {
@@ -61,14 +66,17 @@ RESPONSES FORMAT:
                 },
                 {
                     Command: {
-                        name: "file-read",
-                        args; "other-file.txt"
+                        name: "file_read",
+                        args: [
+                            {
+                                Data: "other-file.txt"
+                            }
+                        ]
                     }
                 }
             ]
         }
     ],
-    "will I be completely done with the step after this one step (true) or do I have more work to do (false)": false,
     "will I be completely done with the plan after this one query (true) or do I have more work to do (false)": false
 }"#;
 
@@ -96,10 +104,9 @@ fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> String
 
             out.push_str(&format!("    {}({arg_str}) -> {}\n", command.name, command.return_type));
             out.push_str(&format!("        {}\n", command.purpose));
-            /*out.push_str("        args: \n");
             for CommandArgument { name, description, .. } in &command.args {
                 out.push_str(&format!("            - {}: {}\n", name, description)); 
-            }*/
+            }
         }
     }
     out.trim_end().to_string()

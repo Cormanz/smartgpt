@@ -26,7 +26,17 @@ impl Debug for Primitive {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Primitive::String(string) => {
-                write!(f, "{:?}", string)
+                if string.len() > 100 {
+                    let mut text = format!("{:?}", string).chars()
+                        .take(100)
+                        .map(|el| el.to_string())
+                        .collect::<Vec<_>>()
+                        .join("");
+                    text.push_str(&r#"...""#);
+                    write!(f, "{}", text)
+                } else {
+                    write!(f, "{:?}", string)
+                }
             }
             Primitive::Bool(bool) => {
                 write!(f, "{}", bool)

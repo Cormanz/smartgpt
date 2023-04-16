@@ -19,7 +19,19 @@ impl Error for FilesNoQueryError {}
 
 pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
     let path: String = args.get(0).ok_or(FilesNoQueryError)?.clone().try_into()?;
-    let content: String = args.get(1).ok_or(FilesNoQueryError)?.clone().try_into()?;
+
+    let mut content = String::new();
+    let contents = args.iter()
+        .skip(1);
+
+    for arg in contents {
+        let arg_content: String = arg.clone().try_into()?;
+        content.push_str(&arg_content);
+    }
+
+    if content.len() == 0 {
+        return Err(Box::new(FilesNoQueryError));
+    }
 
     let path = match path.strip_prefix("files/") {
         Some(path) => path,
@@ -27,7 +39,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
     };
 
     let mut file = OpenOptions::new()
-        .write(!append)
+        .write(true)
         .append(append)
         .create(true)
         .open(format!("./files/{path}"))?;
@@ -135,7 +147,7 @@ pub fn create_filesystem() -> Plugin {
                 purpose: "Override a file with content. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![ 
                     CommandArgument::new("path", "The path of the file that is being written to.", "String"),
-                    CommandArgument::new("content", "The content to be overriden in the file.", "String")
+                    CommandArgument::new("...contents", "The content to be added to the file. You can use as many arguments for content as you like.", "String")
                 ],
                 return_type: "None".to_string(),
                 run: Box::new(FileWriteImpl)
@@ -145,10 +157,10 @@ pub fn create_filesystem() -> Plugin {
                 purpose: "Add content to an existing file. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![ 
                     CommandArgument::new("path", "The path of the file that is being written to.", "String"),
-                    CommandArgument::new("content", "The content to be appended to the file.", "String")
+                    CommandArgument::new("...contents", "The content to be added to the file. You can use as many arguments for content as you like.", "String")
                 ],
                 return_type: "None".to_string(),
-                run: Box::new(FileWriteImpl)
+                run: Box::new(FileAppendImpl)
             },
             Command {
                 name: "file_list".to_string(),

@@ -221,8 +221,9 @@ pub fn create_chatgpt() -> Plugin {
         commands: vec![
             Command {
                 name: "ask_chatgpt".to_string(),
-                purpose: "Ask ChatGPT to answer a prompt. Give ChatGPT a paragraph of prerequisite information explaining any existing information you have collected that is needed.".to_string(),
+                purpose: "Ask ChatGPT to answer a prompt".to_string(),
                 args: vec![
+                    CommandArgument::new("prerequisite_info", "ChatGPT does not know anything about what you have done. Provide ChatGPT with any info needed to complete the task, such as your progress and the content of files needed.", "String"),
                     CommandArgument::new("prompt", "The prompt to ask ChatGPT.", "String")
                 ],
                 return_type: "String".to_string(),

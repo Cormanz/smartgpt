@@ -1,5 +1,6 @@
 mod parse;
 mod run;
+mod query;
 mod convert;
 
 use std::{error::Error, collections::HashMap};
@@ -7,6 +8,8 @@ use std::{error::Error, collections::HashMap};
 pub use parse::*;
 pub use run::*;
 pub use convert::*;
+pub use query::*;
+
 use serde_json::Value;
 
 pub async fn test_runner() -> Result<(), Box<dyn Error>> {
