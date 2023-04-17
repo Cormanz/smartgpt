@@ -15,7 +15,7 @@ pub async fn try_again_employee(
         let prompt = format!(
 r"You have {} command queries left, so finish up shortly. Please continue and write another command query.
 
-You may only use one command.
+You may only use one command at a time.
 Respond with pure YAML only.",
             queries_left
         ).trim().to_string();
@@ -54,7 +54,7 @@ Respond with pure YAML only.",
 
 You now have three choices.
 A. My query was successful, and I am done. I will provide my response to The Boss.
-B. My query was successful, but I am not done. I will continue with another query.
+B. My query was successful, but I am not done. I still have work to do to complete The Boss's request.
 C. My query was not successful, so I will continue with another query.
 
 Provide your response in this format:
@@ -118,10 +118,15 @@ args:
 - !Data Arg
 ```
 
+There is only the `name` and `args`. 
+
 Always use the `!Data` annotation, no matter the datatype.
 
 Please write a command query for to complete the task, in the given format above.
-You may only use one command.
+You may only use one command at a time.
+
+If you are asked to save information to a file or do some other additional task, please do that before you report back to The Boss.
+
 Respond with pure YAML only.", commands, task
         );
     
@@ -132,7 +137,7 @@ Respond with pure YAML only.", commands, task
 The Boss has assigned a new task: {:?}
 
 Please write a command query for it, in the same format as before. 
-You may only use one command.
+You may only use one command at a time.
 Respond with pure YAML only.",
             task
         )));

@@ -55,6 +55,12 @@ pub async fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize) -> Result<
     Err(Box::new(CannotParseError))
 }
 
+pub enum Agent {
+    Manager,
+    Boss,
+    Employee
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Choice {
     pub choice: String
