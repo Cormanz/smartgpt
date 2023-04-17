@@ -3,27 +3,40 @@ use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, 
 use colored::Colorize;
 
 pub async fn run_boss(
-    program: &mut ProgramInfo, task: &str
+    program: &mut ProgramInfo, task: &str, first_prompt: bool, feedback: bool,
 ) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { context, .. } = program;
     let Agents { boss, .. } = &mut context.agents;
 
-    boss.message_history.push(Message::System(
-"You are The Boss, an LLM.
-You have been assigned one task by The Manager, an LLM. You will use your loose planning and adaptability to complete this task.
-You have access to one employee named The Employee, an LLM, who can browse the internet and ask a large language model to provide answers. 
-Your Employee is not meant to do detailed work, but simply to help you find information."
-        .to_string()
-    ));
+    if first_prompt {
+        boss.prompt.push(Message::System(
+            "You are The Boss, an LLM.
+            You have been assigned one task by The Manager, an LLM. You will use your loose planning and adaptability to complete this task.
+            You have access to one employee named The Employee, an LLM, who can browse the internet and ask a large language model to provide answers. 
+            Your Employee is not meant to do detailed work, but simply to help you find information."
+                    .to_string()
+                ));
+    }
 
-    boss.message_history.push(Message::User(format!(
-    "Hello, The Boss.
-    
-    Your task is {:?}
-    
-    Write a 2-sentence loose plan of how you will achieve this.",
-        task
-    )));
+    if feedback {
+        boss.message_history.push(Message::User(format!(
+"Hello, The Boss.
+
+The Manager has provided you with the following feedback: {:?}
+
+Continue to work with The Employee to complete your task based on this feedback.",
+                task
+            )));
+    } else {
+        boss.message_history.push(Message::User(format!(
+"Hello, The Boss.
+
+Your task is {:?}
+
+Write a 2-sentence loose plan of how you will achieve this.",
+                task
+            )));
+    }
 
     let response = boss.model.get_response(&boss.get_messages()).await?;
     boss.message_history.push(Message::Assistant(response.clone()));
@@ -71,7 +84,7 @@ C. I have not finished the task. I shall proceed onto asking the Employee my nex
 Provide your response in this format:
 
 reasoning: Reasoning
-choice: Choice # "A", "B", or "C" exactly.
+choice: A
 
 Do not surround your response in code-blocks. Respond with pure YAML only.
 "#,

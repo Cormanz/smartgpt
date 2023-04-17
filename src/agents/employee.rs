@@ -1,5 +1,5 @@
 use std::error::Error;
-use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice}, QueryCommand, parse_query, run_body};
+use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse}, QueryCommand, parse_query, run_body};
 use colored::Colorize;
 
 pub async fn try_again_employee(
@@ -15,24 +15,22 @@ pub async fn try_again_employee(
         let prompt = format!(
 r"You have {} command queries left, so finish up shortly. Please continue and write another command query.
 
-Do not surround your response in code-blocks. Respond with pure YAML only.",
+You may only use one command.
+Respond with pure YAML only.",
             queries_left
         ).trim().to_string();
         
         employee.message_history.push(Message::User(prompt));
 
-        let response = employee.model.get_response(&employee.get_messages()).await?;
+        let (response, query): (_, QueryCommand) = try_parse(employee, 3).await?;
         employee.message_history.push(Message::Assistant(response.clone()));
-
-        let query = process_response(&response, LINE_WRAP);
+        let response = process_response(&response, LINE_WRAP);
 
         println!("{}", "EMPLOYEE".blue());
         println!("{}", "The employee has created a command query.".white());
         println!();
-        println!("{query}");
+        println!("{response}");
         println!();
-
-        let query: QueryCommand = serde_yaml::from_str(&query)?;
         
         context.command_out.clear();
 
@@ -60,9 +58,9 @@ B. My query was successful, but I am not done. I will continue with another quer
 C. My query was not successful, so I will continue with another query.
 
 Provide your response in this format:
-```yml
+```
 reasoning: Reasoning
-choice: Choice # "A", "B", or "C" exactly.
+choice: A
 ```
 "#,
             context.command_out.join("\n")
@@ -70,8 +68,9 @@ choice: Choice # "A", "B", or "C" exactly.
 
         employee.message_history.push(Message::User(output));
 
-        let response = employee.model.get_response(&employee.get_messages()).await?;
+        let (response, choice): (_, Choice) = try_parse(employee, 3).await?;
         employee.message_history.push(Message::Assistant(response.clone()));
+        let response = process_response(&response, LINE_WRAP);
 
         println!("{}", "EMPLOYEE".blue());
         println!("{}", "The employee has made a decision on whether to keep going.".white());
@@ -79,8 +78,7 @@ choice: Choice # "A", "B", or "C" exactly.
         println!("{response}");
         println!();
         
-        let response: Choice = serde_yaml::from_str(&response)?;
-        if response.choice == "A" {
+        if choice.choice == "A" {
             return Ok(false);
         }
     }
@@ -111,16 +109,19 @@ pub async fn run_employee(
 You have access to these commands:
 {}
 
+Your task is {:?}
 You will write a command query in this format.
 
+```
 name: command_name
 args:
 - !Data Arg
+```
 
 Always use the `!Data` annotation, no matter the datatype.
 
-Your task is {:?}
-Please write a command query for it, in the given format above.
+Please write a command query for to complete the task, in the given format above.
+You may only use one command.
 Respond with pure YAML only.", commands, task
         );
     
@@ -130,25 +131,24 @@ Respond with pure YAML only.", commands, task
             format!("
 The Boss has assigned a new task: {:?}
 
-Please write a command query for it, in the same format as before.",
+Please write a command query for it, in the same format as before. 
+You may only use one command.
+Respond with pure YAML only.",
             task
         )));
     }
     
     employee.crop_to_tokens(2000)?;
 
-    let response = employee.model.get_response(&employee.get_messages()).await?;
+    let (response, query): (_, QueryCommand) = try_parse(employee, 3).await?;
     employee.message_history.push(Message::Assistant(response.clone()));
-
-    let query = process_response(&response, LINE_WRAP);
+    let response = process_response(&response, LINE_WRAP);
 
     println!("{}", "EMPLOYEE".blue());
     println!("{}", "The employee has created a command query.".white());
     println!();
-    println!("{query}");
+    println!("{response}");
     println!();
-
-    let query: QueryCommand = serde_yaml::from_str(&query)?;
     
     context.command_out.clear();
 
@@ -177,31 +177,30 @@ C. My query was not successful, so I will continue with another query.
 
 Provide your response in this format:
 
+```
 reasoning: Reasoning
-choice: Choice # "A", "B", or "C" exactly.
+choice: A
+```
 
-Do not surround your response in code-blocks. Respond with pure YAML only.
+Respond with pure YAML only.
 "#,
         context.command_out.join("\n")
 );
 
     employee.message_history.push(Message::User(output));
 
-    let response = employee.model.get_response(&employee.get_messages()).await?;
+    let (response, choice): (_, Choice) = try_parse(employee, 3).await?;
     employee.message_history.push(Message::Assistant(response.clone()));
-
-    let employee_response = process_response(&response, LINE_WRAP);
+    let response = process_response(&response, LINE_WRAP);
 
     println!("{}", "EMPLOYEE".blue());
     println!("{}", "The employee has made a decision on whether to keep going.".white());
     println!();
-    println!("{employee_response}");
+    println!("{response}");
     println!();
 
-    let response: Choice = serde_yaml::from_str(&response)?;
-
     let mut employee_finished_abruptly = false;
-    if response.choice != "A" {
+    if choice.choice != "A" {
         employee_finished_abruptly = try_again_employee(program).await?;
     }
 
