@@ -5,20 +5,25 @@ use colored::Colorize;
 pub async fn run_manager(
     program: &mut ProgramInfo
 ) -> Result<(), Box<dyn Error>> {
-    let ProgramInfo { context, task, .. } = program;
+    let ProgramInfo { context, task, personality, .. } = program;
     let Agents { manager, .. } = &mut context.agents;
 
-    manager.message_history.push(Message::System(
-"You are The Manager, an LLM. 
+    manager.message_history.push(Message::System(format!(
+"You are The Manager.
+
+Personality: {}
+
 Your goal is take advantage of your planning and self-criticism skills to plan out your task.
-You have access to an employee named The Boss, who will carry out those steps."
-        .to_string()
-    ));
+You have access to an employee named The Boss, who will carry out those steps.",
+        personality
+    )));
 
     manager.message_history.push(Message::User(format!(
 "Hello, The Manager.
 
 Your task is {:?}
+
+You have no other information other than to complete this task.
 
 Break it down into a list of short, high-level, one-sentence tasks.
 Try to minimize the amount of tasks needed.",

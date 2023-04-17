@@ -49,7 +49,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
 }
 
 pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let files = fs::read_dir("memory")?;
+    let files = fs::read_dir("./files/")?;
     let files = files
         .map(|el| el.map(|el| el.path().display().to_string()))
         .filter(|el| el.is_ok())

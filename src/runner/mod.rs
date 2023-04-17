@@ -21,7 +21,7 @@ pub async fn test_runner() -> Result<(), Box<dyn Error>> {
     let mut program = load_config(&config).await?;
 
     let ProgramInfo { 
-        name, role, task, plugins,
+        name, personality: role, task, plugins,
         mut context, disabled_commands } = program;
 
     println!("{}:", "Command Query".blue());

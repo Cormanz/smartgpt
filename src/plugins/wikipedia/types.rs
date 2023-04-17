@@ -11,8 +11,8 @@ pub struct WikipediaOutput {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WikipediaResponse {
-    pub batchcomplete: String,
-    pub warnings: Warnings,
+    //pub batchcomplete: String,
+    //pub warnings: Warnings,
     pub query: Query,
 }
 
@@ -45,8 +45,6 @@ pub struct Normalized {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Page {
-    pub pageid: i64,
-    pub ns: i64,
     pub title: String,
     pub extract: String
 }

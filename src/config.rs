@@ -12,7 +12,7 @@ pub struct NoLLMError;
 
 impl<'a> Display for NoLLMError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "cannot load config without an LLM")
+        write!(f, "cannot load config without a large language model")
     }
 }
 
@@ -48,7 +48,7 @@ pub struct Llm {
 
 pub struct ProgramInfo {
     pub name: String,
-    pub role: String,
+    pub personality: String,
     pub task: String,
     pub plugins: Vec<Plugin>,
     pub context: CommandContext,
@@ -144,7 +144,7 @@ pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
 
     Ok(ProgramInfo {
         name: config.name,
-        role: config.role,
+        personality: config.role,
         task: config.task.clone(),
         plugins: used_plugins,
         context,

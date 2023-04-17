@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "AI Name".blue(), program.name);
-    println!("{}: {}", "Role".blue(), program.role);
+    println!("{}: {}", "Role".blue(), program.personality);
     println!("{}: {}", "Task".blue(), program.task);
 
     println!("{}:", "Plugins".blue());

@@ -5,17 +5,27 @@ use colored::Colorize;
 pub async fn run_boss(
     program: &mut ProgramInfo, task: &str, first_prompt: bool, feedback: bool,
 ) -> Result<String, Box<dyn Error>> {
-    let ProgramInfo { context, .. } = program;
+    let ProgramInfo { context, plugins, personality, .. } = program;
     let Agents { boss, employee, .. } = &mut context.agents;
 
     if first_prompt {
-        boss.prompt.push(Message::System(
-"You are The Boss, an LLM.
-You have been assigned one task by The Manager, an LLM. You will use your loose planning and adaptability to complete this task.
-Your goal is to quickly and efficiently get the task done without refining it too much. You just want to get a sort of quicker, shallower answer.
-If The Manager wants you to do additional work, you will.
+        let commands = plugins.iter()
+            .flat_map(|el| el.commands.iter())
+            .map(|el| el.name.clone())
+            .collect::<Vec<_>>()
+            .join(", ");
+        boss.prompt.push(Message::System(format!(
+"You are The Boss, a large language model.
 
-You have access to one employee named The Employee, an LLM, who can browse the internet and ask a large language model to provide answers. 
+Personality: {}
+
+You have been assigned one task by The Manager, a large language model. You will use your loose planning and adaptability to complete this task.
+Your goal is to quickly and efficiently get the task done without refining it too much. You just want to get a sort of quicker, shallower answer.
+Complete your task as quickly as possible.
+
+You have access to one employee named The Employee, a large language model, who can run commands for you.
+These commands are: {}
+
 Your Employee is not meant to do detailed work, but simply to help you find information.
 
 Only ask The Employee for one thing at a time.
@@ -23,8 +33,8 @@ Keep your Employee requests very simple.
 Make sure to tell the Employee to save important information to files!
 
 You cannot do anywork on your own. You will do all of your work through your Employee."
-                    .to_string()
-                ));
+            , personality, commands
+        )));
     }
 
     if feedback {
@@ -79,7 +89,11 @@ Write a 2-sentence loose plan of how you will achieve this.",
         let Agents { boss, .. } = &mut context.agents;
 
         boss.message_history.push(Message::User(
-            "Create one simple request for The Employee. Remember: Your Employee is not meant to do detailed work, but simply to help you find information. Make sure to tell the Employee to save important information to files!"
+            "Create one simple request for The Employee. 
+Do not give your employee specific commands, simply phrase your request with natural language.
+Provide a very narrow and specific request for the Employee.
+Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
+Make sure to tell the Employee to save important information to files!"
                 .to_string()
         ));
 

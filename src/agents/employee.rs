@@ -13,7 +13,13 @@ pub async fn try_again_employee(
 
         let queries_left = 3 - (i + 1);
         let prompt = format!(
-r"You have {} command queries left, so finish up shortly. Please continue and write another command query.
+r"You have {} command queries left. Please try to finish as soon as possible (ideally in one query.)
+You can be sure that all of your commands are working in full.
+Please continue and write another command query in this format:
+
+name: command_name
+args:
+- !Data Arg
 
 You may only use one command at a time.
 Respond with pure YAML only.",
@@ -52,16 +58,13 @@ Respond with pure YAML only.",
         let output = format!(
     r#"{}
 
-You now have three choices.
-A. My query was successful, and I am done. I will provide my response to The Boss.
-B. My query was successful, but I am not done. I still have work to do to complete The Boss's request.
-C. My query was not successful, so I will continue with another query.
+You now have two choices.
+A. I am completely done with my task from The Boss.
+B. I am almost done with my task from The Boss.
 
 Provide your response in this format:
-```
 reasoning: Reasoning
-choice: A
-```
+choice: B
 "#,
             context.command_out.join("\n")
     );
@@ -90,7 +93,7 @@ pub async fn run_employee(
     program: &mut ProgramInfo, task: &str, new_prompt: bool
 ) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
-        context, plugins, 
+        context, plugins, personality, 
         disabled_commands, .. 
     } = program;
     let Agents { employee, .. } = &mut context.agents;
@@ -98,25 +101,27 @@ pub async fn run_employee(
     let commands = generate_commands(plugins, disabled_commands);
 
     if new_prompt {
-        employee.prompt.push(Message::System(
-            "You are The Employee, an LLM. 
-            Your goal is take advantage of access to commands to provide answers to questions.
-            You have been given one task from The Boss."
-                .to_string()
-        ));
+        employee.prompt.push(Message::System(format!(
+            "You are The Employee, a large language model. 
+
+Personality: {}
+
+Your goal is take advantage of access to commands to provide answers to questions.
+You have been given one task from The Boss.",
+            personality
+        )));
     
         let prompt = format!("
 You have access to these commands:
 {}
 
 Your task is {:?}
+You must fully complete all steps required for this task.
 You will write a command query in this format.
 
-```
 name: command_name
 args:
 - !Data Arg
-```
 
 There is only the `name` and `args`. 
 
@@ -175,17 +180,13 @@ Respond with pure YAML only.",
     let output = format!(
 r#"{}
 
-You now have three choices.
-A. My query was successful, and I am done. I will provide my response to The Boss.
-B. My query was successful, but I am not done. I will continue with another query.
-C. My query was not successful, so I will continue with another query.
+You now have two choices.
+A. I am completely done with my task from The Boss.
+B. I am almost done with my task from The Boss.
 
 Provide your response in this format:
-
-```
 reasoning: Reasoning
-choice: A
-```
+choice: B
 
 Respond with pure YAML only.
 "#,
@@ -197,6 +198,8 @@ Respond with pure YAML only.
     let (response, choice): (_, Choice) = try_parse(employee, 3).await?;
     employee.message_history.push(Message::Assistant(response.clone()));
     let response = process_response(&response, LINE_WRAP);
+
+    employee.crop_to_tokens(2000)?;
 
     println!("{}", "EMPLOYEE".blue());
     println!("{}", "The employee has made a decision on whether to keep going.".white());
@@ -218,11 +221,13 @@ Respond with pure YAML only.
         employee.message_history.push(Message::User(format!(
 "You have finished abruptly: you were still working on finishing your task, but could not finish in three queries. Make sure you tell this to the boss.
 
-Provide a reponse that answers the initial task to the Boss based on your findings."
+Provide a reponse that answers the initial task to The Boss based on your findings.
+Do not give The Boss any details on what specific commands you used. Only discuss your findings."
         )));
     } else {
         employee.message_history.push(Message::User(format!(
-"Provide a reponse that answers the initial task to the Boss based on your findings."
+"Provide a reponse that answers the initial task to The Boss based on your findings.
+Do not give The Boss any details on what specific commands you used. Only discuss your findings."
         )));     
     }
 
