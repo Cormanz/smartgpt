@@ -8,15 +8,12 @@ pub async fn run_boss(
     let ProgramInfo { context, .. } = program;
     let Agents { boss, employee, .. } = &mut context.agents;
 
-    if !feedback {
-        employee.prompt.clear();
-        employee.message_history.clear();
-    }
-
     if first_prompt {
         boss.prompt.push(Message::System(
 "You are The Boss, an LLM.
 You have been assigned one task by The Manager, an LLM. You will use your loose planning and adaptability to complete this task.
+Your goal is to quickly and efficiently get the task done without refining it too much. If the Manager asks you to refine it, you will.
+
 You have access to one employee named The Employee, an LLM, who can browse the internet and ask a large language model to provide answers. 
 Your Employee is not meant to do detailed work, but simply to help you find information.
 
@@ -41,7 +38,7 @@ The Manager has provided you with the following feedback: {:?}
 Continue to work with The Employee to complete your task based on this feedback.",
                 task
             )));
-    } else {
+    } else if first_prompt {
         boss.message_history.push(Message::User(format!(
 "Hello, The Boss.
 
@@ -50,6 +47,20 @@ Your task is {:?}
 Write a 2-sentence loose plan of how you will achieve this.",
                 task
             )));
+    } else {
+        employee.prompt.clear();
+        employee.message_history.clear();
+
+        boss.message_history.push(Message::User(format!(
+            "Hello, The Boss.
+            
+            Your task is {:?}
+
+            Keep in mind that you have been given a new Employee. You may need to brief them on any details they need to complete their tasks.
+            
+            Write a 2-sentence loose plan of how you will achieve this.",
+                task
+        )));
     }
 
     let response = boss.model.get_response(&boss.get_messages()).await?;
