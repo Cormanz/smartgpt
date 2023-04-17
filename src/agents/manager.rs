@@ -20,7 +20,8 @@ You have access to an employee named The Boss, who will carry out those steps."
 
 Your task is {:?}
 
-Break it down into a list of short, high-level, one-sentence tasks.",
+Break it down into a list of short, high-level, one-sentence tasks.
+Try to minimize the amount of tasks needed.",
         task
     )));
 

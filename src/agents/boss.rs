@@ -1,12 +1,17 @@
 use std::error::Error;
-use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_employee, Choice}};
+use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_employee, Choice, try_parse}};
 use colored::Colorize;
 
 pub async fn run_boss(
     program: &mut ProgramInfo, task: &str, first_prompt: bool, feedback: bool,
 ) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { context, .. } = program;
-    let Agents { boss, .. } = &mut context.agents;
+    let Agents { boss, employee, .. } = &mut context.agents;
+
+    if !feedback {
+        employee.prompt.clear();
+        employee.message_history.clear();
+    }
 
     if first_prompt {
         boss.prompt.push(Message::System(
@@ -56,7 +61,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
         let Agents { boss, .. } = &mut context.agents;
 
         boss.message_history.push(Message::User(
-            "Create one simple request for The Employee. Remember: Your Employee is not meant to do detailed work, but simply to help you find information."
+            "Create one simple request for The Employee. Remember: Your Employee is not meant to do detailed work, but simply to help you find information. Make sure the Employee saves important information to files!"
                 .to_string()
         ));
 
@@ -96,19 +101,17 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
 
         boss.message_history.push(Message::User(output));
         
-        let response = boss.model.get_response(&boss.get_messages()).await?;
-        let boss_response = process_response(&response, LINE_WRAP);
-
+        let (response, choice): (_, Choice) = try_parse(boss, 3).await?;
         boss.message_history.push(Message::Assistant(response.clone()));
+        let response = process_response(&response, LINE_WRAP);
 
         println!("{}", "BOSS".blue());
         println!("{}", "The boss has made a decision on whether to keep going.".white());
         println!();
-        println!("{boss_response}");
+        println!("{response}");
         println!();
     
-        let response: Choice = serde_yaml::from_str(&response)?;
-        if response.choice == "A" {
+        if choice.choice == "A" {
             boss.message_history.push(Message::User(
                 "Provide The Manager with your work on completing the task, in at least one paragraph, ideally more.".to_string()
             ));
@@ -127,7 +130,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
             return Ok(response);
         }
     
-        if response.choice == "B" {
+        if choice.choice == "B" {
             boss.message_history.push(Message::User(
                 "Write a new 2-sentence loose plan of how you will achieve your task.".to_string()
             ));
