@@ -30,7 +30,7 @@ Try to minimize the amount of tasks needed.",
         task
     )));
 
-    let response = manager.model.get_response(&manager.get_messages()).await?;
+    let response = manager.model.get_response(&manager.get_messages(), None).await?;
     manager.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
@@ -51,7 +51,7 @@ Try to minimize the amount of tasks needed.",
             "Assign The Boss the first step in one paragraph".to_string()
         ));
         
-        let response = manager.model.get_response(&manager.get_messages()).await?;
+        let response = manager.model.get_response(&manager.get_messages(), None).await?;
         let boss_request = process_response(&response, LINE_WRAP);
     
         println!("{}", "MANAGER".blue());
@@ -85,7 +85,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
     
         manager.message_history.push(Message::User(output));
         
-        let response = manager.model.get_response(&manager.get_messages()).await?;
+        let response = manager.model.get_response(&manager.get_messages(), None).await?;
         let manager_response = process_response(&response, LINE_WRAP);
     
         manager.message_history.push(Message::Assistant(response.clone()));
@@ -103,7 +103,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
                 "Remove the first task from your list. Then, once again, list all of the tasks."
             )));
             
-            let response = manager.model.get_response(&manager.get_messages()).await?;
+            let response = manager.model.get_response(&manager.get_messages(), None).await?;
             manager.message_history.push(Message::Assistant(response.clone()));
         
             let task_list = process_response(&response, LINE_WRAP);
@@ -122,7 +122,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
                     "Provide a list of feedback to provide to the boss."
                 )));
                 
-                let response = manager.model.get_response(&manager.get_messages()).await?;
+                let response = manager.model.get_response(&manager.get_messages(), None).await?;
                 manager.message_history.push(Message::Assistant(response.clone())); 
 
                 let boss_response = run_boss(program, &response, first_prompt, true).await?;
@@ -149,7 +149,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
             
                 manager.message_history.push(Message::User(output));
                 
-                let response = manager.model.get_response(&manager.get_messages()).await?;
+                let response = manager.model.get_response(&manager.get_messages(), None).await?;
                 let manager_response = process_response(&response, LINE_WRAP);
             
                 manager.message_history.push(Message::Assistant(response.clone()));

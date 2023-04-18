@@ -82,7 +82,7 @@ impl From<Message> for ChatCompletionRequestMessage {
 
 #[async_trait]
 pub trait LLMModel : Send + Sync {
-    async fn get_response(&self, messages: &[Message]) -> Result<String, Box<dyn Error>>;
+    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>) -> Result<String, Box<dyn Error>>;
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
     fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
 }
@@ -106,7 +106,7 @@ impl LLM {
 
     pub fn crop_to_tokens(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
         while token_buffer > self.get_tokens_remaining(&self.get_messages())? {
-            self.message_history.pop();
+            self.message_history.remove(0);
         }
 
         Ok(())
@@ -127,7 +127,7 @@ pub struct ChatGPT {
 
 #[async_trait]
 impl LLMModel for ChatGPT {
-    async fn get_response(&self, messages: &[Message]) -> Result<String, Box<dyn Error>> {
+    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>) -> Result<String, Box<dyn Error>> {
         let mut request = CreateChatCompletionRequest::default();
 
         request.model = self.model.clone();
@@ -135,6 +135,8 @@ impl LLMModel for ChatGPT {
             .iter()
             .map(|el| el.clone().into())
             .collect::<Vec<_>>();
+
+        request.max_tokens = max_tokens;
         
         let response: CreateChatCompletionResponse = self.client
             .chat()

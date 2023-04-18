@@ -46,5 +46,5 @@ pub struct Normalized {
 #[serde(rename_all = "camelCase")]
 pub struct Page {
     pub title: String,
-    pub extract: String
+    pub extract: Option<String>
 }

@@ -33,10 +33,8 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
         return Err(Box::new(FilesNoQueryError));
     }
 
-    let path = match path.strip_prefix("files/") {
-        Some(path) => path,
-        None => &path
-    };
+    let path = path.strip_prefix("./").unwrap_or(&path).to_string();
+    let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 
     let mut file = OpenOptions::new()
         .write(true)
@@ -61,10 +59,8 @@ pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Resu
 
 pub async fn file_read(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let path: String = args.get(0).ok_or(FilesNoQueryError)?.clone().try_into()?;
-    let path = match path.strip_prefix("./files/") {
-        Some(path) => path,
-        None => &path
-    };
+    let path = path.strip_prefix("./").unwrap_or(&path).to_string();
+    let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
     
     let content = fs::read_to_string(format!("files/{path}"))?;
     

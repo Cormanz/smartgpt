@@ -16,6 +16,7 @@ mod llm;
 mod config;
 mod runner;
 mod agents;
+mod memory;
 
 pub use plugin::*;
 pub use parse::*;
@@ -26,6 +27,7 @@ pub use chunk::*;
 pub use llm::*;
 pub use config::*;
 pub use runner::*;
+pub use memory::*;
 
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;

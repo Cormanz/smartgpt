@@ -4,6 +4,7 @@ mod employee;
 
 use std::{error::Error, fmt::Display};
 
+use colored::Colorize;
 pub use manager::*;
 pub use boss::*;
 pub use employee::*;
@@ -20,6 +21,8 @@ impl Display for CannotParseError {
         write!(f, "{}", "could not parse.")
     }
 }
+
+
 
 impl Error for CannotParseError {}
 
@@ -44,17 +47,30 @@ pub fn test() {
     let yaml: Result<Value, _> = serde_yaml::from_str(&e);
 }
 
-pub async fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize) -> Result<(String, T), Box<dyn Error>> {
-    for _ in 0..tries {
-        let response = llm.model.get_response(&llm.get_messages()).await?;
-        if let Ok(yaml) = serde_yaml::from_str(&response) {
+pub async fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<(String, T), Box<dyn Error>> {
+    for i in 0..tries {
+        let response = llm.model.get_response(&llm.get_messages(), max_tokens).await?;
+        let processed_response = response.trim();
+        let processed_response = response.strip_prefix("```yml")
+            .unwrap_or(&response)
+            .to_string();
+        let processed_response = processed_response.strip_prefix("```")
+            .unwrap_or(&processed_response)
+            .to_string();
+        let processed_response = processed_response.strip_suffix("```")
+            .unwrap_or(&processed_response)
+            .to_string();
+        if let Ok(yaml) = serde_yaml::from_str(&processed_response) {
             return Ok((response, yaml));
         }
+        println!("{}", format!("Try {i} failed.").red());
+        println!("{response}");
     }
     
     Err(Box::new(CannotParseError))
 }
 
+#[derive(Copy, Clone)]
 pub enum Agent {
     Manager,
     Boss,

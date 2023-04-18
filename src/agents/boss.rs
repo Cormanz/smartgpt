@@ -1,6 +1,25 @@
-use std::error::Error;
+use std::{error::Error, fmt::Display};
 use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_employee, Choice, try_parse}};
 use colored::Colorize;
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct BossDecision {
+    pub choice: String,
+    pub report: Option<String>,
+    #[serde(rename = "new request")] pub new_request: Option<String>
+}
+
+#[derive(Debug, Clone)]
+pub struct NoManagerRequestError;
+
+impl Display for NoManagerRequestError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", "could not parse.")
+    }
+}
+
+impl Error for NoManagerRequestError {}
 
 pub async fn run_boss(
     program: &mut ProgramInfo, task: &str, first_prompt: bool, feedback: bool,
@@ -61,17 +80,19 @@ Write a 2-sentence loose plan of how you will achieve this.",
 
         boss.message_history.push(Message::User(format!(
             "Hello, The Boss.
-            
-            Your task is {:?}
 
-            Keep in mind that you have been given a new Employee. You may need to brief them on any details they need to complete their tasks.
-            
-            Write a 2-sentence loose plan of how you will achieve this.",
+Your task is {:?}
+
+Keep in mind that you have been given a new Employee. You may need to brief them on any details they need to complete their tasks.
+
+Write a 2-sentence loose plan of how you will achieve this.",
                 task
         )));
     }
 
-    let response = boss.model.get_response(&boss.get_messages()).await?;
+    boss.crop_to_tokens(1000)?;
+
+    let response = boss.model.get_response(&boss.get_messages(), None).await?;
     boss.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
@@ -83,28 +104,36 @@ Write a 2-sentence loose plan of how you will achieve this.",
     println!();
 
     let mut new_prompt = true;
+    let mut new_request: Option<String> = None;
 
     loop {
-        let ProgramInfo { context, .. } = program;
-        let Agents { boss, .. } = &mut context.agents;
+        let response = match &new_request {
+            Some(request) => request.clone(),
+            None => {
+                let ProgramInfo { context, .. } = program;
+                let Agents { boss, .. } = &mut context.agents;
+        
+                boss.message_history.push(Message::User(
+                    "Create one simple request for The Employee. 
+        Do not give your employee specific commands, simply phrase your request with natural language.
+        Provide a very narrow and specific request for the Employee.
+        Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
+        Make sure to tell the Employee to save important information to files!"
+                        .to_string()
+                ));
+        
+                let response = boss.model.get_response(&boss.get_messages(), None).await?;
 
-        boss.message_history.push(Message::User(
-            "Create one simple request for The Employee. 
-Do not give your employee specific commands, simply phrase your request with natural language.
-Provide a very narrow and specific request for the Employee.
-Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
-Make sure to tell the Employee to save important information to files!"
-                .to_string()
-        ));
+                println!("{}", "BOSS".blue());
+                println!("{}", "The boss has assigned a task to its employee, The Employee.".white());
+                println!();
+                println!("{response}");
+                println!();
 
-        let response = boss.model.get_response(&boss.get_messages()).await?;
+                response
+            }
+        };
         let boss_request = process_response(&response, LINE_WRAP);
-
-        println!("{}", "BOSS".blue());
-        println!("{}", "The boss has assigned a task to its employee, The Employee.".white());
-        println!();
-        println!("{boss_request}");
-        println!();
 
         let employee_response = run_employee(program, &boss_request, new_prompt).await?;
         new_prompt = false;
@@ -118,12 +147,26 @@ A. I have finished the task The Manager provided me with. I shall report back wi
 B. I have not finished the task. The Employee's response provided me with plenty of new information, so I will update my loose plan.
 C. I have not finished the task. I shall proceed onto asking the Employee my next request.
 
-Provide your response in this format:
+Provide your response in one of these formats depending on the choice:
 
 reasoning: Reasoning
 choice: A
+report: |-
+    Dear Manager...
 
-Do not surround your response in code-blocks. Respond with pure YAML only.
+reasoning: Reasoning
+choice: B
+new loose plan: |-
+    First...
+new request: |-
+    Can you try...
+
+reasoning: Reasoning
+choice: C
+new request: |-
+    Can you try...
+
+Do not surround your response in code-blocks. Respond with pure YAML only. Ensure your response can be parsed by serde_yaml.
 "#,
         employee_response
 );
@@ -133,7 +176,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
 
         boss.message_history.push(Message::User(output));
         
-        let (response, choice): (_, Choice) = try_parse(boss, 3).await?;
+        let (response, decision): (_, BossDecision) = try_parse(boss, 3, Some(300)).await?;
         boss.message_history.push(Message::Assistant(response.clone()));
         let response = process_response(&response, LINE_WRAP);
 
@@ -143,40 +186,10 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
         println!("{response}");
         println!();
     
-        if choice.choice == "A" {
-            boss.message_history.push(Message::User(
-                "Provide The Manager with your work on completing the task, in at least one paragraph, ideally more.".to_string()
-            ));
-
-            let response = boss.model.get_response(&boss.get_messages()).await?;
-            let boss_response = process_response(&response, LINE_WRAP);
-
-            println!("{}", "BOSS".blue());
-            println!("{}", "The boss has given The Manager a response..".white());
-            println!();
-            println!("{boss_response}");
-            println!();
-
-            boss.message_history.push(Message::Assistant(response.clone()));
-
-            return Ok(response);
+        if decision.choice == "A" {
+            return Ok(decision.report.ok_or(NoManagerRequestError)?)
         }
-    
-        if choice.choice == "B" {
-            boss.message_history.push(Message::User(
-                "Write a new 2-sentence loose plan of how you will achieve your task.".to_string()
-            ));
 
-            let response = boss.model.get_response(&boss.get_messages()).await?;
-            let boss_response = process_response(&response, LINE_WRAP);
-
-            println!("{}", "BOSS".blue());
-            println!("{}", "The boss has updated its plan.".white());
-            println!();
-            println!("{boss_response}");
-            println!();
-
-            boss.message_history.push(Message::Assistant(response.clone()));
-        }
+        new_request = decision.new_request;
     }
 }
