@@ -104,8 +104,8 @@ pub fn generate_commands(plugins: &[Plugin], disabled_commands: &[String]) -> St
             let arg_str = arg_names.join(", ");
 
             out.push_str(&format!("    {}({arg_str}) -> {}\n", command.name, command.return_type));
-            /*out.push_str(&format!("        {}\n", command.purpose));
-            for CommandArgument { name, description, .. } in &command.args {
+            out.push_str(&format!("        {}\n", command.purpose));
+            /*for CommandArgument { name, description, .. } in &command.args {
                 out.push_str(&format!("            - {}: {}\n", name, description)); 
             }*/
         }

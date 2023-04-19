@@ -70,6 +70,7 @@ Continue to work with The Employee to complete your task based on this feedback.
 "Hello, The Boss.
 
 Your task is {:?}
+Don't worry if you're unable to complete this task as an LLM, you will complete this task through your Employee.
 
 Write a 2-sentence loose plan of how you will achieve this.",
                 task
@@ -124,11 +125,12 @@ Write a 2-sentence loose plan of how you will achieve this.",
                 ));
         
                 let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None, None)?;
+                let boss_request = process_response(&response, LINE_WRAP);
 
                 println!("{}", "BOSS".blue());
                 println!("{}", "The boss has assigned a task to its employee, The Employee.".white());
                 println!();
-                println!("{response}");
+                println!("{boss_request}");
                 println!();
 
                 drop(context);
@@ -136,9 +138,8 @@ Write a 2-sentence loose plan of how you will achieve this.",
                 response
             }
         };
-        let boss_request = process_response(&response, LINE_WRAP);
 
-        let employee_response = run_employee(program, &boss_request, new_prompt)?;
+        let employee_response = run_employee(program, &response, new_prompt)?;
         new_prompt = false;
 
         let output = format!(

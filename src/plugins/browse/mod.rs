@@ -8,7 +8,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, LLMResponse, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument};
 
 pub struct BrowseData {
     pub client: Client
@@ -120,10 +120,6 @@ pub struct BrowseCycle;
 impl PluginCycle for BrowseCycle {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
-    }
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
     }
 
     fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {

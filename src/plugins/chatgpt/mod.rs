@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, LLMResponse, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue, CommandArgument};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue, CommandArgument};
 
 use super::memory;
 
@@ -205,10 +205,6 @@ pub struct ChatGPTCycle;
 impl PluginCycle for ChatGPTCycle {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
-    }
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
     }
 
     fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {

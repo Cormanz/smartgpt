@@ -5,7 +5,7 @@ use serde_json::Value;
 
 use crate::ScriptValue;
 
-use mlua::{ToLua, Lua, Result as LuaResult, FromLua};
+use mlua::{ToLua, Lua, Result as LuaResult, FromLua, Value as LuaValue};
 
 impl Serialize for ScriptValue {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -121,14 +121,14 @@ impl ToLua<'_> for ScriptValue {
                 for (i, value) in list.into_iter().enumerate() {
                     array.set(i + 1, value.to_lua(lua)?)?;
                 }
-                Ok(array.to_lua(lua)?)
+                Ok(LuaValue::Table(array))
             }
             ScriptValue::Dict(dict) => {
                 let table = lua.create_table()?;
                 for (key, value) in dict.into_iter() {
                     table.set(key, value.to_lua(lua)?)?;
                 }
-                Ok(table.to_lua(lua)?)
+                Ok(LuaValue::Table(table))
             }
             ScriptValue::None => Ok(mlua::Value::Nil),
         }

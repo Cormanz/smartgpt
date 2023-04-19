@@ -6,7 +6,7 @@ use select::{document::Document, predicate::Name};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, LLMResponse, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;
@@ -101,10 +101,6 @@ pub struct WolframCycle;
 impl PluginCycle for WolframCycle {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
-    }
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
     }
 
     fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {

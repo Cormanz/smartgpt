@@ -29,7 +29,7 @@ impl<'a> Display for CommandNoArgError<'a> {
 
 impl<'a> Error for CommandNoArgError<'a> {}
 
-use crate::{LLMResponse, LLM, ScriptValue};
+use crate::{LLM, ScriptValue};
 
 #[async_trait]
 pub trait PluginData: Any + Send + Sync {
@@ -104,9 +104,6 @@ pub trait CommandImpl : Send + Sync {
 #[async_trait]
 pub trait PluginCycle : Send + Sync {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>>;
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>>;
-
     fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>>;
 }
 
@@ -116,10 +113,6 @@ pub struct EmptyCycle;
 impl PluginCycle for EmptyCycle {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
-    }
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
     }
 
     fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {

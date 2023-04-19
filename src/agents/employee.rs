@@ -1,5 +1,5 @@
 use std::error::Error;
-use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse, CannotParseError, minion::run_minion}, SimpleQueryCommand, parse_simple_query, run_body};
+use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse, CannotParseError, minion::run_minion}};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,10 @@ pub fn run_employee(
 Personality: {}
 
 Your goal is take advantage of access to commands to provide answers to questions.
-You will turn the Boss's request into a list of command-names and a description of how you plan to use that command.
+
+You have a minion named The Minion, who will turn your request into a script and run it.
+You will turn the Boss's request into simple, tiny psuedocode.
+
 You have been given one task from The Boss.",
         personality
     )));
@@ -38,12 +41,13 @@ You have access to these commands:
 {}
 
 Your task is {:?}
-You must fully complete all steps required for this task.
-Write a list of commands in this format.
 
-cmd_one: I plan to use command one by...
-cmd_two: I plan to use command two by...
-"#,
+Write a psuedocode for the task.
+Keep your psuedocode as SHORT and SIMPLE as possible.
+Include the EXACT COMMANDS in your psuedocode.
+
+Avoid any DATA EXTRACTION in your psuedocode.
+- Don't try to extract information from an article. Leave the article content as-is."#,
         commands, task
     );
 
@@ -55,7 +59,7 @@ cmd_two: I plan to use command two by...
     let task_list = process_response(&response, LINE_WRAP);
 
     println!("{}", "EMPLOYEE".blue());
-    println!("{}", "The employee has created a list of commands to achieve its goal.".white());
+    println!("{}", "The employee has created some psuedocode to achieve its goal.".white());
     println!();
     println!("{task_list}");
     println!();
@@ -70,7 +74,7 @@ cmd_two: I plan to use command two by...
     
 {out}
 
-Now, please write a response to The Boss with your findings."#);
+Please write a response to The Boss with your findings. Only discuss RESULTS. Do not discuss anything regarding what commands were used."#);
     
     context.agents.employee.prompt.push(Message::User(prompt));
 

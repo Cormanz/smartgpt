@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions};
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, LLMResponse, apply_chunks, PluginData, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chunks, PluginData, ScriptValue, CommandArgument};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -137,10 +137,6 @@ impl PluginCycle for FileCycle {
         } else {
             format!("Files: {} (Consider reading these.)", files.join(", "))
         }))
-    }
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
     }
 
     fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {

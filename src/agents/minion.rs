@@ -1,16 +1,15 @@
 use std::{error::Error, sync::{Arc, Mutex}};
 
-use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua};
+use colored::Colorize;
+use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP}};
 
 pub async fn run_stuff(
     out: &mut String,
     name: String, command: Command, 
     context: &mut CommandContext, args: Vec<ScriptValue>
 ) -> Result<ScriptValue, Box<dyn Error>> {
-    println!("BURGON!");
-
     let result = command.run.invoke(context, args.clone()).await?;
 
     let args: Vec<Expression> = args.iter().map(|el| el.clone().into()).collect();
@@ -19,7 +18,9 @@ pub async fn run_stuff(
     let json = serde_yaml::to_string(&result)
         .map_err(|_| GPTRunError("Could not parse ScriptValue as YAML.".to_string()))?;
 
-    out.push_str(&format!("Command {:?} was successful and returned:\n{}", expr, json));
+    let text = format!("Command {:?} was successful and returned:\n{}", expr, json);
+    out.push_str(&text);
+    println!("{}", text);
 
     Ok(result)
 }
@@ -59,9 +60,15 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
                 let rt = tokio::runtime::Runtime::new().unwrap();
                 let result = rt.block_on(async {
                     run_stuff(&mut out, name.clone(), command.box_clone(), &mut context, args).await
-                }).unwrap();
+                }).map_err(|el| LuaError::RuntimeError(
+                    format!("{:?}", el)
+                ))?;
+                
+                let result = result.to_lua(&lua)?;
 
-                Ok(result.to_lua(&lua)?)
+                println!("{:?}", result);
+
+                Ok(result)
             })?;
             lua.globals().set(name, f)?;
             
@@ -77,38 +84,66 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
 pub fn run_minion(
     program: &mut ProgramInfo, task: &str, new_prompt: bool
 ) -> Result<String, Box<dyn Error>> {
-    let ProgramInfo { 
-        context, plugins, personality,
-        disabled_commands, .. 
-    } = program;
-    let mut context = context.lock().unwrap();
 
-    let cmds = generate_commands(plugins, disabled_commands);
+    let mut last_err: Result<String, Box<dyn Error>> = Ok("".to_string());
+    for i in 0..3 {
+        let ProgramInfo { 
+            context, plugins, personality,
+            disabled_commands, .. 
+        } = program;
+        let mut context = context.lock().unwrap();
 
-    context.agents.minion.prompt.clear();
-    context.agents.minion.message_history.clear();
-
-    context.agents.minion.prompt.push(Message::System(format!(
-r#"
-Using these commands:
-{}
-
-Write a LUA script to complete this task:
-{}
-
-Follow that plan exactly. Keep your LUA script as simple as possible.
-"#,
-        cmds, task
-    )));
-
-    let script = context.agents.minion.model.get_response(
-        &context.agents.minion.get_messages(),
-        Some(300),
-        Some(0.7)
-    )?;
-
-    drop(context);
-    let out = run_script(program, &script)?;
+        let cmds = generate_commands(plugins, disabled_commands);
     
-    Ok(out)
+        context.agents.minion.prompt.clear();
+        context.agents.minion.message_history.clear();
+        
+        context.agents.minion.prompt.push(Message::System(format!(
+    r#"
+Using these commands and ONLY these commands:
+{}
+
+Write a script to complete this task:
+{}
+
+Use the exact commands mentioned in the task.
+
+Keep it as SIMPLE, MINIMAL, and SHORT as possible. IT MUST BE VERY SIMPLE AND SHORT.
+Pay very close attention to the TYPE of each command.
+
+Your script will be in the LUA Scripting Language. LUA.
+    "#,
+            cmds, task
+        )));
+    
+        let script = context.agents.minion.model.get_response(
+            &context.agents.minion.get_messages(),
+            Some(300),
+            Some(0.3)
+        )?;
+    
+        let processed_script = process_response(&script, LINE_WRAP);
+    
+        println!("{}", "MINION".blue());
+        println!("{}", format!("The minion has created a script. Attempt {}", i + 1).white());
+        println!();
+        println!("{processed_script}");
+        println!();
+    
+    
+        drop(context);
+        let out = run_script(program, &script);
+        
+        last_err = match &out {
+            Ok(out) => {
+                return Ok(out.clone());
+            }
+            Err(err) => {
+                println!("{}", err);
+                out
+            }
+        };
+    }
+
+    last_err
 }

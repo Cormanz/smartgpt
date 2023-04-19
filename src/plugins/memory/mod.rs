@@ -9,7 +9,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use crate::EmptyCycle;
 
-use crate::{Plugin, CommandContext, LLMResponse, PluginCycle, PluginData, PluginDataNoInvoke, invoke};
+use crate::{Plugin, CommandContext, PluginCycle, PluginData, PluginDataNoInvoke, invoke};
 
 /*
     pub memory_index: IdMap<FlatIndex>,

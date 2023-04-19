@@ -7,9 +7,7 @@ use async_openai::{
 };
 
 mod plugin;
-mod parse;
 mod prompt;
-mod commands;
 mod plugins;
 mod chunk;
 mod llm;
@@ -19,9 +17,7 @@ mod agents;
 mod memory;
 
 pub use plugin::*;
-pub use parse::*;
 pub use prompt::*;
-pub use commands::*;
 pub use plugins::*;
 pub use chunk::*;
 pub use llm::*;
@@ -124,7 +120,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!();
 
-    run_manager(&mut program);
+    run_manager(&mut program)?;
 
     Ok(())
 }
