@@ -53,6 +53,7 @@ pub struct Agents {
     pub manager: LLM,
     pub boss: LLM,
     pub employee: LLM,
+    pub minion: LLM
 }
 
 pub struct CommandContext {

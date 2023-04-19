@@ -1,6 +1,7 @@
 mod manager;
 mod boss;
 mod employee;
+mod minion;
 
 use std::{error::Error, fmt::Display};
 
@@ -47,9 +48,9 @@ pub fn test() {
     let yaml: Result<Value, _> = serde_yaml::from_str(&e);
 }
 
-pub async fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<(String, T), Box<dyn Error>> {
+pub fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<(String, T), Box<dyn Error>> {
     for i in 0..tries {
-        let response = llm.model.get_response(&llm.get_messages(), max_tokens).await?;
+        let response = llm.model.get_response(&llm.get_messages(), max_tokens)?;
         let processed_response = response.trim();
         let processed_response = response.strip_prefix("```yml")
             .unwrap_or(&response)

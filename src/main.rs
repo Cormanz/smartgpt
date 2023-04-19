@@ -66,9 +66,6 @@ impl Display for NoThoughtError {
 impl Error for NoThoughtError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    test_runner()?;
-    return Ok(());
-
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config)?;
 
@@ -78,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{}: {}", "Task".blue(), program.task);
 
     println!("{}:", "Plugins".blue());
-    /*let mut exit_dependency_error = false;
+    let mut exit_dependency_error = false;
     for plugin in &program.plugins {
         for dependency in &plugin.dependencies {
             let dependency_exists = program.plugins.iter().any(|dep| &dep.name == dependency);
@@ -114,9 +111,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // OH NO OH NO OH NO
-        let data = plugin.cycle.create_data(true.into()).await;
+        let data = plugin.cycle.create_data(true.into());
         if let Some(data) = data {
-            program.context.plugin_data.0.insert(plugin.name.clone(), data);
+            let mut context = program.context.lock().unwrap();
+            context.plugin_data.0.insert(plugin.name.clone(), data);
         }
     }
 
@@ -126,7 +124,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!();
 
-    run_manager(&mut program).await?;*/
+    run_manager(&mut program);
 
     Ok(())
 }

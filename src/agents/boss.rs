@@ -21,11 +21,11 @@ impl Display for NoManagerRequestError {
 
 impl Error for NoManagerRequestError {}
 
-pub async fn run_boss(
+pub fn run_boss(
     program: &mut ProgramInfo, task: &str, first_prompt: bool, feedback: bool,
 ) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { context, plugins, personality, .. } = program;
-    let Agents { boss, employee, .. } = &mut context.agents;
+    let mut context = context.lock().unwrap();
 
     if first_prompt {
         let commands = plugins.iter()
@@ -33,7 +33,7 @@ pub async fn run_boss(
             .map(|el| el.name.clone())
             .collect::<Vec<_>>()
             .join(", ");
-        boss.prompt.push(Message::System(format!(
+        context.agents.boss.prompt.push(Message::System(format!(
 "You are The Boss, a large language model.
 
 Personality: {}
@@ -57,7 +57,7 @@ You cannot do anywork on your own. You will do all of your work through your Emp
     }
 
     if feedback {
-        boss.message_history.push(Message::User(format!(
+        context.agents.boss.message_history.push(Message::User(format!(
 "Hello, The Boss.
 
 The Manager has provided you with the following feedback: {:?}
@@ -66,7 +66,7 @@ Continue to work with The Employee to complete your task based on this feedback.
                 task
             )));
     } else if first_prompt {
-        boss.message_history.push(Message::User(format!(
+        context.agents.boss.message_history.push(Message::User(format!(
 "Hello, The Boss.
 
 Your task is {:?}
@@ -75,10 +75,10 @@ Write a 2-sentence loose plan of how you will achieve this.",
                 task
             )));
     } else {
-        employee.prompt.clear();
-        employee.message_history.clear();
+        context.agents.employee.prompt.clear();
+        context.agents.employee.message_history.clear();
 
-        boss.message_history.push(Message::User(format!(
+        context.agents.boss.message_history.push(Message::User(format!(
             "Hello, The Boss.
 
 Your task is {:?}
@@ -90,10 +90,10 @@ Write a 2-sentence loose plan of how you will achieve this.",
         )));
     }
 
-    boss.crop_to_tokens(1000)?;
+    context.agents.boss.crop_to_tokens(1000)?;
 
-    let response = boss.model.get_response(&boss.get_messages(), None).await?;
-    boss.message_history.push(Message::Assistant(response.clone()));
+    let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None)?;
+    context.agents.boss.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
 
@@ -106,14 +106,15 @@ Write a 2-sentence loose plan of how you will achieve this.",
     let mut new_prompt = true;
     let mut new_request: Option<String> = None;
 
+    drop(context);
     loop {
         let response = match &new_request {
             Some(request) => request.clone(),
             None => {
-                let ProgramInfo { context, .. } = program;
-                let Agents { boss, .. } = &mut context.agents;
+                let ProgramInfo { context, plugins, personality, .. } = program;
+                let mut context = context.lock().unwrap();
         
-                boss.message_history.push(Message::User(
+                context.agents.boss.message_history.push(Message::User(
                     "Create one simple request for The Employee. 
         Do not give your employee specific commands, simply phrase your request with natural language.
         Provide a very narrow and specific request for the Employee.
@@ -122,7 +123,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
                         .to_string()
                 ));
         
-                let response = boss.model.get_response(&boss.get_messages(), None).await?;
+                let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None)?;
 
                 println!("{}", "BOSS".blue());
                 println!("{}", "The boss has assigned a task to its employee, The Employee.".white());
@@ -130,12 +131,14 @@ Write a 2-sentence loose plan of how you will achieve this.",
                 println!("{response}");
                 println!();
 
+                drop(context);
+
                 response
             }
         };
         let boss_request = process_response(&response, LINE_WRAP);
 
-        let employee_response = run_employee(program, &boss_request, new_prompt).await?;
+        let employee_response = run_employee(program, &boss_request, new_prompt)?;
         new_prompt = false;
 
         let output = format!(
@@ -171,13 +174,13 @@ Do not surround your response in code-blocks. Respond with pure YAML only. Ensur
         employee_response
 );
 
-        let ProgramInfo { context, .. } = program;
-        let Agents { boss, .. } = &mut context.agents;
+        let ProgramInfo { context, plugins, personality, .. } = program;
+        let mut context = context.lock().unwrap();
 
-        boss.message_history.push(Message::User(output));
+        context.agents.boss.message_history.push(Message::User(output));
         
-        let (response, decision): (_, BossDecision) = try_parse(boss, 3, Some(300)).await?;
-        boss.message_history.push(Message::Assistant(response.clone()));
+        let (response, decision): (_, BossDecision) = try_parse(&context.agents.boss, 3, Some(300))?;
+        context.agents.boss.message_history.push(Message::Assistant(response.clone()));
         let response = process_response(&response, LINE_WRAP);
 
         println!("{}", "BOSS".blue());

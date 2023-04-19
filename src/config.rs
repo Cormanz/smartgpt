@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, fmt::Display, ascii::AsciiExt, process};
+use std::{collections::HashMap, error::Error, fmt::Display, ascii::AsciiExt, process, sync::{Mutex, Arc}};
 
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
@@ -23,7 +23,8 @@ impl<'a> Error for NoLLMError {}
 pub struct AgentLLMs {
     manager: HashMap<String, Value>,
     boss: HashMap<String, Value>,
-    employee: HashMap<String, Value>
+    employee: HashMap<String, Value>,
+    minion: HashMap<String, Value>
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -51,7 +52,7 @@ pub struct ProgramInfo {
     pub personality: String,
     pub task: String,
     pub plugins: Vec<Plugin>,
-    pub context: CommandContext,
+    pub context: Arc<Mutex<CommandContext>>,
     pub disabled_commands: Vec<String>
 }
 
@@ -91,6 +92,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     let manager = create_model(config.agents.manager)?;
     let boss = create_model(config.agents.boss)?;
     let employee = create_model(config.agents.employee)?;
+    let minion = create_model(config.agents.minion)?;
 
     let mut context = CommandContext {
         task: config.task.clone(),
@@ -113,6 +115,11 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
                 prompt: vec![],
                 message_history: vec![],
                 model: employee
+            },
+            minion: LLM {
+                prompt: vec![],
+                message_history: vec![],
+                model: minion
             }
         }
     };
@@ -147,7 +154,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         personality: config.role,
         task: config.task.clone(),
         plugins: used_plugins,
-        context,
+        context: Arc::new(Mutex::new(context)),
         disabled_commands: config.disabled_commands
     })
 }

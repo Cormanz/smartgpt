@@ -17,8 +17,8 @@ fn pad<T: Copy>(vec: &mut Vec<T>, length: usize, pad: T) {
     vec.extend(std::iter::repeat(pad).take(num_to_add));
 }
 
-pub async fn get_embed(llm: &LLM, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
-    let embedding = llm.model.get_base_embed(text).await?;
+pub fn get_embed(llm: &LLM, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
+    let embedding = llm.model.get_base_embed(text)?;
 
     let mut data = embedding.iter()
         .rev()

@@ -48,13 +48,11 @@ pub fn test_runner() -> Result<(), Box<dyn Error>> {
 
     //println!("{}:", "Command Query".blue());
 
-    let context_mutex = Arc::new(Mutex::new(context));
-
     for plugin in &plugins {
         for command in &plugin.commands {
             let name = command.name.clone();
             let command = command.box_clone();
-            let lua_context_mutex = context_mutex.clone();
+            let lua_context_mutex = context.clone();
             let f = lua.create_function(move |lua, args: Variadic<_>| -> LuaResult<Value> {
                 let args: Vec<ScriptValue> = args.iter()
                     .map(|el: &Value| el.clone())
@@ -75,7 +73,7 @@ pub fn test_runner() -> Result<(), Box<dyn Error>> {
                 let result = rt.block_on(async {
                     run_stuff(name.clone(), command.box_clone(), &mut context, args).await
                 }).unwrap();
-                
+
                 Ok(result.to_lua(lua)?)
             })?;
             lua.globals().set(name, f)?;
@@ -84,8 +82,13 @@ pub fn test_runner() -> Result<(), Box<dyn Error>> {
     }
 
     let _ = lua.load(r#"
-local hi = google_search("Hello")
-print(hi)
+    local articles = google_search("Mitosis Articles").items
+
+    for i = 1, 3 do
+      local article_url = articles[i].link
+      local article_content = browse_article(article_url)
+      file_append("mitosis_articles.txt", article_content)
+    end
     "#).exec()?;
 
 /*

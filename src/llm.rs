@@ -82,8 +82,8 @@ impl From<Message> for ChatCompletionRequestMessage {
 
 #[async_trait]
 pub trait LLMModel : Send + Sync {
-    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>) -> Result<String, Box<dyn Error>>;
-    async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
+    fn get_response(&self, messages: &[Message], max_tokens: Option<u16>) -> Result<String, Box<dyn Error>>;
+    fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
     fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
 }
 
@@ -125,8 +125,8 @@ pub struct ChatGPT {
     pub client: Client
 }
 
-#[async_trait]
 impl LLMModel for ChatGPT {
+    #[tokio::main]
     async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>) -> Result<String, Box<dyn Error>> {
         let mut request = CreateChatCompletionRequest::default();
 
@@ -146,6 +146,7 @@ impl LLMModel for ChatGPT {
         Ok(response.choices[0].message.content.clone())
     }
 
+    #[tokio::main]
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         let embeddings = self.client.embeddings().create(CreateEmbeddingRequest {
             model: self.embedding_model.clone(),
