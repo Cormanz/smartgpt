@@ -1,5 +1,5 @@
 use std::error::Error;
-use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse, CannotParseError}, SimpleQueryCommand, parse_simple_query, run_body};
+use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse, CannotParseError, minion::run_minion}, SimpleQueryCommand, parse_simple_query, run_body};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +49,7 @@ cmd_two: I plan to use command two by...
 
     context.agents.employee.prompt.push(Message::User(prompt));
 
-    let response = context.agents.employee.model.get_response(&context.agents.employee.get_messages(), None)?;
+    let response = context.agents.employee.model.get_response(&context.agents.employee.get_messages(), None, None)?;
     context.agents.employee.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
@@ -60,7 +60,29 @@ cmd_two: I plan to use command two by...
     println!("{task_list}");
     println!();
 
-    println!("{}", generate_commands(plugins, disabled_commands));
+    drop(context);
+    let out = run_minion(program, task, new_prompt)?;
+
+    let ProgramInfo { context, plugins, personality, disabled_commands, .. } = program;
+    let mut context = context.lock().unwrap();
+
+    let prompt = format!(r#"Your query gave the following output:
     
-    panic!();
+{out}
+
+Now, please write a response to The Boss with your findings."#);
+    
+    context.agents.employee.prompt.push(Message::User(prompt));
+
+    let response = context.agents.employee.model.get_response(&context.agents.employee.get_messages(), None, None)?;
+    context.agents.employee.message_history.push(Message::Assistant(response.clone()));
+    let processed_response = process_response(&response, LINE_WRAP);
+    
+    println!("{}", "EMPLOYEE".blue());
+    println!("{}", "The employee has given The Boss a response.".white());
+    println!();
+    println!("{processed_response}");
+    println!();
+
+    Ok(response)
 }

@@ -92,7 +92,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
 
     context.agents.boss.crop_to_tokens(1000)?;
 
-    let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None)?;
+    let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None, None)?;
     context.agents.boss.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
@@ -123,7 +123,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
                         .to_string()
                 ));
         
-                let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None)?;
+                let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None, None)?;
 
                 println!("{}", "BOSS".blue());
                 println!("{}", "The boss has assigned a task to its employee, The Employee.".white());

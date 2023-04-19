@@ -4,7 +4,7 @@ use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua};
 
 use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext};
 
-/*pub async fn run_stuff(
+pub async fn run_stuff(
     out: &mut String,
     name: String, command: Command, 
     context: &mut CommandContext, args: Vec<ScriptValue>
@@ -32,16 +32,15 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
 
     let lua = Lua::new();
 
-    let context_mutex = Arc::new(context);
     let out_mutex = Arc::new(Mutex::new(String::new()));
 
     for plugin in plugins {
         for command in &plugin.commands {
             let name = command.name.clone();
             let command = command.box_clone();
-            let lua_context_mutex = context_mutex.clone();
+            let lua_context_mutex = context.clone();
             let lua_out_mutex = out_mutex.clone();
-            let f = lua.create_function(|lua, args: Variadic<_>| -> LuaResult<Value> {
+            let f = lua.create_function(move |lua, args: Variadic<_>| -> LuaResult<Value> {
                 let args: Vec<ScriptValue> = args.iter()
                     .map(|el: &Value| el.clone())
                     .map(|el| ScriptValue::from_lua(el, lua))
@@ -62,7 +61,7 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
                     run_stuff(&mut out, name.clone(), command.box_clone(), &mut context, args).await
                 }).unwrap();
 
-                Ok(result.to_lua(lua)?)
+                Ok(result.to_lua(&lua)?)
             })?;
             lua.globals().set(name, f)?;
             
@@ -73,20 +72,21 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
 
     let out = out_mutex.lock().unwrap();
     Ok(out.clone())
-}*/
+}
 
 pub fn run_minion(
     program: &mut ProgramInfo, task: &str, new_prompt: bool
 ) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
-        context, plugins, personality, 
+        context, plugins, personality,
         disabled_commands, .. 
     } = program;
-
-    let ProgramInfo { context, plugins, personality, .. } = program;
     let mut context = context.lock().unwrap();
 
     let cmds = generate_commands(plugins, disabled_commands);
+
+    context.agents.minion.prompt.clear();
+    context.agents.minion.message_history.clear();
 
     context.agents.minion.prompt.push(Message::System(format!(
 r#"
@@ -101,7 +101,14 @@ Follow that plan exactly. Keep your LUA script as simple as possible.
         cmds, task
     )));
 
-    let mut text = String::new();
+    let script = context.agents.minion.model.get_response(
+        &context.agents.minion.get_messages(),
+        Some(300),
+        Some(0.7)
+    )?;
+
+    drop(context);
+    let out = run_script(program, &script)?;
     
-    panic!();
+    Ok(out)
 }
