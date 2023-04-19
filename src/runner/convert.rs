@@ -5,6 +5,8 @@ use serde_json::Value;
 
 use crate::ScriptValue;
 
+use mlua::{ToLua, Lua, Result as LuaResult, FromLua};
+
 impl Serialize for ScriptValue {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -104,5 +106,77 @@ impl<'de> Visitor<'de> for ScriptValueVisitor {
         }
 
         Ok(ScriptValue::Dict(map))
+    }
+}
+
+impl ToLua<'_> for ScriptValue {
+    fn to_lua(self, lua: &'_ Lua) -> LuaResult<mlua::Value> {
+        match self {
+            ScriptValue::String(string) => Ok(string.to_lua(lua)?),
+            ScriptValue::Int(int) => Ok(int.to_lua(lua)?),
+            ScriptValue::Float(float) => Ok(float.to_lua(lua)?),
+            ScriptValue::Bool(bool) => Ok(bool.to_lua(lua)?),
+            ScriptValue::List(list) => {
+                let array = lua.create_table()?;
+                for (i, value) in list.into_iter().enumerate() {
+                    array.set(i + 1, value.to_lua(lua)?)?;
+                }
+                Ok(array.to_lua(lua)?)
+            }
+            ScriptValue::Dict(dict) => {
+                let table = lua.create_table()?;
+                for (key, value) in dict.into_iter() {
+                    table.set(key, value.to_lua(lua)?)?;
+                }
+                Ok(table.to_lua(lua)?)
+            }
+            ScriptValue::None => Ok(mlua::Value::Nil),
+        }
+    }
+}
+
+impl<'lua> FromLua<'lua> for ScriptValue {
+    fn from_lua(lua_value: mlua::Value<'lua>, lua: &'lua Lua) -> LuaResult<Self> {
+        match lua_value {
+            mlua::Value::String(s) => Ok(ScriptValue::String(s.to_str()?.to_owned())),
+            mlua::Value::Integer(i) => Ok(ScriptValue::Int(i)),
+            mlua::Value::Number(n) => Ok(ScriptValue::Float(n)),
+            mlua::Value::Boolean(b) => Ok(ScriptValue::Bool(b)),
+            mlua::Value::Table(table) => {
+                let mut dict = HashMap::new();
+                let mut array = Vec::new();
+                for pair in table.pairs::<mlua::Value, mlua::Value>() {
+                    let (key, value) = pair?;
+                    match key {
+                        mlua::Value::Integer(i) => {
+                            array.resize_with(i as usize + 1, || ScriptValue::None);
+                            array[i as usize] = ScriptValue::from_lua(value, lua)?;
+                        }
+                        mlua::Value::String(s) => {
+                            let key_str = s.to_str()?.to_owned();
+                            dict.insert(key_str, ScriptValue::from_lua(value, lua)?);
+                        }
+                        _ => {
+                            return Err(mlua::Error::FromLuaConversionError {
+                                from: key.type_name(),
+                                to: "String or Integer",
+                                message: Some("unsupported key type".to_owned()),
+                            })
+                        }
+                    }
+                }
+                if !dict.is_empty() {
+                    Ok(ScriptValue::Dict(dict))
+                } else {
+                    Ok(ScriptValue::List(array))
+                }
+            }
+            mlua::Value::Nil => Ok(ScriptValue::None),
+            _ => Err(mlua::Error::FromLuaConversionError {
+                from: lua_value.type_name(),
+                to: "ScriptValue",
+                message: Some("unsupported value type".to_owned()),
+            }),
+        }
     }
 }

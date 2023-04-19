@@ -3,7 +3,7 @@ mod run;
 mod query;
 mod convert;
 
-use std::{error::Error, collections::HashMap, time::Duration, fs};
+use std::{error::Error, collections::HashMap, time::Duration, fs, sync::{Mutex, Arc}};
 
 use colored::Colorize;
 pub use parse::*;
@@ -11,21 +11,84 @@ pub use run::*;
 pub use convert::*;
 pub use query::*;
 
-use serde_json::Value;
-use tokio::time::sleep;
+use tokio::{time::sleep, runtime::Handle};
 
-use crate::{load_config, ProgramInfo};
+use mlua::{
+    AnyUserData, ExternalResult, Lua, Result as LuaResult, 
+    UserData, UserDataMethods, Value, FromLua, Error as LuaError, Variadic, ToLua
+};
 
-pub async fn test_runner() -> Result<(), Box<dyn Error>> {
+use crate::{load_config, ProgramInfo, Command, Context, CommandContext};
+
+pub async fn run_stuff(name: String, command: Command, context: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    println!("BURGON!");
+
+    let result = command.run.invoke(context, args.clone()).await?;
+
+    let args: Vec<Expression> = args.iter().map(|el| el.clone().into()).collect();
+    let expr = Expression::FunctionCall(name.clone(), args);
+
+    let json = serde_yaml::to_string(&result)
+        .map_err(|_| GPTRunError("Could not parse ScriptValue as YAML.".to_string()))?;
+
+    println!("{}", format!("Command {:?} was successful and returned:\n{}", expr, json));
+
+    Ok(result)
+}
+
+pub fn test_runner() -> Result<(), Box<dyn Error>> {
+    let lua = Lua::new();
+
     let config = fs::read_to_string("config.yml")?;
-    let mut program = load_config(&config).await?;
+    let mut program = load_config(&config)?;
 
     let ProgramInfo { 
         name, personality: role, task, plugins,
         mut context, disabled_commands } = program;
 
-    println!("{}:", "Command Query".blue());
+    //println!("{}:", "Command Query".blue());
 
+    let context_mutex = Arc::new(Mutex::new(context));
+
+    for plugin in &plugins {
+        for command in &plugin.commands {
+            let name = command.name.clone();
+            let command = command.box_clone();
+            let lua_context_mutex = context_mutex.clone();
+            let f = lua.create_function(move |lua, args: Variadic<_>| -> LuaResult<Value> {
+                let args: Vec<ScriptValue> = args.iter()
+                    .map(|el: &Value| el.clone())
+                    .map(|el| ScriptValue::from_lua(el, lua))
+                    .flat_map(|el| {
+                        if let Ok(el) = el {
+                            vec![ el ]
+                        } else {
+                            vec![]
+                        }
+                    })
+                    .collect();
+                println!("let us VERTCON!");
+                
+                let name = command.name.clone();
+                let mut context = lua_context_mutex.lock().unwrap();
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                let result = rt.block_on(async {
+                    run_stuff(name.clone(), command.box_clone(), &mut context, args).await
+                }).unwrap();
+                
+                Ok(result.to_lua(lua)?)
+            })?;
+            lua.globals().set(name, f)?;
+            
+        }
+    }
+
+    let _ = lua.load(r#"
+local hi = google_search("Hello")
+print(hi)
+    "#).exec()?;
+
+/*
     let query: QueryCommand = serde_yaml::from_str(
 r#"
 name: google_search
@@ -49,7 +112,7 @@ args:
 
     for item in &context.command_out {
         println!("{}", item);
-    }
+    }*/
 
     Ok(())
 }

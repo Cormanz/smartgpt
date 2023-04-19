@@ -96,6 +96,10 @@ impl CommandImpl for WikipediaSearchImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         wikipedia_search(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct WikipediaBrowseImpl;
@@ -104,6 +108,10 @@ pub struct WikipediaBrowseImpl;
 impl CommandImpl for WikipediaBrowseImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         wikipedia_get(ctx, args).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 

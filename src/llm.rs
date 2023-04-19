@@ -90,7 +90,7 @@ pub trait LLMModel : Send + Sync {
 #[async_trait]
 pub trait LLMProvider {
     fn get_name(&self) -> String;
-    async fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>>;
+    fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>>;
 }
 
 pub struct LLM {
@@ -182,7 +182,7 @@ impl LLMProvider for ChatGPTProvider {
         "chatgpt".to_string()
     }
 
-    async fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
+    fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
         let config: ChatGPTConfig = serde_json::from_value(value)?;
 
         Ok(Box::new(ChatGPT {

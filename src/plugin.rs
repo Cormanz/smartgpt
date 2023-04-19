@@ -96,6 +96,8 @@ pub async fn invoke<T : DeserializeOwned>(
 #[async_trait]
 pub trait CommandImpl : Send + Sync {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>>;
+
+    fn box_clone(&self) -> Box<dyn CommandImpl>;
 }
 
 #[async_trait]
@@ -104,7 +106,7 @@ pub trait PluginCycle : Send + Sync {
 
     async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>>;
 
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>>;
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>>;
 }
 
 pub struct EmptyCycle;
@@ -119,11 +121,12 @@ impl PluginCycle for EmptyCycle {
         Ok(())
     }
 
-    async fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {
         None
     }
 }
 
+#[derive(Clone)]
 pub struct CommandArgument {
     pub name: String,
     pub description: String,
@@ -146,6 +149,18 @@ pub struct Command {
     pub return_type: String,
     pub args: Vec<CommandArgument>,
     pub run: Box<dyn CommandImpl>
+}
+
+impl Command {
+    pub fn box_clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            purpose: self.purpose.clone(),
+            return_type: self.return_type.clone(),
+            args: self.args.clone(),
+            run: self.run.box_clone()
+        }
+    }
 }
 
 pub struct Plugin {

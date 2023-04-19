@@ -74,6 +74,10 @@ impl CommandImpl for FileWriteImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_write(ctx, args, false).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct FileAppendImpl;
@@ -82,6 +86,10 @@ pub struct FileAppendImpl;
 impl CommandImpl for FileAppendImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_write(ctx, args, true).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 
@@ -93,6 +101,10 @@ impl CommandImpl for FileListImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_list(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct FileReadImpl;
@@ -101,6 +113,10 @@ pub struct FileReadImpl;
 impl CommandImpl for FileReadImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_read(ctx, args).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 
@@ -127,7 +143,7 @@ impl PluginCycle for FileCycle {
         Ok(())
     }
 
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
         None
     }
 }

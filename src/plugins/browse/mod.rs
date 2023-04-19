@@ -108,6 +108,10 @@ impl CommandImpl for BrowseArticle {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         browse_article(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct BrowseCycle;
@@ -122,7 +126,7 @@ impl PluginCycle for BrowseCycle {
         Ok(())
     }
 
-    async fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {
         let mut headers = HeaderMap::new();
         headers.insert(USER_AGENT, "SmartGPT v0.0.1".parse().unwrap());
     

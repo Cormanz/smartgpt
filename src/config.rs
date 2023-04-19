@@ -76,21 +76,21 @@ pub fn create_providers() -> Vec<Box<dyn LLMProvider>> {
     ]
 }
 
-pub async fn create_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
+pub fn create_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_providers();
     let model = providers.iter()
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoLLMError)?;
 
-    Ok(model.create(model_config.clone()).await?)
+    Ok(model.create(model_config.clone())?)
 }
 
-pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
+pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     let config: Config = serde_yaml::from_str(config)?;
-    let manager = create_model(config.agents.manager).await?;
-    let boss = create_model(config.agents.boss).await?;
-    let employee = create_model(config.agents.employee).await?;
+    let manager = create_model(config.agents.manager)?;
+    let boss = create_model(config.agents.boss)?;
+    let employee = create_model(config.agents.employee)?;
 
     let mut context = CommandContext {
         task: config.task.clone(),
@@ -133,7 +133,7 @@ pub async fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     
     for plugin in plugins {
         if let Some(plugin_info) = config.plugins.get(&plugin.name.to_lowercase()) {
-            let data = plugin.cycle.create_data(plugin_info.clone()).await;
+            let data = plugin.cycle.create_data(plugin_info.clone());
             if let Some(data) = data {
                 context.plugin_data.0.insert(plugin.name.clone(), data);
             }

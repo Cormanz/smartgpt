@@ -70,6 +70,10 @@ impl CommandImpl for WolframImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         wolfram(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -103,7 +107,7 @@ impl PluginCycle for WolframCycle {
         Ok(())
     }
 
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
         let data: WolframData = serde_json::from_value(value).ok()?;
         Some(Box::new(data))
     }

@@ -65,10 +65,12 @@ impl Display for NoThoughtError {
 
 impl Error for NoThoughtError {}
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
+    test_runner()?;
+    return Ok(());
+
     let config = fs::read_to_string("config.yml")?;
-    let mut program = load_config(&config).await?;
+    let mut program = load_config(&config)?;
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "AI Name".blue(), program.name);
@@ -76,7 +78,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("{}: {}", "Task".blue(), program.task);
 
     println!("{}:", "Plugins".blue());
-    let mut exit_dependency_error = false;
+    /*let mut exit_dependency_error = false;
     for plugin in &program.plugins {
         for dependency in &plugin.dependencies {
             let dependency_exists = program.plugins.iter().any(|dep| &dep.name == dependency);
@@ -124,7 +126,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!();
 
-    run_manager(&mut program).await?;
+    run_manager(&mut program).await?;*/
 
     Ok(())
 }

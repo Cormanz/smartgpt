@@ -180,6 +180,10 @@ impl CommandImpl for ChatGPTImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         chatgpt(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct ResetChatGPTImpl;
@@ -188,6 +192,10 @@ pub struct ResetChatGPTImpl;
 impl CommandImpl for ResetChatGPTImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         reset_chatgpt(ctx, args).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 
@@ -203,7 +211,7 @@ impl PluginCycle for ChatGPTCycle {
         Ok(())
     }
 
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
         let config: ChatGPTPluginConfig = serde_json::from_value(value).ok()?;
 
         Some(Box::new(ChatGPTData {
