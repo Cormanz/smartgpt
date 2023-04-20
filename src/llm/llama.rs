@@ -1,5 +1,6 @@
 use std::{error::Error, collections::HashSet, sync::Mutex};
 
+use async_trait::async_trait;
 use llama_rs::{InferenceSession, InferenceSessionParameters, Model, InferenceParameters, Vocabulary, TokenBias};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -35,8 +36,9 @@ pub struct LlamaInfo {
     pub session: InferenceSession
 }
 
+#[async_trait]
 impl LLMModel for Llama {
-    fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
+    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
         println!("oops!");
         let model = Model::load(&self.path, 2000, |_| {})?;
         let params = InferenceParameters::default();
@@ -60,7 +62,7 @@ impl LLMModel for Llama {
         Ok(text)
     }
 
-    fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
+    async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         Ok(vec![])
     }
 

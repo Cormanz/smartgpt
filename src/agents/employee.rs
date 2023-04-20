@@ -45,6 +45,9 @@ Your task is {:?}
 Write a psuedocode for the task.
 Keep your psuedocode as SHORT and SIMPLE as possible.
 Include the EXACT COMMANDS in your psuedocode.
+ONLY USE COMMANDS, NOTHING ELSE.
+
+Whenever you want to do some sort of task involving writing, creating/processing text, use the `ask_chatgpt` command.
 
 Avoid any DATA EXTRACTION in your psuedocode.
 - Don't try to extract information from an article. Leave the article content as-is."#,
@@ -53,7 +56,7 @@ Avoid any DATA EXTRACTION in your psuedocode.
 
     context.agents.employee.prompt.push(Message::User(prompt));
 
-    let response = context.agents.employee.model.get_response(&context.agents.employee.get_messages(), None, None)?;
+    let response = context.agents.employee.model.get_response_sync(&context.agents.employee.get_messages(), None, None)?;
     context.agents.employee.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
@@ -74,11 +77,13 @@ Avoid any DATA EXTRACTION in your psuedocode.
     
 {out}
 
-Please write a response to The Boss with your findings. Only discuss RESULTS. Do not discuss anything regarding what commands were used."#);
+Please write a response to The Boss with your findings. 
+Only discuss RESULTS. 
+Do not discuss anything regarding what commands were used."#);
     
     context.agents.employee.prompt.push(Message::User(prompt));
 
-    let response = context.agents.employee.model.get_response(&context.agents.employee.get_messages(), None, None)?;
+    let response = context.agents.employee.model.get_response_sync(&context.agents.employee.get_messages(), None, None)?;
     context.agents.employee.message_history.push(Message::Assistant(response.clone()));
     let processed_response = process_response(&response, LINE_WRAP);
     

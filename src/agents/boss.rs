@@ -93,7 +93,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
 
     context.agents.boss.crop_to_tokens(1000)?;
 
-    let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None, None)?;
+    let response = context.agents.boss.model.get_response_sync(&context.agents.boss.get_messages(), None, None)?;
     context.agents.boss.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
@@ -124,7 +124,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
                         .to_string()
                 ));
         
-                let response = context.agents.boss.model.get_response(&context.agents.boss.get_messages(), None, None)?;
+                let response = context.agents.boss.model.get_response_sync(&context.agents.boss.get_messages(), None, None)?;
                 let boss_request = process_response(&response, LINE_WRAP);
 
                 println!("{}", "BOSS".blue());
@@ -147,7 +147,7 @@ r#"The Employee has responded:
 {}
 
 You now have three choices.
-A. I have finished the task The Manager provided me with. I shall report back with the information.
+A. I have finished the task The Manager provided me with. I shall report back with the information to The Manager.
 B. I have not finished the task. The Employee's response provided me with plenty of new information, so I will update my loose plan.
 C. I have not finished the task. I shall proceed onto asking the Employee my next request.
 

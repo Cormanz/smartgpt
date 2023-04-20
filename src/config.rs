@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use async_openai::Client as OpenAIClient;
 
-use crate::{CommandContext, create_tokenizer, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_memory, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama};
+use crate::{CommandContext, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama};
 
 #[derive(Debug, Clone)]
 pub struct NoLLMError;
@@ -62,7 +62,6 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_browse(),
         create_google(),
         create_filesystem(),
-        create_memory(),
         create_shutdown(),
         create_wolfram(),
         create_chatgpt(),
@@ -99,7 +98,6 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
 
     let mut context = CommandContext {
         task: config.task.clone(),
-        tokenizer: create_tokenizer(),
         command_out: vec![],
         variables: HashMap::new(),
         plugin_data: crate::PluginStore(HashMap::new()),

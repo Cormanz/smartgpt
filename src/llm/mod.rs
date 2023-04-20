@@ -3,6 +3,7 @@ mod llama;
 
 pub use chatgpt::*;
 pub use llama::*;
+use tokio::runtime::Runtime;
 
 use std::{error::Error, fmt::Display};
 
@@ -69,10 +70,24 @@ impl Message {
     }
 }
 
+#[async_trait]
 pub trait LLMModel : Send + Sync {
-    fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>>;
-    fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
+    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>>;
+    async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
     fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
+
+    fn get_response_sync(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
+        let mut rt = Runtime::new()?;
+        rt.block_on(async {
+            self.get_response(messages, max_tokens, temperature).await
+        })
+    }
+    fn get_base_embed_sync(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
+        let mut rt = Runtime::new()?;
+        rt.block_on(async {
+            self.get_base_embed(text).await
+        })
+    }
 }
 
 #[async_trait]

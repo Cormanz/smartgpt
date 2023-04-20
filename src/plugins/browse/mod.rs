@@ -1,5 +1,6 @@
 use std::{error::Error, fmt::Display, collections::HashMap, fs};
 use async_trait::async_trait;
+use colored::Colorize;
 use reqwest::{Client, header::{USER_AGENT, HeaderMap}};
 use textwrap::wrap;
 
@@ -84,54 +85,36 @@ pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) ->
     let params: [(&str, &str); 0] = [];
     let url: String = args.get(0).ok_or(BrowseNoArgError)?.clone().try_into()?;   
 
-    let res_result = invoke::<String>(browse_info, "browse", BrowseRequest {
+    let body = invoke::<String>(browse_info, "browse", BrowseRequest {
         url: url.to_string(),
         params: params.iter()
             .map(|el| (el.0.to_string(), el.1.to_string()))
             .collect::<Vec<_>>()
-    }).await;
-    let body = match res_result {
-        Ok(res) => {
-            if res.len() < 5 {
-                return Ok(ScriptValue::Dict(HashMap::from_iter([
-                    (
-                        "error".to_string(), 
-                        format!("The URL of \"{url}\" has no content.").into()
-                    )
-                ])));
-            }
-
-            res
-        }
-        Err(_) => {
-            return Ok(ScriptValue::Dict(HashMap::from_iter([
-                (
-                    "error".to_string(), 
-                    format!("Could not browse the website link of \"{url}\". Are you sure this is a valid URL?").into()
-                )
-            ])));
-        }
-    };
+    }).await?;
 
     let content = extract_text_from_html(&body);
 
     let mut summarized_content = String::new();
-    let chunks = chunk_text(&content, 5000);
+    let chunks = chunk_text(&content, 11000);
 
-    for chunk in chunks {
+    for (ind, chunk) in chunks.iter().enumerate() {
+        println!("{} {} / {}", "Summarizing Chunk".green(), ind + 1, chunks.len());
+
         ctx.agents.fast.message_history.clear();
 
         ctx.agents.fast.message_history.push(Message::System(
-            "Summarize into 75 words.".to_string()
+            "Summarize into one paragraph.".to_string()
         ));
 
-        ctx.agents.fast.message_history.push(Message::User(chunk));
+        ctx.agents.fast.message_history.push(Message::User(chunk.to_string()));
 
-        summarized_content.push_str(&ctx.agents.fast.model.get_response(
+        let response = ctx.agents.fast.model.get_response(
             &ctx.agents.fast.get_messages(),
             None,
-            Some(0.0)
-        )?);
+            None
+        ).await?;
+
+        summarized_content.push_str(&response);
     }
 
     Ok(ScriptValue::String(summarized_content))

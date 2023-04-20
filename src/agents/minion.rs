@@ -114,7 +114,7 @@ Your script will be in the LUA Scripting Language. LUA.
             cmds, task
         )));
     
-        let script = context.agents.minion.model.get_response(
+        let script = context.agents.minion.model.get_response_sync(
             &context.agents.minion.get_messages(),
             Some(300),
             Some(0.3)

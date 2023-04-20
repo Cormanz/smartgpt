@@ -59,7 +59,6 @@ pub struct Agents {
 
 pub struct CommandContext {
     pub task: String,
-    pub tokenizer: Tokenizer,
     pub plugin_data: PluginStore,
     pub agents: Agents,
     pub variables: HashMap<String, ScriptValue>,

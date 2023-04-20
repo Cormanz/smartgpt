@@ -26,11 +26,11 @@ Your task is {:?}
 You have no other information other than to complete this task.
 
 Break it down into a list of short, high-level, one-sentence tasks.
-Try to minimize the amount of tasks needed.",
+Try to minimize the amount of tasks needed. Aim for five or less tasks.",
         task
     )));
 
-    let response = context.agents.manager.model.get_response(&context.agents.manager.get_messages(), None, None)?;
+    let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
     context.agents.manager.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
@@ -53,7 +53,7 @@ Try to minimize the amount of tasks needed.",
             "Assign The Boss the first step in one paragraph".to_string()
         ));
         
-        let response = context.agents.manager.model.get_response(&context.agents.manager.get_messages(), None, None)?;
+        let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
         let boss_request = process_response(&response, LINE_WRAP);
     
         println!("{}", "MANAGER".blue());
@@ -90,7 +90,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
     
         context.agents.manager.message_history.push(Message::User(output));
         
-        let response = context.agents.manager.model.get_response(&context.agents.manager.get_messages(), None, None)?;
+        let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
         let manager_response = process_response(&response, LINE_WRAP);
     
         context.agents.manager.message_history.push(Message::Assistant(response.clone()));
@@ -108,7 +108,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
                 "Remove the first task from your list. Then, once again, list all of the tasks."
             )));
             
-            let response = context.agents.manager.model.get_response(&context.agents.manager.get_messages(), None, None)?;
+            let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
             context.agents.manager.message_history.push(Message::Assistant(response.clone()));
         
             let task_list = process_response(&response, LINE_WRAP);
@@ -129,7 +129,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
                     "Provide a list of feedback to provide to the boss."
                 )));
                 
-                let response = context.agents.manager.model.get_response(&context.agents.manager.get_messages(), None, None)?;
+                let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
                 context.agents.manager.message_history.push(Message::Assistant(response.clone())); 
 
                 drop(context);
@@ -158,7 +158,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
             
                 context.agents.manager.message_history.push(Message::User(output));
                 
-                let response = context.agents.manager.model.get_response(&context.agents.manager.get_messages(), None, None)?;
+                let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
                 let manager_response = process_response(&response, LINE_WRAP);
             
                 context.agents.manager.message_history.push(Message::Assistant(response.clone()));

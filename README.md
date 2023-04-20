@@ -2,32 +2,40 @@
 
 SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 and GPT-4) with the ability to complete complex tasks without user input by breaking them down into smaller problems, and collecting information using the internet and other external sources.
 
-[Demonstration Video](https://www.youtube.com/watch?v=c9G1Cj_SCq0)
+[Demonstration Video](https://www.youtube.com/watch?v=3EpmZ0-6sR0)
+
+## Why?
+
+There are many existing solutions to allowing LLMs to perform more complex tasks, such as [Auto-GPT](https://github.com/Torantulino/Auto-GPT) and [BabyAGI](https://github.com/yoheinakajima/babyagi). So, why SmartGPT?
+
+- **Modularity**: SmartGPT is designed in such a way that you can easily add, remove, or toggle any part of it. Commands are abstracted into plugins, and LLMs are abstracted into their own interfaces that they have to implement.
+
+- **Reasoning**: As far as I know, SmartGPT excels in reasoning tasks by far compared to other solutions, because it divides your task into multiple agents (Manager, Boss, Employee, Minion), and gives each agent a different task involving reasoning. This compartmentalization allows for much more impressive feats of reasoning. It also allows for you to potentially save on plenty of token-costs as context is split up between many of the agents, and you can use smaller models with the experimental LLAMA support potentially.
+
+- **Configuration**: SmartGPT is incredibly easy to configure simply by using a simple `config.yml` file both for users, and for developers (who can parse their configurations using [Serde](https://serde.rs/))
+
+There are two main shortcomings, however.
+
+- **Ecosystem**: [AutoGPT](https://github.com/Torantulino/Auto-GPT) is a much more polished and refined tool, with many more commands and integrations with memory systems, as well as being much more well-tested than SmartGPT.
+
+- **Memory Management**: As of right now, there is no memory system in SmartGPT. We're currently working to create a memory management system that would be much more flexible and work with multiple agents. However, even then, we'd still lack the ecosystem of memory management systems with different databases like Pinecone. This is an area that needs work.
 
 ## Disclaimer
 
 SmartGPT isn't a ready-for-use application, it's an experiment by me, mostly for my own pleasure. It can also use a significant amount of tokens, and may run requests you didn't authorize, so it's not recommended to leave it running on its own for long periods of time. You are also held liable to the constraints of any services used with SmartGPT, i.e. OpenAI's GPT3, Wolfram Alpha, etc, if toggled and used.
 
-## Objectives
+## Agents
 
-Although inspired significantly by [Auto-GPT](https://github.com/Torantulino/Auto-GPT) and [BabyAGI](https://github.com/yoheinakajima/babyagi), SmartGPT has some key differences.
+SmartGPT has the following agents:
 
-1. **Modularity** - The key difference between SmartGPT and other tools is that SmartGPT is completely modular. Everything can be replaced. SmartGPT relies on a system of plugins, where plugins can register new commands (allowing the AI to apply new actions and gain new inputs), add additional context to the beginning of the prompt, manage removed responses (due to token limit), and even manage their own data. Everything in SmartGPT, except the LLMs themselves, are plugins, including the access to the web, the memory, and even the ability to shut down the program. LLMs are also modular, and can be swapped out at any time.
+- **Manager**: Splits the main task into a few high-level subtasks, passing those to The Boss one by one.
+- **Boss**: Takes its task and creates a loose plan, then splitting it into subtasks one by one, giving each subtask to the Employee.
+- **Employee**: Takes its task, writes psuedo-code, passes it to The Minion.
+- **Minion**: Refines the psuedo-code into a LUA script, runs it.
 
-2. **Prompting** - Part of the focus on SmartGPT is creating a single prompt that can allow the AI to easily run and exhibit complex behaviors and solve programs. Our prompting and the way we encode responses is meant to accomplish a few things.
-- The AI reports on exactly what it learns from every command, allowing that information to both help it contextualize its thoughts and serve as long-term memory.
-- The AI divides a problem into **planned commands** then focusing on one planned command at a time.
+## LUA integration
 
-3. **Easy Configuration Management** - It's incredibly easy to configure your plugins in SmartGPT, both on the user side and the developer side. Users can save a very readable `config.yml` file (an example is shown in the root of the project directory), and run their entire project. Developers can easily parse these configurations using [Serde](https://serde.rs/).
-
-## Main Task Loop
-
-The main task loop of SmartGPT is as follows:
-
-- Focuses on the current **endgoal** (one of the final goals it was told to complete)
-- Records any findings from the **previous command**.
-- Generates a list of **planned commands** to carry out. Chooses the current planned command.
-- Runs the **command**.
+SmartGPT is integrated with [LUA](https://www.lua.org/) to allow for simple scripts to be run. This is a massive improvement over existing frameworks, because they have to run each command one by one. However, this could still be unstable and may need work.
 
 ## How To Use
 
@@ -118,38 +126,6 @@ pub trait PluginCycle {
 ```
 
 We take in our plugin data of `chatgpt_info`, tell it to `push` a new message, and it will return a `bool`. It's not the prettiest syntax, but decoupling plugin data from the rest of SmartGPT was one of the goals of the product, so this compromise was necessary (unless there's a better way to do this in Rust.)
-
-# GPTScript
-
-One of the most unique and promising areas of SmartGPT development is what's known as **GPTScript.** When using SmartGPT, you may have noticed it may output queries that look like this:
-
-```yml
-- name: file_write
-    args:
-    - !Data a.txt
-    - !Command
-        name: file_read
-        args:
-        - !Data b.txt
-    - !Command
-        name: file_read
-        args:
-        - !Data c.txt
-```
-
-This is GPTScript. GPTScript allows for the SmartGPT commands system to be integrated into a runtime environment with these features:
-
-- Running multiple commands at once
-- Providing one command's output as the value to another
-- Variables
-- Datatypes: String, Int, Float, Bool, None, List, Dict
-- For Loops
-
-Only the first two (running up to 3 commands and providing one command as the output to another) are currently implemented, though.
-
-This is because, at least with GPT3.5, providing it with too much information on the query-system leads to it getting confused and being inconsistent.
-
-However, GPTScript does support the other three features, and in the future, they could be trivially implemented.
 
 # Areas of Development
 
