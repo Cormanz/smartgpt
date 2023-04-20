@@ -257,6 +257,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
 
 [[package]]
+name = "bytemuck"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17febce684fd15d89027105661fec94afb475cb995fbc59d2865198446ba2eea"
+
+[[package]]
 name = "byteorder"
 version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -939,6 +945,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ggml"
+version = "0.1.0"
+source = "git+https://github.com/rustformers/llama-rs#84656bedce38a6be8070e13506cb6c6245e7ef75"
+dependencies = [
+ "ggml-sys",
+]
+
+[[package]]
+name = "ggml-sys"
+version = "0.1.0"
+source = "git+https://github.com/rustformers/llama-rs#84656bedce38a6be8070e13506cb6c6245e7ef75"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1294,6 +1316,20 @@ name = "linux-raw-sys"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
+
+[[package]]
+name = "llama-rs"
+version = "0.1.0"
+source = "git+https://github.com/rustformers/llama-rs#84656bedce38a6be8070e13506cb6c6245e7ef75"
+dependencies = [
+ "bytemuck",
+ "ggml",
+ "partial_sort",
+ "rand",
+ "serde",
+ "serde_bytes",
+ "thiserror",
+]
 
 [[package]]
 name = "lock_api"
@@ -1684,6 +1720,12 @@ dependencies = [
  "smallvec",
  "windows-sys 0.45.0",
 ]
+
+[[package]]
+name = "partial_sort"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7924d1d0ad836f665c9065e26d016c673ece3993f30d340068b16f282afc1156"
 
 [[package]]
 name = "password-hash"
@@ -2201,6 +2243,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_bytes"
+version = "0.11.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "416bda436f9aab92e02c8e10d49a15ddd339cea90b6e340fe51ed97abb548294"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2299,8 +2350,10 @@ dependencies = [
  "async-trait",
  "colored",
  "faiss",
+ "llama-rs",
  "mlua",
  "num-traits",
+ "rand",
  "regex",
  "reqwest",
  "rustpython-parser",
