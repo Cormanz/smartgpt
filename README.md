@@ -24,6 +24,8 @@ There are two main shortcomings, however.
 
 SmartGPT isn't a ready-for-use application, it's an experiment by me, mostly for my own pleasure. It can also use a significant amount of tokens, and may run requests you didn't authorize, so it's not recommended to leave it running on its own for long periods of time. You are also held liable to the constraints of any services used with SmartGPT, i.e. OpenAI's GPT3, Wolfram Alpha, etc, if toggled and used.
 
+It should also be noted that SmartGPT is a **very experimental** application that prioritizes rapid development over stability. Our goal is to pioneer the prompts and features of this, throwing ideas into the pool and seeing what floats, without any sort of priority on polishing, at least for now.
+
 ## Agents
 
 SmartGPT has the following agents:
