@@ -1,6 +1,7 @@
 use std::{error::Error, fmt::Display, collections::HashMap, fs};
 use async_trait::async_trait;
 use reqwest::{Client, header::{USER_AGENT, HeaderMap}};
+use textwrap::wrap;
 
 mod extract;
 
@@ -8,7 +9,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument, Message};
 
 pub struct BrowseData {
     pub client: Client
@@ -60,6 +61,23 @@ pub struct NoContentError {
     help: String
 }
 
+fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
+    let mut chunks = vec![];
+    let mut current_chunk = String::new();
+
+    for word in wrap(text, chunk_size) {
+        if current_chunk.len() + word.len() > chunk_size {
+            chunks.push(current_chunk.trim().to_owned());
+            current_chunk = String::new();
+        }
+        current_chunk.push_str(&word);
+    }
+    if !current_chunk.is_empty() {
+        chunks.push(current_chunk.trim().to_owned());
+    }
+    chunks
+}
+
 pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let browse_info = ctx.plugin_data.get_data("Browse")?;
 
@@ -96,9 +114,27 @@ pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) ->
     };
 
     let content = extract_text_from_html(&body);
-    let (content, ..) = apply_chunks(&content, 1, 5000);
 
-    Ok(content.into())
+    let mut summarized_content = String::new();
+    let chunks = chunk_text(&content, 5000);
+
+    for chunk in chunks {
+        ctx.agents.fast.message_history.clear();
+
+        ctx.agents.fast.message_history.push(Message::System(
+            "Summarize into 75 words.".to_string()
+        ));
+
+        ctx.agents.fast.message_history.push(Message::User(chunk));
+
+        summarized_content.push_str(&ctx.agents.fast.model.get_response(
+            &ctx.agents.fast.get_messages(),
+            None,
+            Some(0.0)
+        )?);
+    }
+
+    Ok(ScriptValue::String(summarized_content))
 }
 
 pub struct BrowseArticle;

@@ -24,7 +24,8 @@ pub struct AgentLLMs {
     manager: HashMap<String, Value>,
     boss: HashMap<String, Value>,
     employee: HashMap<String, Value>,
-    minion: HashMap<String, Value>
+    minion: HashMap<String, Value>,
+    fast: HashMap<String, Value>
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -94,6 +95,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     let boss = create_model(config.agents.boss)?;
     let employee = create_model(config.agents.employee)?;
     let minion = create_model(config.agents.minion)?;
+    let fast = create_model(config.agents.fast)?;
 
     let mut context = CommandContext {
         task: config.task.clone(),
@@ -121,6 +123,11 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
                 prompt: vec![],
                 message_history: vec![],
                 model: minion
+            },
+            fast: LLM {
+                prompt: vec![],
+                message_history: vec![],
+                model: fast
             }
         }
     };

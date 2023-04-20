@@ -25,3 +25,4 @@ tiktoken-rs = { version = "0.4.1", features = ["async-openai"] }
 mlua = { version = "0.8.8", features = [ "lua54", "vendored", "async" ] }
 llama-rs = { git = "https://github.com/rustformers/llama-rs" }
 rand = "0.8.5"
+textwrap = "0.16.0"

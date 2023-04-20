@@ -5,7 +5,7 @@ use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as L
 
 use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP}};
 
-pub async fn run_stuff(
+pub async fn run_command(
     out: &mut String,
     name: String, command: Command, 
     context: &mut CommandContext, args: Vec<ScriptValue>
@@ -59,7 +59,7 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
                 let mut out= lua_out_mutex.lock().unwrap();
                 let rt = tokio::runtime::Runtime::new().unwrap();
                 let result = rt.block_on(async {
-                    run_stuff(&mut out, name.clone(), command.box_clone(), &mut context, args).await
+                    run_command(&mut out, name.clone(), command.box_clone(), &mut context, args).await
                 }).map_err(|el| LuaError::RuntimeError(
                     format!("{:?}", el)
                 ))?;
