@@ -37,7 +37,7 @@ pub struct LlamaInfo {
 
 impl LLMModel for Llama {
     fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
-        let model = Model::load(self.path, 2000, |_| {})?;
+        let model = Model::load(&self.path, 2000, |_| {})?;
         let params = InferenceParameters::default();
         let session_params = InferenceSessionParameters::default();
         let mut session = model.start_session(session_params);
