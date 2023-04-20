@@ -106,15 +106,11 @@ Back to plugins, plugins also have a `cycle` dynamic trait, for a `PluginCycle`.
 pub trait PluginCycle {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>>;
 
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>>;
-
     async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>>;
 }
 ```
 
 `create_context` defines whether or not the function will put extra text at the beginning of the prompt, and if so, what. This is mainly used to remind the LLM of what files it has, and what memories its pulled.
-
-`apply_removed_responses` will apply the function whenever a response is updated, providing the `response` of what the Assistant said, and the result of its commands, `cmd_output`. `previous_response` is a redundant argument that will soon be removed.
 
 `create_data` defines the long-term data that the plugin stores. Because of how Rust works, it's very tricky to convert the `PluginData` trait back into any one of its members, like `MemoryData`. Instead, you call invocations on `PluginData`, and parse out a response. Here's an example:
 
@@ -126,26 +122,6 @@ pub trait PluginCycle {
 ```
 
 We take in our plugin data of `chatgpt_info`, tell it to `push` a new message, and it will return a `bool`. It's not the prettiest syntax, but decoupling plugin data from the rest of SmartGPT was one of the goals of the product, so this compromise was necessary (unless there's a better way to do this in Rust.)
-
-# Areas of Development
-
-This project isn't done as there's many more areas of development worth implementing:
-
-**GPTScript Complexity**
-If possible, I'd like to give SmartGPT the ability to formulate more complex queries, such as saving variables, and what-not.
-
-**Implementing More LLMs**
-I'd like to add more variety in terms of LLMs. In particular, I'd like to integrate this with the [llama](https://github.com/rustformers/llama-rs) Rust crate.
-
-**Prompt Refining**
-Ideally, I'd like for SmartGPT to more efficiently complete its tasks and not waste time on unnecessary queries. I'd also like to avoid having it gain tunnel-vision or repeat the same commands.
-
-**Implement More Plugins**
-I'd like to implement more plugins for common features to make AI queries much easier.
-Alternatively, I'd also like to add a single plugin that would allow it to hook into many more plugins.
-
-**Safe Terminal Access**
-If this is possible, it would be very useful for running tasks on your computer.
 
 # License
 
