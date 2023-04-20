@@ -37,6 +37,7 @@ pub struct LlamaInfo {
 
 impl LLMModel for Llama {
     fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
+        println!("oops!");
         let model = Model::load(&self.path, 2000, |_| {})?;
         let params = InferenceParameters::default();
         let session_params = InferenceSessionParameters::default();
@@ -70,7 +71,7 @@ impl LLMModel for Llama {
 
 #[derive(Serialize, Deserialize)]
 pub struct LlamaConfig {
-    pub model_path: String
+    #[serde(rename = "model path")] pub model_path: String
 }
 
 pub struct LlamaProvider;
@@ -82,7 +83,12 @@ impl LLMProvider for LlamaProvider {
 
     fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
         let LlamaConfig { model_path } = serde_json::from_value(value)?;
+        println!("haHA!");
 
         Ok(Box::new(Llama { path: model_path }))
     }
+}
+
+pub fn create_model_llama() -> Box<dyn LLMProvider> {
+    Box::new(LlamaProvider)
 }

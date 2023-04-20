@@ -66,8 +66,6 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
                 
                 let result = result.to_lua(&lua)?;
 
-                println!("{:?}", result);
-
                 Ok(result)
             })?;
             lua.globals().set(name, f)?;

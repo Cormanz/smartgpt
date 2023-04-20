@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use async_openai::Client as OpenAIClient;
 
-use crate::{CommandContext, create_tokenizer, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_memory, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel};
+use crate::{CommandContext, create_tokenizer, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_memory, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama};
 
 #[derive(Debug, Clone)]
 pub struct NoLLMError;
@@ -73,7 +73,8 @@ pub fn list_plugins() -> Vec<Plugin> {
 
 pub fn create_providers() -> Vec<Box<dyn LLMProvider>> {
     vec![
-        create_model_chatgpt()
+        create_model_chatgpt(),
+        create_model_llama()
     ]
 }
 

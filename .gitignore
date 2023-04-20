@@ -3,3 +3,4 @@ secret-thing
 files/*
 resources/*
 config.yml
+ggml-vicuna*
