@@ -14,5 +14,8 @@ pub fn extract_text_from_html(html: &str) -> String {
     }
     // prints "This is some text."
 
-    text.trim().to_string()
+    text
+        .trim()
+        .replace(|c: char| !c.is_ascii(), "")
+        .to_string()
 }

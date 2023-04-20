@@ -29,7 +29,7 @@ impl<'a> Display for CommandNoArgError<'a> {
 
 impl<'a> Error for CommandNoArgError<'a> {}
 
-use crate::{LLMResponse, LLM, ScriptValue};
+use crate::{LLM, ScriptValue};
 
 #[async_trait]
 pub trait PluginData: Any + Send + Sync {
@@ -49,11 +49,18 @@ impl EndGoals {
     }
 }
 
+pub struct Agents {
+    pub manager: LLM,
+    pub boss: LLM,
+    pub employee: LLM,
+    pub minion: LLM,
+    pub fast: LLM
+}
+
 pub struct CommandContext {
-    pub end_goals: EndGoals,
-    pub tokenizer: Tokenizer,
+    pub task: String,
     pub plugin_data: PluginStore,
-    pub llm: LLM,
+    pub agents: Agents,
     pub variables: HashMap<String, ScriptValue>,
     pub command_out: Vec<String>
 }
@@ -90,15 +97,14 @@ pub async fn invoke<T : DeserializeOwned>(
 #[async_trait]
 pub trait CommandImpl : Send + Sync {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>>;
+
+    fn box_clone(&self) -> Box<dyn CommandImpl>;
 }
 
 #[async_trait]
 pub trait PluginCycle : Send + Sync {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>>;
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>>;
-
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>>;
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>>;
 }
 
 pub struct EmptyCycle;
@@ -109,15 +115,12 @@ impl PluginCycle for EmptyCycle {
         Ok(None)
     }
 
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
-
-    async fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, _: Value) -> Option<Box<dyn PluginData>> {
         None
     }
 }
 
+#[derive(Clone)]
 pub struct CommandArgument {
     pub name: String,
     pub description: String,
@@ -140,6 +143,18 @@ pub struct Command {
     pub return_type: String,
     pub args: Vec<CommandArgument>,
     pub run: Box<dyn CommandImpl>
+}
+
+impl Command {
+    pub fn box_clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            purpose: self.purpose.clone(),
+            return_type: self.return_type.clone(),
+            args: self.args.clone(),
+            run: self.run.box_clone()
+        }
+    }
 }
 
 pub struct Plugin {

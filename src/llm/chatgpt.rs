@@ -4,80 +4,9 @@ use async_openai::{Client, types::{CreateChatCompletionResponse, CreateChatCompl
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
+use tiktoken_rs::async_openai::get_chat_completion_max_tokens;
 
-#[derive(Clone)]
-pub enum Message {
-    User(String),
-    Assistant(String)
-}
-
-impl Message {
-    pub fn is_user(&self) -> bool {
-        match self {
-            Message::User(_) => true,
-            _ => false
-        }
-    }
-    
-    pub fn is_assistant(&self) -> bool {
-        match self {
-            Message::Assistant(_) => true,
-            _ => false
-        }
-    }
-
-    pub fn content(&self) -> &str {
-        match self {
-            Message::User(content) => content,
-            Message::Assistant(content) => content
-        }
-    }
-
-    pub fn set_content(&mut self, new_content: &str) {
-        match self {
-            Message::User(content) => *content = new_content.to_string(),
-            Message::Assistant(content) => *content = new_content.to_string()
-        }
-    }
-}
-
-impl From<Message> for ChatCompletionRequestMessage {
-    fn from(value: Message) -> Self {
-        match value {
-            Message::User(text) => {
-                ChatCompletionRequestMessage {
-                    role: Role::User,
-                    content: text,
-                    name: None
-                }
-            },
-            Message::Assistant(text) => {
-                ChatCompletionRequestMessage {
-                    role: Role::Assistant,
-                    content: text,
-                    name: None
-                }
-            }
-        }
-    }
-}
-
-#[async_trait]
-pub trait LLMModel : Send + Sync {
-    async fn get_response(&self, messages: &[Message]) -> Result<String, Box<dyn Error>>;
-    async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
-}
-
-#[async_trait]
-pub trait LLMProvider {
-    fn get_name(&self) -> String;
-    async fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>>;
-}
-
-pub struct LLM {
-    pub message_history: Vec<Message>,
-    pub model: Box<dyn LLMModel>
-}
+use crate::{LLMProvider, Message, LLMModel};
 
 pub struct ChatGPT {
     pub model: String,
@@ -87,7 +16,7 @@ pub struct ChatGPT {
 
 #[async_trait]
 impl LLMModel for ChatGPT {
-    async fn get_response(&self, messages: &[Message]) -> Result<String, Box<dyn Error>> {
+    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
         let mut request = CreateChatCompletionRequest::default();
 
         request.model = self.model.clone();
@@ -95,6 +24,10 @@ impl LLMModel for ChatGPT {
             .iter()
             .map(|el| el.clone().into())
             .collect::<Vec<_>>();
+
+        request.temperature = temperature;
+
+        request.max_tokens = max_tokens;
         
         let response: CreateChatCompletionResponse = self.client
             .chat()
@@ -103,7 +36,7 @@ impl LLMModel for ChatGPT {
 
         Ok(response.choices[0].message.content.clone())
     }
-
+    
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         let embeddings = self.client.embeddings().create(CreateEmbeddingRequest {
             model: self.embedding_model.clone(),
@@ -112,6 +45,16 @@ impl LLMModel for ChatGPT {
         }).await?;
     
         Ok(embeddings.data[0].embedding.clone())
+    }
+
+    fn get_tokens_remaining(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
+        let messages: Vec<ChatCompletionRequestMessage> = messages
+            .iter()
+            .map(|el| el.clone().into())
+            .collect::<Vec<_>>();
+
+        let tokens = get_chat_completion_max_tokens(&self.model, &messages)?;
+        Ok(tokens)
     }
 }
 
@@ -130,7 +73,7 @@ impl LLMProvider for ChatGPTProvider {
         "chatgpt".to_string()
     }
 
-    async fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
+    fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
         let config: ChatGPTConfig = serde_json::from_value(value)?;
 
         Ok(Box::new(ChatGPT {
@@ -143,4 +86,32 @@ impl LLMProvider for ChatGPTProvider {
 
 pub fn create_model_chatgpt() -> Box<dyn LLMProvider> {
     Box::new(ChatGPTProvider)
+}
+
+impl From<Message> for ChatCompletionRequestMessage {
+    fn from(value: Message) -> Self {
+        match value {
+            Message::User(text) => {
+                ChatCompletionRequestMessage {
+                    role: Role::User,
+                    content: text,
+                    name: None
+                }
+            },
+            Message::Assistant(text) => {
+                ChatCompletionRequestMessage {
+                    role: Role::Assistant,
+                    content: text,
+                    name: None
+                }
+            },
+            Message::System(text) => {
+                ChatCompletionRequestMessage {
+                    role: Role::System,
+                    content: text,
+                    name: None
+                }
+            }
+        }
+    }
 }

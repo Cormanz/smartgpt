@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 pub use types::*;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, LLMResponse, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument};
 
 #[derive(Debug, Clone)]
 pub struct GoogleNoQueryError;
@@ -73,6 +73,10 @@ impl CommandImpl for GoogleImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         google(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -105,12 +109,8 @@ impl PluginCycle for GoogleCycle {
     async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
-
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
-
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
         let data: GoogleData = serde_json::from_value(value).ok()?;
         Some(Box::new(data))
     }

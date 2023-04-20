@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions};
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, LLMResponse, apply_chunks, PluginData, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chunks, PluginData, ScriptValue, CommandArgument};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -33,10 +33,8 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
         return Err(Box::new(FilesNoQueryError));
     }
 
-    let path = match path.strip_prefix("files/") {
-        Some(path) => path,
-        None => &path
-    };
+    let path = path.strip_prefix("./").unwrap_or(&path).to_string();
+    let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 
     let mut file = OpenOptions::new()
         .write(true)
@@ -49,7 +47,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
 }
 
 pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let files = fs::read_dir("memory")?;
+    let files = fs::read_dir("./files/")?;
     let files = files
         .map(|el| el.map(|el| el.path().display().to_string()))
         .filter(|el| el.is_ok())
@@ -61,10 +59,8 @@ pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Resu
 
 pub async fn file_read(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let path: String = args.get(0).ok_or(FilesNoQueryError)?.clone().try_into()?;
-    let path = match path.strip_prefix("./files/") {
-        Some(path) => path,
-        None => &path
-    };
+    let path = path.strip_prefix("./").unwrap_or(&path).to_string();
+    let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
     
     let content = fs::read_to_string(format!("files/{path}"))?;
     
@@ -78,6 +74,10 @@ impl CommandImpl for FileWriteImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_write(ctx, args, false).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct FileAppendImpl;
@@ -86,6 +86,10 @@ pub struct FileAppendImpl;
 impl CommandImpl for FileAppendImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_write(ctx, args, true).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 
@@ -97,6 +101,10 @@ impl CommandImpl for FileListImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_list(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct FileReadImpl;
@@ -105,6 +113,10 @@ pub struct FileReadImpl;
 impl CommandImpl for FileReadImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         file_read(ctx, args).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 
@@ -127,11 +139,7 @@ impl PluginCycle for FileCycle {
         }))
     }
 
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
-
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
         None
     }
 }

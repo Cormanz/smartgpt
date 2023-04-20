@@ -1,6 +1,5 @@
 mod none;
 mod shutdown;
-mod memory;
 mod google;
 mod filesystem;
 mod browse;
@@ -11,7 +10,6 @@ mod news;
 
 pub use none::*;
 pub use shutdown::*;
-pub use memory::*;
 pub use google::*;
 pub use filesystem::*;
 pub use browse::*;

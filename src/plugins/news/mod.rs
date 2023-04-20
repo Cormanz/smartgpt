@@ -8,7 +8,7 @@ use select::{document::Document, predicate::Name};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, LLMResponse, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument};
 
 pub use types::*;
 
@@ -62,6 +62,10 @@ impl CommandImpl for NewsImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         news(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -91,11 +95,7 @@ impl PluginCycle for NewsCycle {
         Ok(None)
     }
 
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
-
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
         let data: NewsData = serde_json::from_value(value).ok()?;
         Some(Box::new(data))
     }

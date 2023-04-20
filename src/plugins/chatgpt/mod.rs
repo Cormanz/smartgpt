@@ -5,9 +5,7 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, LLMResponse, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue, CommandArgument};
-
-use super::memory;
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue, CommandArgument};
 
 const CHAT_GPT_PROMPT: &str = r#"You are ChatGPT, a large language model trained by OpenAI, based on the GPT-3.5 architecture. As an assistant, your purpose is to provide helpful and informative responses to a wide variety of questions and topics, while also engaging in natural and friendly conversation with users.
 
@@ -180,6 +178,10 @@ impl CommandImpl for ChatGPTImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         chatgpt(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct ResetChatGPTImpl;
@@ -188,6 +190,10 @@ pub struct ResetChatGPTImpl;
 impl CommandImpl for ResetChatGPTImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         reset_chatgpt(ctx, args).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 
@@ -199,11 +205,7 @@ impl PluginCycle for ChatGPTCycle {
         Ok(None)
     }
 
-    async fn apply_removed_response(&self, context: &mut CommandContext, response: &LLMResponse, cmd_output: &str, previous_response: bool) -> Result<(), Box<dyn Error>> {
-        Ok(())
-    }
-
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
         let config: ChatGPTPluginConfig = serde_json::from_value(value).ok()?;
 
         Some(Box::new(ChatGPTData {

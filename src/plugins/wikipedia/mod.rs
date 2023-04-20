@@ -60,7 +60,7 @@ pub async fn get_wikipedia(ctx: &mut CommandContext, name: &str) -> Result<Strin
     let json: WikipediaResponse = serde_json::from_str(&json)?;
     let page = json.query.pages.iter().next().ok_or(WikipediaNoPageError)?.1;
 
-    let content = page.extract.clone();
+    let content = page.extract.clone().unwrap_or("".to_string());
 
     let (content, length_warning) = apply_chunks(&content, 1, 5000);
     let length_warning = length_warning
@@ -96,6 +96,10 @@ impl CommandImpl for WikipediaSearchImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         wikipedia_search(ctx, args).await
     }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
+    }
 }
 
 pub struct WikipediaBrowseImpl;
@@ -104,6 +108,10 @@ pub struct WikipediaBrowseImpl;
 impl CommandImpl for WikipediaBrowseImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
         wikipedia_get(ctx, args).await
+    }
+
+    fn box_clone(&self) -> Box<dyn CommandImpl> {
+        Box::new(Self)
     }
 }
 

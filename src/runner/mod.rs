@@ -1,37 +1,34 @@
 mod parse;
-mod run;
-mod query;
+mod scriptvalue;
 mod convert;
 
-use std::{error::Error, collections::HashMap};
+use std::{error::Error, collections::HashMap, time::Duration, fs, sync::{Mutex, Arc}};
 
+use colored::Colorize;
 pub use parse::*;
-pub use run::*;
+pub use scriptvalue::*;
 pub use convert::*;
-pub use query::*;
 
-use serde_json::Value;
+use tokio::{time::sleep, runtime::{Handle, Runtime}};
 
+use mlua::{
+    AnyUserData, ExternalResult, Lua, Result as LuaResult, 
+    UserData, UserDataMethods, Value, FromLua, Error as LuaError, Variadic, ToLua
+};
+
+use crate::{load_config, ProgramInfo, Command, Context, CommandContext, browse_article};
+
+#[tokio::main]
 pub async fn test_runner() -> Result<(), Box<dyn Error>> {
-    let code = r#"
-news_results = news_search('biology news')
-for article in news_results['articles']:
-    print('Title:', article['title'])
-    print('Author:', article['author'])
-    print('Description:', article['description'])
-    print('URL:', article['url'])
-    print()"#;
-
-    let program = parse_gptscript(code)?;
-    /*let mut ctx = ScriptContext {
-        variables: HashMap::new()
-    };
-    run_body(&mut ctx, program).await?;*/
+    let url = "https://codilime.com/blog/why-is-rust-programming-language-so-popular/#:~:text=The%20Rust%20programming%20language%20has,to%20build%20secure%20operating%20systems.";
     
-    let json = r#"null"#;
+    let config = fs::read_to_string("config.yml")?;
+    let mut program = load_config(&config)?;
 
-    let data: ScriptValue = serde_json::from_str(json)?;
-    println!("{:?}", data);
+    let mut context = program.context.lock().unwrap();
+    let e = browse_article(&mut context, vec![ ScriptValue::String(url.to_string()) ]).await?;
+
+    println!("{:?}", e);
 
     Ok(())
 }
