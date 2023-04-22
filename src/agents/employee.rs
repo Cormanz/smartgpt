@@ -79,7 +79,12 @@ Avoid any DATA EXTRACTION in your psuedocode.
 
 Please write a response to The Boss with your findings. 
 Only discuss RESULTS. 
-Do not discuss anything regarding what commands were used."#);
+
+Provide very specific information.
+What exact information was saved? What was the name of the file? What sources were they?
+Be specific.
+
+Do not discuss anything regarding what commands were used, though."#);
     
     context.agents.employee.prompt.push(Message::User(prompt));
 

@@ -4,11 +4,19 @@ use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
-pub struct BossDecision {
+pub struct BossDecisionInfo {
     pub choice: String,
     pub report: Option<String>,
     #[serde(rename = "new request")] pub new_request: Option<String>
 }
+
+
+#[derive(Serialize, Deserialize)]
+pub struct BossDecision {
+    pub info: BossDecisionInfo,
+    pub observations: Vec<String>
+}
+
 
 #[derive(Debug, Clone)]
 pub struct NoManagerRequestError;
@@ -151,24 +159,41 @@ A. I have finished the task The Manager provided me with. I shall report back wi
 B. I have not finished the task. The Employee's response provided me with plenty of new information, so I will update my loose plan.
 C. I have not finished the task. I shall proceed onto asking the Employee my next request.
 
-Provide your response in one of these formats depending on the choice:
+Provide an `info` field in one of these formats depending on the choice:
 
-reasoning: Reasoning
-choice: A
-report: |-
-    Dear Manager...
+info:
+    reasoning: Reasoning
+    choice: A
+    report: |-
+        Dear Manager...
 
-reasoning: Reasoning
-choice: B
-new loose plan: |-
-    First...
-new request: |-
-    Can you try...
+info:
+    reasoning: Reasoning
+    choice: B
+    new loose plan: |-
+        First...
+    new request: |-
+        Can you try...
 
-reasoning: Reasoning
-choice: C
-new request: |-
-    Can you try...
+info:
+    reasoning: Reasoning
+    choice: C
+    new request: |-
+        Can you try...
+
+After your `info` field, include an additional field named observations.
+It should contain any important facts or mental notes you wish to retain.
+Each observation will be one short sentence.
+
+Be very specific about your observations. 
+Your observations must be detailed.
+What exact information was saved? What was the name of the file? What sources were they?
+Be specific.
+Your observations are exclusive and do not relate to one another.
+
+observations:
+- A
+- B
 
 Do not surround your response in code-blocks. Respond with pure YAML only. Ensure your response can be parsed by serde_yaml.
 "#,
@@ -190,10 +215,10 @@ Do not surround your response in code-blocks. Respond with pure YAML only. Ensur
         println!("{response}");
         println!();
     
-        if decision.choice == "A" {
-            return Ok(decision.report.ok_or(NoManagerRequestError)?)
+        if decision.info.choice == "A" {
+            return Ok(decision.info.report.ok_or(NoManagerRequestError)?)
         }
 
-        new_request = decision.new_request;
+        new_request = decision.info.new_request;
     }
 }

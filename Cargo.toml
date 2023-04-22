@@ -11,7 +11,6 @@ async-recursion = "1.0.4"
 async-trait = "0.1.68"
 colored = "2.0.0"
 num-traits = "0.2.15"
-faiss = { version = "0.12.0", optional = true }
 regex = "1.7.3"
 reqwest = "0.11.16"
 rustpython-parser = "0.2.0"
@@ -26,3 +25,4 @@ mlua = { version = "0.8.8", features = [ "lua54", "vendored", "async" ] }
 llama-rs = { git = "https://github.com/rustformers/llama-rs" }
 rand = "0.8.5"
 textwrap = "0.16.0"
+faiss = { version = "0.12.0", optional = false }

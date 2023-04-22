@@ -26,9 +26,14 @@ pub async fn test_runner() -> Result<(), Box<dyn Error>> {
     let mut program = load_config(&config)?;
 
     let mut context = program.context.lock().unwrap();
-    let e = browse_article(&mut context, vec![ ScriptValue::String(url.to_string()) ]).await?;
-
-    println!("{:?}", e);
+    
+    println!(
+        "{:?}",
+        context.agents.employee.model.get_base_embed(
+            "iPhone"
+        )
+            .await
+    );
 
     Ok(())
 }
