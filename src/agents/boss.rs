@@ -41,7 +41,7 @@ pub fn run_boss(
             .map(|el| el.name.clone())
             .collect::<Vec<_>>()
             .join(", ");
-        context.agents.boss.prompt.push(Message::System(format!(
+        context.agents.boss.llm.prompt.push(Message::System(format!(
 "You are The Boss, a large language model.
 
 Personality: {}
@@ -65,7 +65,7 @@ You cannot do anywork on your own. You will do all of your work through your Emp
     }
 
     if feedback {
-        context.agents.boss.message_history.push(Message::User(format!(
+        context.agents.boss.llm.message_history.push(Message::User(format!(
 "Hello, The Boss.
 
 The Manager has provided you with the following feedback: {:?}
@@ -74,7 +74,7 @@ Continue to work with The Employee to complete your task based on this feedback.
                 task
             )));
     } else if first_prompt {
-        context.agents.boss.message_history.push(Message::User(format!(
+        context.agents.boss.llm.message_history.push(Message::User(format!(
 "Hello, The Boss.
 
 Your task is {:?}
@@ -84,10 +84,10 @@ Write a 2-sentence loose plan of how you will achieve this.",
                 task
             )));
     } else {
-        context.agents.employee.prompt.clear();
-        context.agents.employee.message_history.clear();
+        context.agents.employee.llm.prompt.clear();
+        context.agents.employee.llm.message_history.clear();
 
-        context.agents.boss.message_history.push(Message::User(format!(
+        context.agents.boss.llm.message_history.push(Message::User(format!(
             "Hello, The Boss.
 
 Your task is {:?}
@@ -99,10 +99,10 @@ Write a 2-sentence loose plan of how you will achieve this.",
         )));
     }
 
-    context.agents.boss.crop_to_tokens(1000)?;
+    context.agents.boss.llm.crop_to_tokens(1000)?;
 
-    let response = context.agents.boss.model.get_response_sync(&context.agents.boss.get_messages(), None, None)?;
-    context.agents.boss.message_history.push(Message::Assistant(response.clone()));
+    let response = context.agents.boss.llm.model.get_response_sync(&context.agents.boss.llm.get_messages(), None, None)?;
+    context.agents.boss.llm.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
 
@@ -123,7 +123,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
                 let ProgramInfo { context, plugins, personality, .. } = program;
                 let mut context = context.lock().unwrap();
         
-                context.agents.boss.message_history.push(Message::User(
+                context.agents.boss.llm.message_history.push(Message::User(
                     "Create one simple request for The Employee. 
         Do not give your employee specific commands, simply phrase your request with natural language.
         Provide a very narrow and specific request for the Employee.
@@ -132,7 +132,7 @@ Write a 2-sentence loose plan of how you will achieve this.",
                         .to_string()
                 ));
         
-                let response = context.agents.boss.model.get_response_sync(&context.agents.boss.get_messages(), None, None)?;
+                let response = context.agents.boss.llm.model.get_response_sync(&context.agents.boss.llm.get_messages(), None, None)?;
                 let boss_request = process_response(&response, LINE_WRAP);
 
                 println!("{}", "BOSS".blue());
@@ -203,10 +203,10 @@ Do not surround your response in code-blocks. Respond with pure YAML only. Ensur
         let ProgramInfo { context, plugins, personality, .. } = program;
         let mut context = context.lock().unwrap();
 
-        context.agents.boss.message_history.push(Message::User(output));
+        context.agents.boss.llm.message_history.push(Message::User(output));
         
-        let (response, decision): (_, BossDecision) = try_parse(&context.agents.boss, 3, Some(300))?;
-        context.agents.boss.message_history.push(Message::Assistant(response.clone()));
+        let (response, decision): (_, BossDecision) = try_parse(&context.agents.boss.llm, 3, Some(300))?;
+        context.agents.boss.llm.message_history.push(Message::Assistant(response.clone()));
         let response = process_response(&response, LINE_WRAP);
 
         println!("{}", "BOSS".blue());

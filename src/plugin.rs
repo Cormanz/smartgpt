@@ -29,7 +29,7 @@ impl<'a> Display for CommandNoArgError<'a> {
 
 impl<'a> Error for CommandNoArgError<'a> {}
 
-use crate::{LLM, ScriptValue};
+use crate::{LLM, ScriptValue, MemorySystem};
 
 #[async_trait]
 pub trait PluginData: Any + Send + Sync {
@@ -49,12 +49,18 @@ impl EndGoals {
     }
 }
 
+pub struct AgentInfo {
+    pub llm: LLM,
+    pub observations: Box<dyn MemorySystem>,
+    pub reflections: Box<dyn MemorySystem>
+}
+
 pub struct Agents {
-    pub manager: LLM,
-    pub boss: LLM,
-    pub employee: LLM,
-    pub minion: LLM,
-    pub fast: LLM
+    pub manager: AgentInfo,
+    pub boss: AgentInfo,
+    pub employee: AgentInfo,
+    pub minion: AgentInfo,
+    pub fast: AgentInfo
 }
 
 pub struct CommandContext {

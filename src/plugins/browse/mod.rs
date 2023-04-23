@@ -100,16 +100,16 @@ pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) ->
     for (ind, chunk) in chunks.iter().enumerate() {
         println!("{} {} / {}", "Summarizing Chunk".green(), ind + 1, chunks.len());
 
-        ctx.agents.fast.message_history.clear();
+        ctx.agents.fast.llm.message_history.clear();
 
-        ctx.agents.fast.message_history.push(Message::System(
+        ctx.agents.fast.llm.message_history.push(Message::System(
             "Summarize into one paragraph.".to_string()
         ));
 
-        ctx.agents.fast.message_history.push(Message::User(chunk.to_string()));
+        ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
 
-        let response = ctx.agents.fast.model.get_response(
-            &ctx.agents.fast.get_messages(),
+        let response = ctx.agents.fast.llm.model.get_response(
+            &ctx.agents.fast.llm.get_messages(),
             None,
             None
         ).await?;

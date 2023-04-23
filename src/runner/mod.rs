@@ -29,7 +29,7 @@ pub async fn test_runner() -> Result<(), Box<dyn Error>> {
     
     println!(
         "{:?}",
-        context.agents.employee.model.get_base_embed(
+        context.agents.employee.llm.model.get_base_embed(
             "iPhone"
         )
             .await

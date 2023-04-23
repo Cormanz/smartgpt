@@ -92,7 +92,8 @@ pub trait LLMModel : Send + Sync {
 
 #[async_trait]
 pub trait LLMProvider {
-    fn get_name(&self) -> String;
+    fn is_enabled(&self) -> bool;
+    fn get_name(&self) -> &str;
     fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>>;
 }
 

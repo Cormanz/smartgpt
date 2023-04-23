@@ -93,10 +93,10 @@ pub fn run_minion(
 
         let cmds = generate_commands(plugins, disabled_commands);
     
-        context.agents.minion.prompt.clear();
-        context.agents.minion.message_history.clear();
+        context.agents.minion.llm.prompt.clear();
+        context.agents.minion.llm.message_history.clear();
         
-        context.agents.minion.prompt.push(Message::System(format!(
+        context.agents.minion.llm.prompt.push(Message::System(format!(
     r#"
 Using these commands and ONLY these commands:
 {}
@@ -114,8 +114,8 @@ Your script will be in the LUA Scripting Language. LUA.
             cmds, task
         )));
     
-        let script = context.agents.minion.model.get_response_sync(
-            &context.agents.minion.get_messages(),
+        let script = context.agents.minion.llm.model.get_response_sync(
+            &context.agents.minion.llm.get_messages(),
             Some(300),
             Some(0.3)
         )?;

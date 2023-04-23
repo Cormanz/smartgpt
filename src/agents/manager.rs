@@ -8,7 +8,7 @@ pub fn run_manager(
     let ProgramInfo { context, task, personality, .. } = program;
     let mut context = context.lock().unwrap();
 
-    context.agents.manager.message_history.push(Message::System(format!(
+    context.agents.manager.llm.message_history.push(Message::System(format!(
 "You are The Manager.
 
 Personality: {}
@@ -18,7 +18,7 @@ You have access to an employee named The Boss, who will carry out those steps.",
         personality
     )));
 
-    context.agents.manager.message_history.push(Message::User(format!(
+    context.agents.manager.llm.message_history.push(Message::User(format!(
 "Hello, The Manager.
 
 Your task is {:?}
@@ -30,8 +30,8 @@ Try to minimize the amount of tasks needed. Aim for five or less tasks.",
         task
     )));
 
-    let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
-    context.agents.manager.message_history.push(Message::Assistant(response.clone()));
+    let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
+    context.agents.manager.llm.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
 
@@ -49,11 +49,11 @@ Try to minimize the amount of tasks needed. Aim for five or less tasks.",
         let ProgramInfo { context, task, personality, .. } = program;
         let mut context = context.lock().unwrap();
 
-        context.agents.manager.message_history.push(Message::User(
+        context.agents.manager.llm.message_history.push(Message::User(
             "Assign The Boss the first step in one paragraph".to_string()
         ));
         
-        let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
+        let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
         let boss_request = process_response(&response, LINE_WRAP);
     
         println!("{}", "MANAGER".blue());
@@ -88,12 +88,12 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
                     boss_response
             );
     
-        context.agents.manager.message_history.push(Message::User(output));
+        context.agents.manager.llm.message_history.push(Message::User(output));
         
-        let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
+        let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
         let manager_response = process_response(&response, LINE_WRAP);
     
-        context.agents.manager.message_history.push(Message::Assistant(response.clone()));
+        context.agents.manager.llm.message_history.push(Message::Assistant(response.clone()));
     
         println!("{}", "MANAGER".blue());
         println!("{}", "The Manager has made a decision on whether or not The Boss successfully completed the task.".white());
@@ -104,12 +104,12 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
         let response: Choice = serde_yaml::from_str(&response)?;
     
         if response.choice == "A" {
-            context.agents.manager.message_history.push(Message::User(format!(
+            context.agents.manager.llm.message_history.push(Message::User(format!(
                 "Remove the first task from your list. Then, once again, list all of the tasks."
             )));
             
-            let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
-            context.agents.manager.message_history.push(Message::Assistant(response.clone()));
+            let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
+            context.agents.manager.llm.message_history.push(Message::Assistant(response.clone()));
         
             let task_list = process_response(&response, LINE_WRAP);
         
@@ -125,12 +125,12 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
                 let ProgramInfo { context, task, personality, .. } = program;
                 let mut context = context.lock().unwrap();
 
-                context.agents.manager.message_history.push(Message::User(format!(
+                context.agents.manager.llm.message_history.push(Message::User(format!(
                     "Provide a list of feedback to provide to the boss."
                 )));
                 
-                let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
-                context.agents.manager.message_history.push(Message::Assistant(response.clone())); 
+                let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
+                context.agents.manager.llm.message_history.push(Message::Assistant(response.clone())); 
 
                 drop(context);
                 let boss_response = run_boss(program, &response, first_prompt, true)?;
@@ -156,12 +156,12 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
                     boss_response
                 );
             
-                context.agents.manager.message_history.push(Message::User(output));
+                context.agents.manager.llm.message_history.push(Message::User(output));
                 
-                let response = context.agents.manager.model.get_response_sync(&context.agents.manager.get_messages(), None, None)?;
+                let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
                 let manager_response = process_response(&response, LINE_WRAP);
             
-                context.agents.manager.message_history.push(Message::Assistant(response.clone()));
+                context.agents.manager.llm.message_history.push(Message::Assistant(response.clone()));
             
                 println!("{}", "MANAGER".blue());
                 println!("{}", "The Manager has made a decision on whether or not The Boss successfully completed the task.".white());

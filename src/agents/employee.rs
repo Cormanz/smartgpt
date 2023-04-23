@@ -16,7 +16,7 @@ pub fn run_employee(
     let ProgramInfo { context, plugins, personality, disabled_commands, .. } = program;
     let mut context = context.lock().unwrap();
 
-    context.agents.employee.prompt.push(Message::System(format!(
+    context.agents.employee.llm.prompt.push(Message::System(format!(
         "You are The Employee, a large language model. 
 
 Personality: {}
@@ -54,10 +54,10 @@ Avoid any DATA EXTRACTION in your psuedocode.
         commands, task
     );
 
-    context.agents.employee.prompt.push(Message::User(prompt));
+    context.agents.employee.llm.prompt.push(Message::User(prompt));
 
-    let response = context.agents.employee.model.get_response_sync(&context.agents.employee.get_messages(), None, None)?;
-    context.agents.employee.message_history.push(Message::Assistant(response.clone()));
+    let response = context.agents.employee.llm.model.get_response_sync(&context.agents.employee.llm.get_messages(), None, None)?;
+    context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
 
     let task_list = process_response(&response, LINE_WRAP);
 
@@ -86,10 +86,10 @@ Be specific.
 
 Do not discuss anything regarding what commands were used, though."#);
     
-    context.agents.employee.prompt.push(Message::User(prompt));
+    context.agents.employee.llm.prompt.push(Message::User(prompt));
 
-    let response = context.agents.employee.model.get_response_sync(&context.agents.employee.get_messages(), None, None)?;
-    context.agents.employee.message_history.push(Message::Assistant(response.clone()));
+    let response = context.agents.employee.llm.model.get_response_sync(&context.agents.employee.llm.get_messages(), None, None)?;
+    context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
     let processed_response = process_response(&response, LINE_WRAP);
     
     println!("{}", "EMPLOYEE".blue());

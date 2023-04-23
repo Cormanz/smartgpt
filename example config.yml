@@ -3,30 +3,45 @@ role: Create a fun, science video script for middle schoolers.
 task: Create a fun Biology script for middle schoolers.
 agents:
     manager:
-        chatgpt:
-            api key: API KEY
-            model: gpt-3.5-turbo
-            embedding model: text-embedding-ada-002
+        llm:
+            chatgpt:
+                api key: API KEY
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            faiss: {}
     boss:
-        chatgpt:
-            api key: API KEY
-            model: gpt-3.5-turbo
-            embedding model: text-embedding-ada-002
+        llm:
+            chatgpt:
+                api key: API KEY
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            faiss: {}
     employee:
-        chatgpt:
-            api key: API KEY
-            model: gpt-3.5-turbo
-            embedding model: text-embedding-ada-002
+        llm:
+            chatgpt:
+                api key: API KEY
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            faiss: {}
     minion:
-        chatgpt:
-            api key: API KEY
-            model: gpt-3.5-turbo
-            embedding model: text-embedding-ada-002
+        llm:
+            chatgpt:
+                api key: API KEY
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            faiss: {}
     fast:
-        chatgpt:
-            api key: API KEY
-            model: gpt-3.5-turbo
-            embedding model: text-embedding-ada-002
+        llm:
+            chatgpt:
+                api key: API KEY
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            faiss: {}
 plugins:
     browse: {}
     google:

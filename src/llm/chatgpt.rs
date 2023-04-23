@@ -69,8 +69,12 @@ pub struct ChatGPTProvider;
 
 #[async_trait]
 impl LLMProvider for ChatGPTProvider {
-    fn get_name(&self) -> String {
-        "chatgpt".to_string()
+    fn is_enabled(&self) -> bool {
+        true
+    }
+
+    fn get_name(&self) -> &str {
+        "chatgpt"
     }
 
     fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
