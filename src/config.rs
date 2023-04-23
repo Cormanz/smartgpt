@@ -106,6 +106,7 @@ pub fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMMode
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_llm_providers();
     let llm_provider = providers.iter()
+        .filter(|el| el.is_enabled())
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoLLMError)?;
 
@@ -116,6 +117,7 @@ pub fn create_memory_model(agent: HashMap<String, Value>) -> Result<Box<dyn Memo
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_memory_providers();
     let memory_provider = providers.iter()
+        .filter(|el| el.is_enabled())
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoMemorySystemError)?;
 

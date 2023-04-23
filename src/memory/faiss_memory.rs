@@ -4,17 +4,15 @@ use async_trait::async_trait;
 use faiss::{FlatIndex, IdMap, Idx, Index};
 use serde_json::Value;
 
-use crate::{LLM, Memory, MemoryProvider, MemorySystemLoadError};
+use crate::{LLM, Memory, MemoryProvider, MemorySystemLoadError, RelevantMemory};
 
 use super::MemorySystem;
 
-#[cfg(feature = "faiss")]
 pub struct FaissMemorySystem {
     pub index: IdMap<FlatIndex>,
     pub memory: Vec<Memory>
 }
 
-#[cfg(feature = "faiss")]
 #[async_trait]
 impl MemorySystem for FaissMemorySystem {
     async fn store_memory(&mut self, llm: LLM, memory: &str) -> Result<(), Box<dyn Error>> {
@@ -22,6 +20,7 @@ impl MemorySystem for FaissMemorySystem {
 
         self.memory.push(Memory {
             content: memory.to_string(),
+            recency: 1.,
             recall: 1.,
             embedding: embedding.clone()
         });
@@ -31,15 +30,18 @@ impl MemorySystem for FaissMemorySystem {
         Ok(())
     }
 
-    async fn search_memories(&mut self, llm: LLM, memory: &str) -> Result<Vec<Memory>, Box<dyn Error>> {
+    async fn get_memory_pool(&mut self, llm: LLM, memory: &str, min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
         let embedding = llm.model.get_base_embed(memory).await?;
-        let results = self.index.search(&embedding, 10)?;
+        let results = self.index.search(&embedding, min_count)?;
     
-        let results = results.labels.iter()
-            .filter(|el| el.get().is_some())
-            .map(|&el| {
-                let id = el.get().unwrap() as usize;
-                self.memory[id].clone()
+        let results = results.labels.iter().zip(results.distances)
+            .filter(|(idx, _)| idx.get().is_some())
+            .map(|(idx, distance)| {
+                let id = idx.get().unwrap() as usize;
+                RelevantMemory {
+                    memory: self.memory[id].clone(),
+                    relevance: distance
+                }
             })
             .collect::<Vec<_>>();
 
