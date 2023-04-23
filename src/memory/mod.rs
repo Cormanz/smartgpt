@@ -47,12 +47,12 @@ pub struct Weights {
 
 #[async_trait]
 pub trait MemorySystem : Send + Sync {
-    async fn store_memory(&mut self, llm: LLM, memory: &str) -> Result<(), Box<dyn Error>>;
+    async fn store_memory(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>>;
 
-    async fn get_memory_pool(&mut self, llm: LLM, memory: &str, min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>>;
+    async fn get_memory_pool(&mut self, llm: &LLM, memory: &str, min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>>;
 
     async fn get_memories(
-        &mut self, llm: LLM, memory: &str, min_count: usize, 
+        &mut self, llm: &LLM, memory: &str, min_count: usize, 
         weights: Weights, count: usize
     ) -> Result<Vec<Memory>, Box<dyn Error>> {
         let memory_pool = self.get_memory_pool(llm, memory, min_count).await?;
@@ -74,6 +74,33 @@ pub trait MemorySystem : Send + Sync {
             .take(count)
             .collect::<Vec<_>>();
         Ok(memories)
+    }
+
+    fn store_memory_sync(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>> {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(self.store_memory(llm, memory))
+    }
+    
+    fn get_memory_pool_sync(
+        &mut self,
+        llm: &LLM,
+        memory: &str,
+        min_count: usize,
+    ) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(self.get_memory_pool(llm, memory, min_count))
+    }
+    
+    fn get_memories_sync(
+        &mut self,
+        llm: &LLM,
+        memory: &str,
+        min_count: usize,
+        weights: Weights,
+        count: usize,
+    ) -> Result<Vec<Memory>, Box<dyn Error>> {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(self.get_memories(llm, memory, min_count, weights, count))
     }
 }
 

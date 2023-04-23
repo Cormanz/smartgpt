@@ -1,21 +1,24 @@
 use std::error::Error;
 
 use async_trait::async_trait;
-use faiss::{FlatIndex, IdMap, Idx, Index};
 use serde_json::Value;
 
 use crate::{LLM, Memory, MemoryProvider, MemorySystemLoadError, RelevantMemory};
 
 use super::MemorySystem;
 
+#[cfg(feature = "faiss")]
 pub struct FaissMemorySystem {
-    pub index: IdMap<FlatIndex>,
+    pub index: faiss::IdMap<faiss::FlatIndex>,
     pub memory: Vec<Memory>
 }
 
+#[cfg(feature = "faiss")]
 #[async_trait]
 impl MemorySystem for FaissMemorySystem {
-    async fn store_memory(&mut self, llm: LLM, memory: &str) -> Result<(), Box<dyn Error>> {
+    async fn store_memory(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>> {
+        use faiss::Index;
+
         let embedding = llm.model.get_base_embed(memory).await?;
 
         self.memory.push(Memory {
@@ -25,12 +28,14 @@ impl MemorySystem for FaissMemorySystem {
             embedding: embedding.clone()
         });
 
-        self.index.add_with_ids(&embedding, &[Idx::new((self.memory.len() - 1) as u64)])?;
+        self.index.add_with_ids(&embedding, &[faiss::Idx::new((self.memory.len() - 1) as u64)])?;
 
         Ok(())
     }
 
-    async fn get_memory_pool(&mut self, llm: LLM, memory: &str, min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
+    async fn get_memory_pool(&mut self, llm: &LLM, memory: &str, min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
+        use faiss::ConcurrentIndex;
+
         let embedding = llm.model.get_base_embed(memory).await?;
         let results = self.index.search(&embedding, min_count)?;
     
@@ -62,8 +67,8 @@ impl MemoryProvider for FaissProvider {
     }
 
     fn create(&self, _: Value) -> Result<Box<dyn MemorySystem> ,Box<dyn Error> > {
-        let index = FlatIndex::new_l2(1000).unwrap();
-        let index = IdMap::new(index).unwrap();
+        let index = faiss::FlatIndex::new_l2(1000).unwrap();
+        let index = faiss::IdMap::new(index).unwrap();
 
         Ok(Box::new(FaissMemorySystem {
             index,

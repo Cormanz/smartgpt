@@ -1,5 +1,5 @@
 use std::error::Error;
-use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_boss, Choice}};
+use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_boss, Choice, Task}};
 use colored::Colorize;
 
 pub fn run_manager(
@@ -65,7 +65,7 @@ Try to minimize the amount of tasks needed. Aim for five or less tasks.",
         drop(context);
 
         first_prompt = false;
-        let boss_response = run_boss(program, &boss_request, first_prompt, false)?;
+        let boss_response = run_boss(program, Task::Task(boss_request))?;
 
         let ProgramInfo { context, task, personality, .. } = program;
         let mut context = context.lock().unwrap();
@@ -118,59 +118,6 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
             println!();
             println!("{task_list}");
             println!();
-        } else {
-            drop(context);
-
-            loop {
-                let ProgramInfo { context, task, personality, .. } = program;
-                let mut context = context.lock().unwrap();
-
-                context.agents.manager.llm.message_history.push(Message::User(format!(
-                    "Provide a list of feedback to provide to the boss."
-                )));
-                
-                let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
-                context.agents.manager.llm.message_history.push(Message::Assistant(response.clone())); 
-
-                drop(context);
-                let boss_response = run_boss(program, &response, first_prompt, true)?;
-
-                let ProgramInfo { context, task, personality, .. } = program;
-                let mut context = context.lock().unwrap();
-
-                let output = format!(
-r#"The Boss has responded:
-{}
-
-You now have two choices.
-A. The Boss was successful in finishing this step.
-B. The Boss was incomplete in finishing this step. I shall provide feedback.
-
-Provide your response in this format:
-
-reasoning: Reasoning
-choice: Choice # "A", "B" exactly.
-
-Do not surround your response in code-blocks. Respond with pure YAML only.
-"#,
-                    boss_response
-                );
-            
-                context.agents.manager.llm.message_history.push(Message::User(output));
-                
-                let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
-                let manager_response = process_response(&response, LINE_WRAP);
-            
-                context.agents.manager.llm.message_history.push(Message::Assistant(response.clone()));
-            
-                println!("{}", "MANAGER".blue());
-                println!("{}", "The Manager has made a decision on whether or not The Boss successfully completed the task.".white());
-                println!();
-                println!("{manager_response}");
-                println!();
-                
-                let response: Choice = serde_yaml::from_str(&response)?;                       
-            }
         }
     }
 
