@@ -113,6 +113,14 @@ You cannot do anywork on your own. You will do all of your work through your Emp
     drop(llm);
     drop(observations);
 
+    let formatted_observations = process_response(&observation_text, LINE_WRAP);
+
+    println!("{}", "BOSS".blue());
+    println!("{}", "The boss has found its observations.".white());
+    println!();
+    println!("{formatted_observations}");
+    println!();
+
     let previous_loose_plan = previous_loose_plan.unwrap_or("None".to_string());
     let previous_request = previous_request.unwrap_or("None".to_string());
     let previous_employee_response = previous_employee_response.unwrap_or("None".to_string());
@@ -173,10 +181,12 @@ Ensure your response is in the exact YAML format as specified.")));
     let (response, decision) = try_parse::<BossDecision>(&context.agents.boss.llm, 2, Some(1000))?;
     context.agents.boss.llm.message_history.push(Message::Assistant(response.clone()));
 
-    println!("{}", "EMPLOYEE".blue());
+    let formatted_response = process_response(&response, LINE_WRAP);
+
+    println!("{}", "BOSS".blue());
     println!("{}", "The boss has made a decision.".white());
     println!();
-    println!("{response}");
+    println!("{formatted_response}");
     println!();
 
     Ok(decision)
