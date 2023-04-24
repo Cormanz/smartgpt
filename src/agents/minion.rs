@@ -82,6 +82,7 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
 pub fn run_minion(
     program: &mut ProgramInfo, task: &str, new_prompt: bool
 ) -> Result<String, Box<dyn Error>> {
+    
 
     let mut last_err: Result<String, Box<dyn Error>> = Ok("".to_string());
     for i in 0..3 {
@@ -93,26 +94,28 @@ pub fn run_minion(
 
         let cmds = generate_commands(plugins, disabled_commands);
     
-        context.agents.minion.llm.prompt.clear();
-        context.agents.minion.llm.message_history.clear();
-        
-        context.agents.minion.llm.prompt.push(Message::System(format!(
-    r#"
-Using these commands and ONLY these commands:
-{}
+        if i == 0 {
+            context.agents.minion.llm.prompt.clear();
+            context.agents.minion.llm.message_history.clear();
 
-Write a script to complete this task:
-{}
+            context.agents.minion.llm.prompt.push(Message::System(format!(
+        r#"
+    Using these commands and ONLY these commands:
+    {}
 
-Use the exact commands mentioned in the task.
+    Write a script to complete this task:
+    {}
 
-Keep it as SIMPLE, MINIMAL, and SHORT as possible. IT MUST BE VERY SIMPLE AND SHORT.
-Pay very close attention to the TYPE of each command.
+    Use the exact commands mentioned in the task.
 
-Your script will be in the LUA Scripting Language. LUA.
-    "#,
-            cmds, task
-        )));
+    Keep it as SIMPLE, MINIMAL, and SHORT as possible. IT MUST BE VERY SIMPLE AND SHORT.
+    Pay very close attention to the TYPE of each command.
+
+    Your script will be in the LUA Scripting Language. LUA.
+        "#,
+                cmds, task
+            )));
+        }
     
         let script = context.agents.minion.llm.model.get_response_sync(
             &context.agents.minion.llm.get_messages(),
@@ -128,19 +131,34 @@ Your script will be in the LUA Scripting Language. LUA.
         println!("{processed_script}");
         println!();
     
-    
         drop(context);
         let out = run_script(program, &script);
+
+        let ProgramInfo { 
+            context, ..
+        } = program;
+        let mut context = context.lock().unwrap();
         
         last_err = match &out {
             Ok(out) => {
                 return Ok(out.clone());
             }
             Err(err) => {
-                println!("{}", err);
+                println!("{:#?}", err);
+                context.agents.minion.llm.message_history.push(Message::User(format!(
+"Unfortunately, that did not work. 
+The error was: {err:#?}\n
+
+Please try again in the exact same format with a fixed LUA script
+Respond ONLY with a LUA script. 
+You may provide additional commentary on the fixes in code comments.
+Ensure your response is exactly valid LUA and can be parsed as valid LUA."
+                )));
                 out
             }
         };
+        
+        drop(context);
     }
 
     last_err

@@ -25,6 +25,7 @@ Your goal is take advantage of access to commands to provide answers to question
 
 You have a minion named The Minion, who will turn your request into a script and run it.
 You will turn the Boss's request into simple, tiny psuedocode.
+Keep your psuedocode idea very short and concise. Do not make something complicated.
 
 You have been given one task from The Boss.",
         personality
@@ -40,7 +41,7 @@ You have been given one task from The Boss.",
 You have access to these commands:
 {}
 
-Your task is {:?}
+Your new task is {:?}
 
 Write a psuedocode for the task.
 Keep your psuedocode as SHORT and SIMPLE as possible.

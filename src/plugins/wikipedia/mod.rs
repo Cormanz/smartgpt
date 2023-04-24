@@ -127,7 +127,7 @@ pub fn create_wikipedia() -> Plugin {
                 args: vec![
                     CommandArgument::new("query", "The query to search for.", "String")
                 ],
-                return_type: "{ query: { pages: Map<String, { title: String, extract: String }> } }".to_string(),
+                return_type: "{ query: { search: { title: String, extract: String }[] } }".to_string(),
                 run: Box::new(WikipediaSearchImpl)
             },
             Command {

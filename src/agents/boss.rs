@@ -76,16 +76,18 @@ You have been assigned one task by The Manager, a large language model. You will
 Your goal is to quickly and efficiently get the task done without refining it too much. You just want to get a sort of quicker, shallower answer.
 Complete your task as quickly as possible.
 
-You have access to one employee named The Employee, a large language model, who can run commands for you.
-These commands are: {}
+You have access to one employee named The Employee, a large language model, who will help you run tasks.
+Your Employee has access to the following resources: {}
 
 Your Employee is not meant to do detailed work, but simply to help you find information.
 
 Only ask The Employee for one thing at a time.
 Keep your Employee requests very simple.
-Make sure to tell the Employee to save important information to files!
+Make sure to tell the Employee to save important information to files.
 
-You cannot do anywork on your own. You will do all of your work through your Employee."
+You must only act through your employee.
+You cannot do any work on your own.
+Your only goal is to handle loose planning and going from one step to the next through your Employee."
         , personality, commands
     )));
     
@@ -151,6 +153,11 @@ Info on Memory Queries:
 Your memory query is a very short summary of every topic in your mind that is relevant at this moment.
 Think of it like a search query.
 Your memory query will be used to help you find relevant observations and reflections.
+
+Info on Loose Plans:
+Loose plans are very unstructured, loose, high-level plans. 
+They are rapidly updated whenever necessary.
+They are only two short sentences.
 
 Respond in this format:
 
