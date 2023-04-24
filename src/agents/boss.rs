@@ -33,6 +33,7 @@ pub struct BossDecisionInfo {
 pub struct BossDecision {
     #[serde(rename = "action info")] pub info: BossDecisionInfo,
     #[serde(rename = "new loose plan")] pub loose_plan: Option<String>,
+    #[serde(rename = "memory query")] pub memory_query: String,
     pub observations: Option<Vec<String>>
 }
 
@@ -52,7 +53,8 @@ pub fn run_boss_once(
     program: &mut ProgramInfo, task: Task, 
     previous_loose_plan: Option<String>,
     previous_request: Option<String>,
-    previous_employee_response: Option<String>
+    previous_employee_response: Option<String>,
+    memory_query: Option<String>
 ) -> Result<BossDecision, Box<dyn Error>> {
     let ProgramInfo { context, plugins, personality, .. } = program;
     let mut context = context.lock().unwrap();
@@ -131,11 +133,18 @@ OBSERVATIONS
     )));
 
     context.agents.boss.llm.message_history.push(Message::User(format!(
-"Employee Requests:
+"Info on Employee Requests:
 Do not give your employee specific commands, simply phrase your request with natural language.
 Provide a very narrow and specific request for the Employee.
 Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
 Make sure to tell the Employee to save important information to files!
+
+Info on Memory Queries:
+Your memory query is a very short summary of every topic in your mind that is relevant at this moment.
+Think of it like a search query.
+Your memory query will be used to help you find relevant observations and reflections.
+
+Respond in this format:
 
 ```yml
 observations: # can be `null`
@@ -144,6 +153,9 @@ observations: # can be `null`
 
 new loose plan: |- # can be `null`
     I should...
+
+memory query: |-
+    I am working on...
 
 action info:
     reasoning: Reasoning
@@ -158,8 +170,14 @@ If you do not want to put a specific field, put the field, but set its value to 
 
 Ensure your response is in the exact YAML format as specified.")));
 
-    let (response, decision) = try_parse::<BossDecision>(llm, 2, Some(1000))?;
+    let (response, decision) = try_parse::<BossDecision>(&context.agents.boss.llm, 2, Some(1000))?;
     context.agents.boss.llm.message_history.push(Message::Assistant(response.clone()));
+
+    println!("{}", "EMPLOYEE".blue());
+    println!("{}", "The boss has made a decision.".white());
+    println!();
+    println!("{response}");
+    println!();
 
     Ok(decision)
 }
@@ -170,6 +188,7 @@ pub fn run_boss(
     let mut previous_loose_plan: Option<String> = None;
     let mut previous_request: Option<String> = None;
     let mut previous_employee_response: Option<String> = None;
+    let mut memory_query: Option<String> = None;
     let mut new_prompt = match task {
         Task::Feedback(_, _) => false,
         Task::Task(_) => true
@@ -178,14 +197,15 @@ pub fn run_boss(
         let decision = run_boss_once(
             program, task.clone(),
             previous_loose_plan.clone(),
-            previous_request.clone(), previous_employee_response.clone()
+            previous_request.clone(), previous_employee_response.clone(),
+            memory_query.clone()
         )?;
 
         if let Some(observations) = decision.observations.clone() {
             for observation in observations {
                 let mut context = program.context.lock().unwrap();
                 let AgentInfo { llm, observations, .. } = &mut context.agents.boss;
-                observations.store_memory_sync(llm, &observation);
+                observations.store_memory_sync(llm, &observation)?;
             }
         }
 
@@ -198,7 +218,12 @@ pub fn run_boss(
         }
 
         if let Some(request) = decision.info.new_request {
-            let response = run_employee(program, &request, new_prompt);
+            let employee_response = run_employee(program, &request, new_prompt)?;
+
+            previous_request = Some(request);
+            previous_employee_response = Some(employee_response);
         }
+
+        memory_query = Some(decision.memory_query);
     }
 }
