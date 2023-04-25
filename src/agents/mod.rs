@@ -30,19 +30,26 @@ impl Error for CannotParseError {}
 pub const LINE_WRAP: usize = 12;
 
 pub fn process_response(text: &str, line_wrap: usize) -> String {
-    let lines: Vec<String> = text.split("\n")
-        .flat_map(|line| line.split(" ")
-            .map(|el| el.to_string())
-            .collect::<Vec<_>>()
-            .chunks(line_wrap)
-            .map(|el| el.join(" "))
-            .collect::<Vec<_>>()
-        )
-        .map(|el| format!("    {el}"))
+    let lines: Vec<String> = text
+        .lines()
+        .flat_map(|line| {
+            let indent = line
+                .chars()
+                .take_while(|&c| c.is_whitespace())
+                .collect::<String>();
+            line.trim()
+                .split(' ')
+                .collect::<Vec<_>>()
+                .chunks(line_wrap)
+                .map(|el| {
+                    let words = el.join(" ");
+                    format!("{}{}", indent, words)
+                })
+                .collect::<Vec<_>>()
+        })
         .collect();
     lines.join("\n")
 }
-
 pub fn test() {
     let e = String::from("e");
     let yaml: Result<Value, _> = serde_yaml::from_str(&e);

@@ -100,18 +100,19 @@ pub fn run_minion(
 
             context.agents.minion.llm.prompt.push(Message::System(format!(
         r#"
-    Using these commands and ONLY these commands:
-    {}
+Using these commands and ONLY these commands:
+{}
 
-    Write a script to complete this task:
-    {}
+Write a script to complete this task:
+{}
 
-    Use the exact commands mentioned in the task.
+Use the exact commands mentioned in the task.
 
-    Keep it as SIMPLE, MINIMAL, and SHORT as possible. IT MUST BE VERY SIMPLE AND SHORT.
-    Pay very close attention to the TYPE of each command.
+Keep it as SIMPLE, MINIMAL, and SHORT as possible. IT MUST BE VERY SIMPLE AND SHORT.
+Pay very close attention to the TYPE of each command.
+Whenever you save a file, use ".txt" for the extension.
 
-    Your script will be in the LUA Scripting Language. LUA.
+Your script will be in the LUA Scripting Language. LUA.
         "#,
                 cmds, task
             )));

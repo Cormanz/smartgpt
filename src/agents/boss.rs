@@ -3,6 +3,8 @@ use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, 
 use colored::Colorize;
 use serde::{Serialize, Deserialize, __private::de};
 
+use super::EmployeeResponse;
+
 #[derive(Clone)]
 pub enum Task {
     Task(String),
@@ -53,7 +55,7 @@ pub fn run_boss_once(
     program: &mut ProgramInfo, task: Task, 
     previous_loose_plan: Option<String>,
     previous_request: Option<String>,
-    previous_employee_response: Option<String>,
+    previous_employee_response: Option<EmployeeResponse>,
     memory_query: Option<String>
 ) -> Result<BossDecision, Box<dyn Error>> {
     let ProgramInfo { context, plugins, personality, .. } = program;
@@ -94,7 +96,7 @@ Your only goal is to handle loose planning and going from one step to the next t
     let AgentInfo { llm, observations, .. } = &mut context.agents.boss;
     let observations = observations.get_memories_sync(
         &llm,
-        "None",
+        memory_query.as_deref().unwrap_or("None"),
         200,
         Weights {
             recall: 1.,
@@ -125,7 +127,6 @@ Your only goal is to handle loose planning and going from one step to the next t
 
     let previous_loose_plan = previous_loose_plan.unwrap_or("None".to_string());
     let previous_request = previous_request.unwrap_or("None".to_string());
-    let previous_employee_response = previous_employee_response.unwrap_or("None".to_string());
 
     context.agents.boss.llm.message_history.push(Message::System(format!(
 "TASK
@@ -136,10 +137,11 @@ PREVIOUS LOOSE PLAN
 
 PREVIOUS REQUEST
     Request: {previous_request}
-    Response from Empoloyee: {previous_employee_response}
+    Response from Empoloyee: {}
 
 OBSERVATIONS
-{observation_text}"
+{observation_text}",
+        previous_employee_response.map(|resp| resp.report).as_deref().unwrap_or("None")
     )));
 
     context.agents.boss.llm.message_history.push(Message::User(format!(
@@ -204,7 +206,7 @@ pub fn run_boss(
 ) -> Result<String, Box<dyn Error>> {
     let mut previous_loose_plan: Option<String> = None;
     let mut previous_request: Option<String> = None;
-    let mut previous_employee_response: Option<String> = None;
+    let mut previous_employee_response: Option<EmployeeResponse> = None;
     let mut memory_query: Option<String> = None;
     let mut new_prompt = match task {
         Task::Feedback(_, _) => false,
@@ -235,7 +237,10 @@ pub fn run_boss(
         }
 
         if let Some(request) = decision.info.new_request {
-            let employee_response = run_employee(program, &request, new_prompt)?;
+            let employee_response = run_employee(
+                program, &request, new_prompt, 
+                previous_employee_response.map(|el| el.memory_query).unwrap_or(None)
+            )?;
 
             previous_request = Some(request);
             previous_employee_response = Some(employee_response);
