@@ -97,14 +97,18 @@ pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) ->
     let mut summarized_content = String::new();
     let chunks = chunk_text(&content, 11000);
 
+    let chunk_count = chunks.len();
+    let summary_prompt = match chunk_count {
+        0..=2 => "Create a paragraph summary.",
+        _ => "Create a two-sentence summary."
+    }.to_string();
+
     for (ind, chunk) in chunks.iter().enumerate() {
         println!("{} {} / {}", "Summarizing Chunk".green(), ind + 1, chunks.len());
 
         ctx.agents.fast.llm.message_history.clear();
 
-        ctx.agents.fast.llm.message_history.push(Message::System(
-            "Summarize into one paragraph.".to_string()
-        ));
+        ctx.agents.fast.llm.message_history.push(Message::System(summarized_content.clone()));
 
         ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
 

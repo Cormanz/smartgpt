@@ -239,7 +239,7 @@ pub fn run_boss(
         if let Some(request) = decision.info.new_request {
             let employee_response = run_employee(
                 program, &request, new_prompt, 
-                previous_employee_response.map(|el| el.memory_query).unwrap_or(None)
+                previous_employee_response.map(|el| el.memory_query)
             )?;
 
             previous_request = Some(request);

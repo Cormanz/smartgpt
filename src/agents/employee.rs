@@ -1,18 +1,22 @@
 use std::error::Error;
 use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse, CannotParseError, minion::run_minion}, AgentInfo, Weights};
 use colored::Colorize;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, __private::de};
 
 #[derive(Serialize, Deserialize)]
 pub struct EmployeeDecision {
     pub psuedocode: String,
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct EmployeeQueryDecision {
+    #[serde(rename = "memory query")] pub memory_query: String
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EmployeeResponse {
-    #[serde(rename = "memory query")] pub memory_query: Option<String>,
-    pub observations: Option<Vec<String>>,
+    #[serde(rename = "memory query")] pub memory_query: String,
+    pub observations: Vec<String>,
     #[serde(rename = "report to boss")] pub report: String
 }
 
@@ -91,14 +95,18 @@ OBSERVATIONS
 
     let prompt = format!(r#"
 Info on Psuedocode:
-Your psuedocode should be human readable, but follow the flow of logic that code does.
+Your psuedocode should be human readable.
+Keep it very, very straightforward.
 Whenever you save a file, use ".txt" for the extension.
 
 Respond in this format:
 
 ```yml
 psuedocode: |-
-    ask ChatGPT for...
+    use google_search for "Bunnies"
+    for each website from the search results:
+        use browse_website on the website
+        use write_file with the file name "bunny{{index}}" with content "{{website content}}"
 ```
 
 All fields must be specified exactly as shown above.
@@ -108,66 +116,76 @@ Ensure your response is in the exact YAML format as specified."#);
 
     context.agents.employee.llm.prompt.push(Message::User(prompt));
 
-    let (response, decision) = try_parse::<EmployeeDecision>(&context.agents.employee.llm, 2, Some(1000))?;
+    let (response, decision) = try_parse::<EmployeeDecision>(&context.agents.employee.llm, 3, Some(1000))?;
     context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
 
     let formatted_response = process_response(&response, LINE_WRAP);
 
     println!("{}", "EMPLOYEE".blue());
-    println!("{}", "The employee has nade a decision and some psuedocode.".white());
+    println!("{}", "The employee has made a decision and some psuedocode.".white());
     println!();
     println!("{formatted_response}");
     println!();
 
     drop(context);
-    let out = run_minion(program, &decision.psuedocode, new_prompt)?;
+    let (letter, details) = run_minion(program, &decision.psuedocode, new_prompt)?;
 
     let ProgramInfo { context, plugins, personality, disabled_commands, .. } = program;
     let mut context = context.lock().unwrap();
-
-    let prompt = format!(r#"Your query gave the following output:
-    
-{out}
-
-Info on Report to Boss:
-Please write a response to The Boss with your findings. 
-Only discuss RESULTS. 
-Provide very specific information.
-What exact information was saved? What was the name of the file? What sources were they?
-Be specific.
-Do not discuss anything regarding what commands were used.
-
-Info on Memory Queries:
-Your memory query is a very short summary of every topic in your mind that is relevant at this moment.
-Think of it like a search query.
-Your memory query will be used to help you find relevant observations and reflections.
-
-Respond in this format:
-
-```yml
-observations: # can be `null`
-- A
-- B
-
-memories query: |-
-    I am working on...
-
-report to boss: |-
-    Dear Boss, I managed...
-```"#);
-    
-    context.agents.employee.llm.prompt.push(Message::User(prompt));
-
-    let (response, decision) = try_parse::<EmployeeResponse>(&context.agents.employee.llm, 2, Some(1000))?;
-    context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
-
-    let formatted_response = process_response(&response, LINE_WRAP);
     
     println!("{}", "EMPLOYEE".blue());
     println!("{}", "The employee has given The Boss a response.".white());
     println!();
+    println!("{letter}");
+    println!();
+
+    let new_observations = details.findings.iter()
+        .chain(details.changes.iter())
+        .map(|el| el.clone())
+        .collect::<Vec<_>>();
+
+    context.agents.employee.llm.prompt.clear();
+    context.agents.employee.llm.message_history.clear();
+
+    context.agents.employee.llm.prompt.push(Message::System(format!(
+r#"You have a list of relevant observations and reflections from the previous query.
+
+Create a new memory query. It should discuss all currently relevant topics, and be brief. It will be used to find new memories. Memory queries are like google searches.
+
+Example of a memory query: "Spongebob Show, Squidward, Crusty Crab"
+
+Reply in this format:
+```yml
+reasoning: [...]
+memory query: [...]
+```"#
+    )));
+
+    context.agents.employee.llm.message_history.push(Message::User(format!(
+"PREVIOUS BOSS REQUEST
+{task}
+
+PREVIOUS EMPLOYEE RESPONSE
+{letter}
+
+OBSERVATIONS
+{observation_text}"
+    )));
+
+    let (response, query_decision) = try_parse::<EmployeeQueryDecision>(&context.agents.employee.llm, 3, Some(1000))?;
+    context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
+
+    let formatted_response = process_response(&response, LINE_WRAP);
+
+    println!("{}", "EMPLOYEE".blue());
+    println!("{}", "The employee has made a decision on its next memory query.".white());
+    println!();
     println!("{formatted_response}");
     println!();
 
-    Ok(decision)
+    Ok(EmployeeResponse {
+        memory_query: query_decision.memory_query.clone(),
+        observations: new_observations,
+        report: letter
+    })
 }

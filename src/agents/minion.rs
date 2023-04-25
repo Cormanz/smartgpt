@@ -2,8 +2,17 @@ use std::{error::Error, sync::{Arc, Mutex}};
 
 use colored::Colorize;
 use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
+use serde::{Deserialize, Serialize, __private::de};
 
 use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP}};
+
+use super::try_parse;
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct MinionResponse {
+    pub findings: Vec<String>,
+    pub changes: Vec<String>
+}
 
 pub async fn run_command(
     out: &mut String,
@@ -81,9 +90,7 @@ pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<d
 
 pub fn run_minion(
     program: &mut ProgramInfo, task: &str, new_prompt: bool
-) -> Result<String, Box<dyn Error>> {
-    
-
+) -> Result<(String, MinionResponse), Box<dyn Error>> {
     let mut last_err: Result<String, Box<dyn Error>> = Ok("".to_string());
     for i in 0..3 {
         let ProgramInfo { 
@@ -142,7 +149,7 @@ Your script will be in the LUA Scripting Language. LUA.
         
         last_err = match &out {
             Ok(out) => {
-                return Ok(out.clone());
+                break;
             }
             Err(err) => {
                 println!("{:#?}", err);
@@ -162,5 +169,67 @@ Ensure your response is exactly valid LUA and can be parsed as valid LUA."
         drop(context);
     }
 
-    last_err
+    match last_err {
+        Err(err) => {
+            Err(err)
+        }
+        Ok(result) => {
+            let ProgramInfo { 
+                context, plugins, personality,
+                disabled_commands, .. 
+            } = program;
+            let mut context = context.lock().unwrap();
+    
+            context.agents.minion.llm.prompt.clear();
+            context.agents.minion.llm.message_history.clear();
+
+            context.agents.minion.llm.message_history.push(Message::System(format!(
+r#"First, create a list of concise points about your findings from the commands.
+
+Then, create a list of long-lasting changes that were executed (i.e. writing to a file, posting a tweet.) Use quotes when discussing specific details.
+
+Keep your findings list very brief.
+
+In this format:
+
+```yml
+findings:
+- A
+- B
+
+changes:
+- A
+- B
+```"#
+            )));
+            context.agents.minion.llm.message_history.push(Message::User(result));
+            
+            let (response, decision) = try_parse::<MinionResponse>(&context.agents.employee.llm, 3, Some(1000))?;
+            context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
+        
+            let findings = decision.findings.iter()
+                .map(|el| format!("- {el}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            let changes = decision.changes.iter()
+                .map(|el| format!("- {el}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+
+            let letter = format!(
+"Dear Boss,
+
+I have completed the tasks you assigned to me. These are my findings:
+{findings}
+
+These are the changes I had to carry out:
+{changes}
+
+Sincerely, Your Employee."
+            );
+
+            Ok((letter, decision))
+        }
+    }
 }

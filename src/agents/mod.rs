@@ -59,7 +59,7 @@ pub fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Opti
     for i in 0..tries {
         let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
         let processed_response = response.trim();
-        let processed_response = response.strip_prefix("```yml")
+        let processed_response = processed_response.strip_prefix("```yml")
             .unwrap_or(&response)
             .to_string();
         let processed_response = processed_response.strip_prefix("```")
@@ -71,7 +71,7 @@ pub fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Opti
         if let Ok(yaml) = serde_yaml::from_str(&processed_response) {
             return Ok((response, yaml));
         }
-        println!("{}", format!("Try {i} failed.").red());
+        println!("{}", format!("Try {} failed.", i + 1).red());
         println!("{response}");
     }
     
