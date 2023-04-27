@@ -7,18 +7,21 @@ use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chu
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
-pub struct FilesNoQueryError;
+pub struct FilesNoArgError<'a>(&'a str, &'a str);
 
-impl Display for FilesNoQueryError {
+impl<'a> Display for FilesNoArgError<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "one of the 'file' commands did not receive enough info.")
+        write!(f, "the '{}' command did not receive the '{}' argument.", self.0, self.1)
     }
 }
 
-impl Error for FilesNoQueryError {}
+impl<'a> Error for FilesNoArgError<'a> {}
 
 pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
-    let path: String = args.get(0).ok_or(FilesNoQueryError)?.clone().try_into()?;
+    let command_name = if append { "file_append" } else { "file_write" };
+    let path: String = args.get(0)
+        .ok_or(FilesNoArgError(command_name, "path"))?
+        .clone().try_into()?;
 
     let mut content = String::new();
     let contents = args.iter()
@@ -30,7 +33,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
     }
 
     if content.len() == 0 {
-        return Err(Box::new(FilesNoQueryError));
+        return Err(Box::new(FilesNoArgError(command_name, "content")));
     }
 
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
@@ -58,7 +61,7 @@ pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Resu
 }
 
 pub async fn file_read(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let path: String = args.get(0).ok_or(FilesNoQueryError)?.clone().try_into()?;
+    let path: String = args.get(0).ok_or(FilesNoArgError("file_read", "path"))?.clone().try_into()?;
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
     

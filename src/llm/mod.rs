@@ -24,11 +24,24 @@ impl Display for ModelLoadError {
 
 impl Error for ModelLoadError {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Message {
     User(String),
     Assistant(String),
     System(String)
+}
+
+impl Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let header = match self {
+            Self::Assistant(_) => "ASSISTANT",
+            Self::System(_) => "SYSTEM",
+            Self::User(_) => "USER"
+        };
+
+        write!(f, "-- {header} --\n")?;
+        write!(f, "{}", self.content())
+    }
 }
 
 impl Message {

@@ -108,7 +108,7 @@ pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) ->
 
         ctx.agents.fast.llm.message_history.clear();
 
-        ctx.agents.fast.llm.message_history.push(Message::System(summarized_content.clone()));
+        ctx.agents.fast.llm.message_history.push(Message::System(summary_prompt.clone()));
 
         ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
 
@@ -167,7 +167,7 @@ pub fn create_browse() -> Plugin {
         commands: vec![
             Command {
                 name: "browse_article".to_string(),
-                purpose: "Browse a website's paragraph-only content.".to_string(),
+                purpose: "Browse a URL's paragraph-only content.".to_string(),
                 args: vec![
                     CommandArgument::new("url", "The URL to browse.", "String")
                 ],

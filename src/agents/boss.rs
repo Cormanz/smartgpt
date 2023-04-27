@@ -183,6 +183,7 @@ action info:
 ```
 
 All fields must be specified exactly as shown above.
+Keep all of the requests in the EXACT SAME YAML FORMAT, INCLUDING TYPES.
 If you do not want to put a specific field, put the field, but set its value to `null`.
 
 Ensure your response is in the exact YAML format as specified.")));
