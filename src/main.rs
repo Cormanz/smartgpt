@@ -62,9 +62,6 @@ impl Display for NoThoughtError {
 impl Error for NoThoughtError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    //test_runner();
-    //creturn Ok(());
-
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config)?;
 

@@ -23,12 +23,10 @@ pub async fn run_command(
     Ok(result)
 }
 
-pub fn run_script(program: &mut ProgramInfo, code: &str) -> Result<String, Box<dyn Error>> {
+pub fn run_script(program: &mut ProgramInfo, code: &str, lua: &Lua) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
         context, plugins, .. 
     } = program;
-
-    let lua = Lua::new();
 
     let out_mutex = Arc::new(Mutex::new(String::new()));
 

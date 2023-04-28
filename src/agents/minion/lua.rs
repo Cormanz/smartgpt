@@ -4,7 +4,7 @@ use colored::Colorize;
 use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
 use serde::{Deserialize, Serialize, __private::de};
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}}};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}, create_findings_prompt}};
 
 use super::{super::try_parse, MinionResponse};
 
@@ -66,7 +66,7 @@ Your script will be in the LUA Scripting Language. LUA.
         println!();
 
         drop(context);
-        let out = run_script(program, &script);
+        let out = run_script(program, &script, &Lua::new());
 
         let ProgramInfo { 
             context, ..
@@ -132,27 +132,7 @@ Ensure your response is exactly valid LUA and can be parsed as valid LUA."
             } = program;
             let mut context = context.lock().unwrap();
 
-            context.agents.minion.llm.message_history.push(Message::System(format!(
-r#"First, create a list of concise points about your findings from the commands.
-
-Then, create a list of long-lasting changes that were executed (i.e. writing to a file, posting a tweet.) Use quotes when discussing specific details.
-
-Keep your findings list very brief.
-
-Respond in this exact format:
-
-```yml
-findings:
-- A
-- B
-
-changes:
-- A
-- B
-```
-
-Ensure your response is fully valid YAML."#
-            )));
+            context.agents.minion.llm.message_history.push(Message::System(create_findings_prompt()));
             context.agents.minion.llm.message_history.push(Message::User(result));
             
             let (response, decision) = try_parse::<MinionResponse>(&context.agents.employee.llm, 3, Some(1000))?;

@@ -16,23 +16,18 @@ use mlua::{
     UserData, UserDataMethods, Value, FromLua, Error as LuaError, Variadic, ToLua
 };
 
-use crate::{load_config, ProgramInfo, Command, Context, CommandContext, browse_article};
+use crate::{load_config, ProgramInfo, Command, Context, CommandContext, browse_article, agents::run_script};
 
-#[tokio::main]
-pub async fn test_runner() -> Result<(), Box<dyn Error>> {
+pub fn test_runner() -> Result<(), Box<dyn Error>> {
     let url = "https://codilime.com/blog/why-is-rust-programming-language-so-popular/#:~:text=The%20Rust%20programming%20language%20has,to%20build%20secure%20operating%20systems.";
     
     let config = fs::read_to_string("config.yml")?;
     let mut program = load_config(&config)?;
 
-    let mut context = program.context.lock().unwrap();
-    
-    println!(
-        "{:?}",
-        context.agents.employee.llm.model.get_base_embed(
-            "iPhone"
-        )
-            .await
+    run_script(
+        &mut program, 
+        r#"wikipedia_browse("Ronald Reagan")"#,
+        &Lua::new()
     );
 
     Ok(())

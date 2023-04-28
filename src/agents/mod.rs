@@ -6,9 +6,12 @@ mod minion;
 use std::{error::Error, fmt::Display};
 
 use colored::Colorize;
+
 pub use manager::*;
 pub use boss::*;
 pub use employee::*;
+pub use minion::*;
+
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_yaml::Value;
 
