@@ -32,7 +32,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
         content.push_str(&arg_content);
     }
 
-    if content.len() == 0 {
+    if args.len() <= 1 {
         return Err(Box::new(FilesNoArgError(command_name, "content")));
     }
 

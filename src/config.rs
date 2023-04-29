@@ -129,6 +129,7 @@ pub fn create_agent(agent: AgentConfig) -> Result<AgentInfo, Box<dyn Error>> {
         llm: LLM {
             prompt: vec![],
             message_history: vec![],
+            end_prompt: vec![],
             model: create_llm_model(agent.llm)?
         },
         observations: create_memory_model(agent.memory.clone())?,

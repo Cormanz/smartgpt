@@ -24,22 +24,31 @@ pub fn run_continuous_minion(
 
     context.agents.minion.llm.prompt.push(Message::System(format!(
 r#"
-Using these commands and ONLY these commands:
-{}
-
 Run one command at a time to complete this task:
 {}
 
-This is psuedocode. You will need to run this one command at a time.
+Use the exact commands mentioned in the task.
+ONLY USE THOSE COMMANDS.
+Do not use any other commands.
 
-Format your commands like so: command(ARG1, ARG2...)
+This is psuedocode. You will need to run this one command at a time.
+When running a command, reply in this format exactly:
+
+command_name(ARG1, ARG2...)
+
 Escape all quotes inside of your arguments.
 Only respond with the command. NOTHING ELSE!
 Only use ONE COMMAND at a time.
 
 If you are done, reply with "DONE"
 "#,
-        cmds, task
+        task
+    )));
+
+    context.agents.minion.llm.end_prompt.push(Message::System(format!(
+"Use these commands and ONLY these commands:
+{}",
+        cmds
     )));
 
     drop(context);
@@ -50,6 +59,8 @@ If you are done, reply with "DONE"
         } = program;
         let mut context = context.lock().unwrap();
 
+        println!("{:#?}", context.agents.minion.llm.get_messages());
+
         let script = context.agents.minion.llm.model.get_response_sync(
             &context.agents.minion.llm.get_messages(),
             Some(300),
@@ -57,9 +68,10 @@ If you are done, reply with "DONE"
         )?;
 
         let processed_script = process_response(&script, LINE_WRAP);
+        context.agents.minion.llm.message_history.push(Message::Assistant(script.clone()));
     
         println!("{}", "MINION".blue());
-        println!("{}", format!("The minion has ran a command.").white());
+        println!("{}", format!("The minion has written a command.").white());
         println!();
         println!("{processed_script}");
         println!();
@@ -77,9 +89,10 @@ If you are done, reply with "DONE"
         } = program;
         let mut context = context.lock().unwrap();
 
-        context.agents.minion.llm.prompt.push(Message::User(format!(
-"{out}\nProceed to your next command."
-        )));  
+        context.agents.minion.llm.message_history.push(Message::User(out));  
+        context.agents.minion.llm.message_history.push(Message::User("Please run another command.".to_string()));  
+
+        context.agents.minion.llm.crop_to_tokens_remaining(1000);
     }
 
     let ProgramInfo { 
@@ -89,8 +102,8 @@ If you are done, reply with "DONE"
 
     context.agents.minion.llm.message_history.push(Message::User(create_findings_prompt()));
     
-    let (response, decision) = try_parse::<MinionResponse>(&context.agents.employee.llm, 3, Some(1000))?;
-    context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
+    let (response, decision) = try_parse::<MinionResponse>(&context.agents.minion.llm, 3, Some(1000))?;
+    context.agents.minion.llm.message_history.push(Message::Assistant(response.clone()));
 
     let letter = create_letter(&decision.findings, &decision.changes);
 

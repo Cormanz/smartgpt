@@ -112,6 +112,7 @@ pub trait LLMProvider {
 
 pub struct LLM {
     pub prompt: Vec<Message>,
+    pub end_prompt: Vec<Message>,
     pub message_history: Vec<Message>,
     pub model: Box<dyn LLMModel>
 }
@@ -121,7 +122,7 @@ impl LLM {
         self.model.get_tokens_remaining(messages)
     }
 
-    pub fn crop_to_tokens(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
+    pub fn crop_to_tokens_remaining(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
         while token_buffer > self.get_tokens_remaining(&self.get_messages())? {
             self.message_history.remove(0);
         }
@@ -132,6 +133,7 @@ impl LLM {
     pub fn get_messages(&self) -> Vec<Message> {
         let mut messages = self.prompt.clone();
         messages.extend(self.message_history.clone());
+        messages.extend(self.end_prompt.clone());
         messages
     }
 }

@@ -79,7 +79,7 @@ fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
     chunks
 }
 
-pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn browse_url(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let browse_info = ctx.plugin_data.get_data("Browse")?;
 
     let params: [(&str, &str); 0] = [];
@@ -124,12 +124,12 @@ pub async fn browse_article(ctx: &mut CommandContext, args: Vec<ScriptValue>) ->
     Ok(ScriptValue::String(summarized_content))
 }
 
-pub struct BrowseArticle;
+pub struct BrowseURL;
 
 #[async_trait]
-impl CommandImpl for BrowseArticle {
+impl CommandImpl for BrowseURL {
     async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-        browse_article(ctx, args).await
+        browse_url(ctx, args).await
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -166,13 +166,13 @@ pub fn create_browse() -> Plugin {
         cycle: Box::new(BrowseCycle),
         commands: vec![
             Command {
-                name: "browse_article".to_string(),
-                purpose: "Browse a URL's paragraph-only content.".to_string(),
+                name: "browse_url".to_string(),
+                purpose: "Browse the paragraph-only content from an exact URL.".to_string(),
                 args: vec![
                     CommandArgument::new("url", "The URL to browse.", "String")
                 ],
                 return_type: "String".to_string(),
-                run: Box::new(BrowseArticle)
+                run: Box::new(BrowseURL)
             }
         ]
     }
