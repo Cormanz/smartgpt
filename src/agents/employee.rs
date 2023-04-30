@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize, __private::de};
 
 #[derive(Serialize, Deserialize)]
 pub struct EmployeeDecision {
-    pub psuedocode: String,
+    pub request: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,9 +46,9 @@ You have access to these commands:
 
 Your goal is take advantage of access to commands to provide answers to questions.
 
-You have a minion named The Minion, who will turn your psuedocode into a script and run it.
-You will turn the Boss's request into simple, tiny psuedocode.
-Keep your psuedocode idea very short and concise. Do not make something complicated.",
+You have a minion named The Minion, who will turn your request into a script and run it.
+You will turn the Boss's request into simple, tiny, natural language request.
+Keep your request idea very short and concise. Do not make something complicated.",
         personality, commands
     )));
 
@@ -95,7 +95,7 @@ OBSERVATIONS
 
     let prompt = format!(r#"
 Info on Psuedocode:
-Your psuedocode should be human readable.
+Your request should be human readable.
 Keep it very, very straightforward.
 Whenever you save a file, use ".txt" for the extension.
 Include SPECIFIC command names.
@@ -103,13 +103,13 @@ Include SPECIFIC command names.
 Respond in this format:
 
 ```yml
-reasoning: I should...
-psuedocode: |-
-    use google_search for "Bunnies"
-    for each website from the search results:
-        use browse_website on the website
-        use write_file with the file name "bunny{{index}}" with content "{{website content}}"
+idea: |-
+    Maybe I could...
+request: |-
+    Use google_search to find information on bunnies. Then, on the first three results, use browse_website, and save a file with the content.```
 ```
+
+Use natural language for your request.
 
 List of commands: {}
 
@@ -128,13 +128,13 @@ Ensure your response is in the exact YAML format as specified."#,
     let formatted_response = process_response(&response, LINE_WRAP);
 
     println!("{}", "EMPLOYEE".blue());
-    println!("{}", "The employee has made a decision and some psuedocode.".white());
+    println!("{}", "The employee has made a decision and some request.".white());
     println!();
     println!("{formatted_response}");
     println!();
 
     drop(context);
-    let (letter, details) = run_minion(program, &decision.psuedocode, new_prompt)?;
+    let (letter, details) = run_minion(program, &decision.request, new_prompt)?;
 
     let ProgramInfo { context, plugins, personality, disabled_commands, .. } = program;
     let mut context = context.lock().unwrap();

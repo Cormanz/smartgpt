@@ -4,9 +4,15 @@ use colored::Colorize;
 use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
 use serde::{Deserialize, Serialize, __private::de};
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}, create_findings_prompt}};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}, create_findings_prompt, run_command}};
 
 use super::{super::try_parse, MinionResponse};
+
+#[derive(Serialize, Deserialize)]
+pub struct MinionUpdate {
+    #[serde(rename = "command name")] command: String,
+    args: Option<Vec<ScriptValue>>
+}
 
 pub fn run_continuous_minion(
     program: &mut ProgramInfo, task: &str, new_prompt: bool
@@ -27,16 +33,22 @@ r#"
 Run one command at a time to complete your task:
 {}
 
-This is psuedocode. You will need to run this one command at a time.
 When running a command, reply in this format exactly:
 
-command_name(STRING, NUMBER...)
+progress towards task: So far, I have...
+remaining work to complete task: I still must... / I am done.
+reasoning: As...
+idea: I should...
+command name: Command Name
+args:
+- A
+- B
 
 Escape all quotes inside of your arguments.
-Your arguments cannot be other commands. Only primitive datatypes.
 
 Only respond with the command. NOTHING ELSE!
 Only use ONE COMMAND at a time.
+Always use a command.
 "#,
         task
     )));
@@ -44,6 +56,8 @@ Only use ONE COMMAND at a time.
     context.agents.minion.llm.end_prompt.push(Message::User(format!(
 "Reminder that these are your commands:
 {}
+    done() -> AssignmentIsDone
+        A special command. Use this command when you are done with your assignment.
 
 You can only use those commands.
 ONLY USE THOSE COMMANDS.
@@ -53,7 +67,7 @@ Please complete your task, one command at a time.",
     )));
 
     context.agents.minion.llm.message_history.push(Message::User(format!(
-        r#"Please run your next command. If you are done, reply with "Done" exactly."#
+        r#"Please run your next command. If you are done, use the "done" command."#
     )));
         
     drop(context);
@@ -69,14 +83,10 @@ Please complete your task, one command at a time.",
             } = program;
             let mut context = context.lock().unwrap();
 
-            let script = context.agents.minion.llm.model.get_response_sync(
-                &context.agents.minion.llm.get_messages(),
-                Some(1000),
-                Some(0.3)
-            )?;
+            let (response, update) = try_parse::<MinionUpdate>(&context.agents.minion.llm, 3, Some(1000))?;
 
-            let processed_script = process_response(&script, LINE_WRAP);
-            messages.push(Message::Assistant(script.clone()));
+            let processed_script = process_response(&response, LINE_WRAP);
+            messages.push(Message::Assistant(response.clone()));
         
             println!("{}", "MINION".blue());
             println!("{}", format!("The minion has written a command.").white());
@@ -84,16 +94,17 @@ Please complete your task, one command at a time.",
             println!("{processed_script}");
             println!();
 
-            let lower = script.trim().to_ascii_lowercase();
-            if vec![ "done.", "done" ].contains(&lower.trim()) {
+            if update.command.to_ascii_lowercase().trim() == "done" {
                 is_done = true;
                 break;
             }
 
-            drop(context);
+            let command = plugins.iter()
+                .flat_map(|el| &el.commands)
+                .find(|el| el.name == update.command)
+                .ok_or(MinionError(format!("Cannot find command {}", update.command)));
 
-            let out = run_script(program, &script, &Lua::new());
-            let out = match out {
+            let command = match command {
                 Err(err) => {
                     println!("{}", "MINION".blue());
                     println!("{}", 
@@ -105,7 +116,36 @@ Please complete your task, one command at a time.",
                     println!();
                     continue;
                 },
-                Ok(out) => out
+                Ok(cmd) => cmd
+            };
+
+            let mut out = String::new();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let result = rt.block_on(async {
+                run_command(
+                    &mut out, 
+                    command.name.clone(), 
+                    command.box_clone(), 
+                    &mut context, 
+                    update.args.unwrap_or(vec![])
+                ).await
+            });
+
+            drop(context);
+
+            match result {
+                Err(err) => {
+                    println!("{}", "MINION".blue());
+                    println!("{}", 
+                        format!("The minion errored on attempt {}. Trying again.", i + 1)
+                            .white()
+                    );
+                    println!();
+                    println!("{err}");
+                    println!();
+                    continue;
+                },
+                Ok(_) => {}
             };
 
             let ProgramInfo { 
@@ -118,7 +158,7 @@ Please complete your task, one command at a time.",
             context.agents.minion.llm.crop_to_tokens_remaining(1800);
 
             messages.push(Message::User(format!(
-                r#"Please run your next command. If you are done, reply with "DONE""#
+                r#"Please run your next command. If you are done, use the "done" command."#
             )));
 
             context.agents.minion.llm.message_history.extend(messages.clone());
