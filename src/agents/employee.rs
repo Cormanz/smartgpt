@@ -98,10 +98,12 @@ Info on Psuedocode:
 Your psuedocode should be human readable.
 Keep it very, very straightforward.
 Whenever you save a file, use ".txt" for the extension.
+Include SPECIFIC command names.
 
 Respond in this format:
 
 ```yml
+reasoning: I should...
 psuedocode: |-
     use google_search for "Bunnies"
     for each website from the search results:
@@ -109,10 +111,14 @@ psuedocode: |-
         use write_file with the file name "bunny{{index}}" with content "{{website content}}"
 ```
 
+List of commands: {}
+
 All fields must be specified exactly as shown above.
 If you do not want to put a specific field, put the field, but set its value to `null`.
 
-Ensure your response is in the exact YAML format as specified."#);  
+Ensure your response is in the exact YAML format as specified."#,
+        plugins.iter().flat_map(|el| &el.commands).map(|el| el.name.clone()).collect::<Vec<_>>().join(", ")
+    );  
 
     context.agents.employee.llm.prompt.push(Message::User(prompt));
 
@@ -182,6 +188,14 @@ OBSERVATIONS
     println!();
     println!("{formatted_response}");
     println!();
+
+    drop(context);
+
+    for observation in &new_observations {
+        let mut context = program.context.lock().unwrap();
+        let AgentInfo { llm, observations, .. } = &mut context.agents.employee;
+        observations.store_memory_sync(llm, &observation)?;
+    }
 
     Ok(EmployeeResponse {
         memory_query: query_decision.memory_query.clone(),

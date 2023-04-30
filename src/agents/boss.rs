@@ -221,13 +221,13 @@ pub fn run_boss(
             memory_query.clone()
         )?;
 
-        if let Some(observations) = decision.observations.clone() {
+        /*if let Some(observations) = decision.observations.clone() {
             for observation in observations {
                 let mut context = program.context.lock().unwrap();
                 let AgentInfo { llm, observations, .. } = &mut context.agents.boss;
                 observations.store_memory_sync(llm, &observation)?;
             }
-        }
+        }*/
 
         if let Some(report) = decision.info.report {
             return Ok(report);
@@ -242,6 +242,12 @@ pub fn run_boss(
                 program, &request, new_prompt, 
                 previous_employee_response.map(|el| el.memory_query)
             )?;
+
+            for observation in &employee_response.observations {
+                let mut context = program.context.lock().unwrap();
+                let AgentInfo { llm, observations, .. } = &mut context.agents.boss;
+                observations.store_memory_sync(llm, &observation)?;
+            }
 
             previous_request = Some(request);
             previous_employee_response = Some(employee_response);

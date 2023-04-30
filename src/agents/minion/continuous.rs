@@ -1,4 +1,4 @@
-use std::{error::Error, sync::{Arc, Mutex}, fmt::Display};
+use std::{error::Error, sync::{Arc, Mutex}, fmt::Display, ascii::AsciiExt};
 
 use colored::Colorize;
 use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
@@ -24,75 +24,109 @@ pub fn run_continuous_minion(
 
     context.agents.minion.llm.prompt.push(Message::System(format!(
 r#"
-Run one command at a time to complete this task:
+Run one command at a time to complete your task:
 {}
-
-Use the exact commands mentioned in the task.
-ONLY USE THOSE COMMANDS.
-Do not use any other commands.
 
 This is psuedocode. You will need to run this one command at a time.
 When running a command, reply in this format exactly:
 
-command_name(ARG1, ARG2...)
+command_name(STRING, NUMBER...)
 
 Escape all quotes inside of your arguments.
+Your arguments cannot be other commands. Only primitive datatypes.
+
 Only respond with the command. NOTHING ELSE!
 Only use ONE COMMAND at a time.
-
-If you are done, reply with "DONE"
 "#,
         task
     )));
 
-    context.agents.minion.llm.end_prompt.push(Message::System(format!(
-"Use these commands and ONLY these commands:
-{}",
+    context.agents.minion.llm.end_prompt.push(Message::User(format!(
+"Reminder that these are your commands:
+{}
+
+You can only use those commands.
+ONLY USE THOSE COMMANDS.
+
+Please complete your task, one command at a time.",
         cmds
     )));
 
+    context.agents.minion.llm.message_history.push(Message::User(format!(
+        r#"Please run your next command. If you are done, reply with "Done" exactly."#
+    )));
+        
     drop(context);
 
     loop {        
-        let ProgramInfo { 
-            context, ..
-        } = program;
-        let mut context = context.lock().unwrap();
+        let mut is_done = false;
 
-        println!("{:#?}", context.agents.minion.llm.get_messages());
+        for i in 0..3 {
+            let mut messages: Vec<Message> = vec![];
 
-        let script = context.agents.minion.llm.model.get_response_sync(
-            &context.agents.minion.llm.get_messages(),
-            Some(300),
-            Some(0.3)
-        )?;
+            let ProgramInfo { 
+                context, ..
+            } = program;
+            let mut context = context.lock().unwrap();
 
-        let processed_script = process_response(&script, LINE_WRAP);
-        context.agents.minion.llm.message_history.push(Message::Assistant(script.clone()));
-    
-        println!("{}", "MINION".blue());
-        println!("{}", format!("The minion has written a command.").white());
-        println!();
-        println!("{processed_script}");
-        println!();
+            let script = context.agents.minion.llm.model.get_response_sync(
+                &context.agents.minion.llm.get_messages(),
+                Some(1000),
+                Some(0.3)
+            )?;
 
-        if script == "DONE" {
-            break;
+            let processed_script = process_response(&script, LINE_WRAP);
+            messages.push(Message::Assistant(script.clone()));
+        
+            println!("{}", "MINION".blue());
+            println!("{}", format!("The minion has written a command.").white());
+            println!();
+            println!("{processed_script}");
+            println!();
+
+            let lower = script.trim().to_ascii_lowercase();
+            if vec![ "done.", "done" ].contains(&lower.trim()) {
+                is_done = true;
+                break;
+            }
+
+            drop(context);
+
+            let out = run_script(program, &script, &Lua::new());
+            let out = match out {
+                Err(err) => {
+                    println!("{}", "MINION".blue());
+                    println!("{}", 
+                        format!("The minion errored on attempt {}. Trying again.", i + 1)
+                            .white()
+                    );
+                    println!();
+                    println!("{err}");
+                    println!();
+                    continue;
+                },
+                Ok(out) => out
+            };
+
+            let ProgramInfo { 
+                context, ..
+            } = program;
+            let mut context = context.lock().unwrap();
+
+            messages.push(Message::User(out));  
+
+            context.agents.minion.llm.crop_to_tokens_remaining(1800);
+
+            messages.push(Message::User(format!(
+                r#"Please run your next command. If you are done, reply with "DONE""#
+            )));
+
+            context.agents.minion.llm.message_history.extend(messages.clone());
         }
 
-        drop(context);
-
-        let out = run_script(program, &script, &Lua::new())?;
-
-        let ProgramInfo { 
-            context, ..
-        } = program;
-        let mut context = context.lock().unwrap();
-
-        context.agents.minion.llm.message_history.push(Message::User(out));  
-        context.agents.minion.llm.message_history.push(Message::User("Please run another command.".to_string()));  
-
-        context.agents.minion.llm.crop_to_tokens_remaining(1000);
+        if is_done {
+            break;
+        }
     }
 
     let ProgramInfo { 

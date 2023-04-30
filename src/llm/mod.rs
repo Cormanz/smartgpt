@@ -136,4 +136,12 @@ impl LLM {
         messages.extend(self.end_prompt.clone());
         messages
     }
+
+    pub fn get_messages_additional(&self, additional_history: impl IntoIterator<Item = Message>) -> Vec<Message> {
+        let mut messages = self.prompt.clone();
+        messages.extend(self.message_history.clone());
+        messages.extend(additional_history);
+        messages.extend(self.end_prompt.clone());
+        messages
+    }
 }
