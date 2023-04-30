@@ -1,5 +1,5 @@
 use std::{error::Error, fmt::{Display, Debug}};
-use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_employee, Choice, try_parse}, Weights, AgentInfo};
+use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_employee, Choice, try_parse_yaml, try_parse_json}, Weights, AgentInfo};
 use colored::Colorize;
 use serde::{Serialize, Deserialize, __private::de};
 
@@ -145,7 +145,7 @@ OBSERVATIONS
     )));
 
     context.agents.boss.llm.message_history.push(Message::User(format!(
-"Info on Employee Requests:
+r#"Info on Employee Requests:
 Do not give your employee specific commands, simply phrase your request with natural language.
 Provide a very narrow and specific request for the Employee.
 Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
@@ -163,32 +163,29 @@ They are only two short sentences.
 
 Respond in this format:
 
-```yml
-observations: # can be `null`
-- A
-- B
-
-new loose plan: |- # can be `null`
-    I should...
-
-memory query: |-
-    I am working on...
-
-action info:
-    reasoning: Reasoning
-    report to manager: |- # can be `null`
-        Dear Manager...
-    new employee request: |- # can be `null`
-        Can you try...
+```json
+{{
+    "observations": [
+      "A",
+      "B"
+    ],
+    "new loose plan": "I should...",
+    "memory query": "I am working on...",
+    "action info": {{
+      "reasoning": "Reasoning",
+      "report to manager": "Dear Manager...",
+      "new employee request": "Can you try..."
+    }}
+}}
 ```
 
 All fields must be specified exactly as shown above.
-Keep all of the requests in the EXACT SAME YAML FORMAT, INCLUDING TYPES.
+Keep all of the requests in the EXACT SAME JSON FORMAT, INCLUDING TYPES.
 If you do not want to put a specific field, put the field, but set its value to `null`.
 
-Ensure your response is in the exact YAML format as specified.")));
+Ensure your response is in the exact JSON format as specified."#)));
 
-    let (response, decision) = try_parse::<BossDecision>(&context.agents.boss.llm, 2, Some(1000))?;
+    let (response, decision) = try_parse_json::<BossDecision>(&context.agents.boss.llm, 2, Some(1000))?;
     context.agents.boss.llm.message_history.push(Message::Assistant(response.clone()));
 
     let formatted_response = process_response(&response, LINE_WRAP);

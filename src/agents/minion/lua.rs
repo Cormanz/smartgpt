@@ -4,9 +4,9 @@ use colored::Colorize;
 use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
 use serde::{Deserialize, Serialize, __private::de};
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}, create_findings_prompt}};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}, create_findings_prompt, try_parse_json}};
 
-use super::{super::try_parse, MinionResponse};
+use super::{super::try_parse_yaml, MinionResponse};
 
 pub fn run_lua_minion(
     program: &mut ProgramInfo, task: &str, new_prompt: bool
@@ -135,7 +135,7 @@ Ensure your response is exactly valid LUA and can be parsed as valid LUA."
             context.agents.minion.llm.message_history.push(Message::System(create_findings_prompt()));
             context.agents.minion.llm.message_history.push(Message::User(result));
             
-            let (response, decision) = try_parse::<MinionResponse>(&context.agents.employee.llm, 3, Some(1000))?;
+            let (response, decision) = try_parse_json::<MinionResponse>(&context.agents.employee.llm, 3, Some(1000))?;
             context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
 
             let letter = create_letter(&decision.findings, &decision.changes);

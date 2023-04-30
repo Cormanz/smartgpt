@@ -58,11 +58,19 @@ pub fn test() {
     let yaml: Result<Value, _> = serde_yaml::from_str(&e);
 }
 
-pub fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<(String, T), Box<dyn Error>> {
+pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<(String, T), Box<dyn Error>> {
+    try_parse_base(llm, tries, max_tokens, "yml", |str| serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
+}
+
+pub fn try_parse_json<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<(String, T), Box<dyn Error>> {
+    try_parse_base(llm, tries, max_tokens, "json", |str| serde_json::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
+}
+
+pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, lang: &str, parse: impl Fn(&str) -> Result<T, Box<dyn Error>>) -> Result<(String, T), Box<dyn Error>> {
     for i in 0..tries {
         let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
         let processed_response = response.trim();
-        let processed_response = processed_response.strip_prefix("```yml")
+        let processed_response = processed_response.strip_prefix(&format!("```{lang}"))
             .unwrap_or(&response)
             .to_string();
         let processed_response = processed_response.strip_prefix("```")
@@ -71,11 +79,16 @@ pub fn try_parse<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Opti
         let processed_response = processed_response.strip_suffix("```")
             .unwrap_or(&processed_response)
             .to_string();
-        if let Ok(yaml) = serde_yaml::from_str(&processed_response) {
-            return Ok((response, yaml));
+        match parse(&processed_response) {
+            Ok(yaml) => {
+                return Ok((response, yaml));
+            },
+            Err(err) => {
+                println!("{}", format!("Try {} failed.", i + 1).red());
+                println!("{response}");
+                println!("{err}");
+            }
         }
-        println!("{}", format!("Try {} failed.", i + 1).red());
-        println!("{response}");
     }
     
     Err(Box::new(CannotParseError))

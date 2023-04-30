@@ -8,17 +8,20 @@ Keep your findings list very brief.
 
 Respond in this exact format:
 
-```yml
-findings:
-- A
-- B
-
-changes:
-- A
-- B
+```json
+{{
+    "findings": [
+      "A",
+      "B"
+    ],
+    "changes": [
+      "A",
+      "B"
+    ]
+}}
 ```
 
-Ensure your response is fully valid YAML."#)
+Ensure your response is fully valid JSON."#)
 }
 
 fn to_points(points: &[String]) -> String {

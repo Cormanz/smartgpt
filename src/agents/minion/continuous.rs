@@ -4,9 +4,9 @@ use colored::Colorize;
 use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
 use serde::{Deserialize, Serialize, __private::de};
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}, create_findings_prompt, run_command}};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, agents::{process_response, LINE_WRAP, minion::{create_letter, MinionError, run_script}, create_findings_prompt, run_command, try_parse_json}};
 
-use super::{super::try_parse, MinionResponse};
+use super::{super::try_parse_yaml, MinionResponse};
 
 #[derive(Serialize, Deserialize)]
 pub struct MinionUpdate {
@@ -35,14 +35,21 @@ Run one command at a time to complete your task:
 
 When running a command, reply in this format exactly:
 
-progress towards task: So far, I have...
-remaining work to complete task: I still must... / I am done.
-reasoning: As...
-idea: I should...
-command name: Command Name
-args:
-- A
-- B
+```json
+{{
+    "progress towards task": "None. / So far...",
+    "remaining work to complete task": "I still must... / I am done.",
+    "reasoning": "As...",
+    "idea": "I should...",
+    "command name": "Command Name",
+    "args": [
+      "A",
+      "B"
+    ]
+}}
+```
+
+Use this exact format exactly, including all fields.
 
 Escape all quotes inside of your arguments.
 
@@ -62,12 +69,13 @@ Always use a command.
 You can only use those commands.
 ONLY USE THOSE COMMANDS.
 
-Please complete your task, one command at a time.",
+Please complete your task succintly, one command at a time.
+Ensure your response is valid JSON.",
         cmds
     )));
 
     context.agents.minion.llm.message_history.push(Message::User(format!(
-        r#"Please run your next command. If you are done, use the "done" command."#
+        r#"Please run your next command. If you are done, set your 'command name' to "done""#
     )));
         
     drop(context);
@@ -83,7 +91,7 @@ Please complete your task, one command at a time.",
             } = program;
             let mut context = context.lock().unwrap();
 
-            let (response, update) = try_parse::<MinionUpdate>(&context.agents.minion.llm, 3, Some(1000))?;
+            let (response, update) = try_parse_json::<MinionUpdate>(&context.agents.minion.llm, 3, Some(1000))?;
 
             let processed_script = process_response(&response, LINE_WRAP);
             messages.push(Message::Assistant(response.clone()));
@@ -176,7 +184,7 @@ Please complete your task, one command at a time.",
 
     context.agents.minion.llm.message_history.push(Message::User(create_findings_prompt()));
     
-    let (response, decision) = try_parse::<MinionResponse>(&context.agents.minion.llm, 3, Some(1000))?;
+    let (response, decision) = try_parse_json::<MinionResponse>(&context.agents.minion.llm, 3, Some(1000))?;
     context.agents.minion.llm.message_history.push(Message::Assistant(response.clone()));
 
     let letter = create_letter(&decision.findings, &decision.changes);

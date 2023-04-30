@@ -1,11 +1,11 @@
 use std::error::Error;
-use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse, CannotParseError, minion::run_minion}, AgentInfo, Weights};
+use crate::{prompt::generate_commands, ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, Choice, try_parse_yaml, CannotParseError, minion::run_minion, try_parse_json}, AgentInfo, Weights};
 use colored::Colorize;
 use serde::{Deserialize, Serialize, __private::de};
 
 #[derive(Serialize, Deserialize)]
 pub struct EmployeeDecision {
-    pub request: String,
+    #[serde(rename = "natural language request for minion")] pub request: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,8 +46,8 @@ You have access to these commands:
 
 Your goal is take advantage of access to commands to provide answers to questions.
 
-You have a minion named The Minion, who will turn your request into a script and run it.
-You will turn the Boss's request into simple, tiny, natural language request.
+You have a minion named The Minion, who can run commands for you.
+You will create one simple, tiny natural language request for your Minion.
 Keep your request idea very short and concise. Do not make something complicated.",
         personality, commands
     )));
@@ -102,33 +102,33 @@ Include SPECIFIC command names.
 
 Respond in this format:
 
-```yml
-idea: |-
-    Maybe I could...
-request: |-
-    Use google_search to find information on bunnies. Then, on the first three results, use browse_website, and save a file with the content.```
+``json
+{{
+    "idea": "Maybe I could...",
+    "natural language request for minion": "Use google_search to find information on bunnies. Then, on the first three results, use browse_website, and save a file with the content.```"
+}}
 ```
 
-Use natural language for your request.
+Use this exact JSON format exactly. Do not change a thing.
 
 List of commands: {}
 
 All fields must be specified exactly as shown above.
 If you do not want to put a specific field, put the field, but set its value to `null`.
 
-Ensure your response is in the exact YAML format as specified."#,
+Ensure your response is in the exact JSON format as specified."#,
         plugins.iter().flat_map(|el| &el.commands).map(|el| el.name.clone()).collect::<Vec<_>>().join(", ")
     );  
 
     context.agents.employee.llm.prompt.push(Message::User(prompt));
 
-    let (response, decision) = try_parse::<EmployeeDecision>(&context.agents.employee.llm, 3, Some(1000))?;
+    let (response, decision) = try_parse_json::<EmployeeDecision>(&context.agents.employee.llm, 3, Some(1000))?;
     context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
 
     let formatted_response = process_response(&response, LINE_WRAP);
 
     println!("{}", "EMPLOYEE".blue());
-    println!("{}", "The employee has made a decision and some request.".white());
+    println!("{}", "The employee has made a decision and a request.".white());
     println!();
     println!("{formatted_response}");
     println!();
@@ -161,9 +161,11 @@ Create a new memory query. It should discuss all currently relevant topics, and 
 Example of a memory query: "Spongebob Show, Squidward, Crusty Crab"
 
 Reply in this format:
-```yml
-reasoning: [...]
-memory query: [...]
+```json
+{{
+    "reasoning": "...",
+    "memory query": "..."
+}}
 ```"#
     )));
 
@@ -178,7 +180,7 @@ OBSERVATIONS
 {observation_text}"
     )));
 
-    let (response, query_decision) = try_parse::<EmployeeQueryDecision>(&context.agents.employee.llm, 3, Some(1000))?;
+    let (response, query_decision) = try_parse_json::<EmployeeQueryDecision>(&context.agents.employee.llm, 3, Some(1000))?;
     context.agents.employee.llm.message_history.push(Message::Assistant(response.clone()));
 
     let formatted_response = process_response(&response, LINE_WRAP);

@@ -13,8 +13,8 @@ pub async fn run_command(
     let args: Vec<Expression> = args.iter().map(|el| el.clone().into()).collect();
     let expr = Expression::FunctionCall(name.clone(), args);
 
-    let json = serde_yaml::to_string(&result)
-        .map_err(|_| GPTRunError("Could not parse ScriptValue as YAML.".to_string()))?;
+    let json = serde_json::to_string(&result)
+        .map_err(|_| GPTRunError("Could not parse ScriptValue as JSON.".to_string()))?;
 
     let text = format!("Command {:?} was successful and returned:\n{}", expr, json);
     out.push_str(&text);

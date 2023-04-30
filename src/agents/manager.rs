@@ -50,7 +50,7 @@ Try to minimize the amount of tasks needed. Aim for five or less tasks.",
         let mut context = context.lock().unwrap();
 
         context.agents.manager.llm.message_history.push(Message::User(
-            "Assign The Boss the first step in one paragraph".to_string()
+            "Assign The Boss the first step in one paragraph. Only tell The Boss about that step. Do not tell The Boss about your task.".to_string()
         ));
         
         let response = context.agents.manager.llm.model.get_response_sync(&context.agents.manager.llm.get_messages(), None, None)?;
@@ -80,10 +80,14 @@ B. The Boss was incomplete in finishing this step. I shall provide feedback.
 
 Provide your response in this format:
 
-reasoning: Reasoning
-choice: Choice # "A", "B" exactly.
+```json
+{{
+    "reasoning": "Reasoning",
+    "choice": "Choice"
+}}
+```
 
-Do not surround your response in code-blocks. Respond with pure YAML only.
+Do not surround your response in code-blocks. Respond with pure JSON only.
 "#,
                     boss_response
             );
@@ -101,7 +105,7 @@ Do not surround your response in code-blocks. Respond with pure YAML only.
         println!("{manager_response}");
         println!();
         
-        let response: Choice = serde_yaml::from_str(&response)?;
+        let response: Choice = serde_json::from_str(&response)?;
     
         if response.choice == "A" {
             context.agents.manager.llm.message_history.push(Message::User(format!(
