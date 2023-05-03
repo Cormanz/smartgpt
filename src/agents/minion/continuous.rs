@@ -37,7 +37,7 @@ When running a command, reply in this format exactly:
 
 ```json
 {{
-    "progress towards task": null / "So far...",
+    "long term thoughts": "So far...",
     "remaining work to complete task": "I still must... / I am done.",
     "reasoning": "As...",
     "idea": "I should...",
@@ -75,7 +75,7 @@ Ensure your response is valid JSON.",
     )));
 
     context.agents.minion.llm.message_history.push(Message::User(format!(
-        r#"Please run your next command. If you are done, set your 'command name' to "done""#
+        r#"Please run your next command. If you are done, keep your 'command name' field as 'done'"#
     )));
         
     drop(context);

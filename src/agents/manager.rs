@@ -26,7 +26,7 @@ Your task is {:?}
 You have no other information other than to complete this task.
 
 Break it down into a list of short, high-level, one-sentence tasks.
-Try to minimize the amount of tasks needed. Aim for five or less tasks.",
+Try to minimize the amount of tasks needed. Aim for two to five tasks.",
         task
     )));
 

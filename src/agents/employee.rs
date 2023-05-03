@@ -102,7 +102,7 @@ Include SPECIFIC command names.
 
 Respond in this format:
 
-``json
+```json
 {{
     "idea": "Maybe I could...",
     "natural language request for minion": "Use google_search to find information on bunnies. Then, on the first three results, use browse_website, and save a file with the content.```"
