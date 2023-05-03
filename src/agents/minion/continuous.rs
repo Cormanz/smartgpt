@@ -37,7 +37,7 @@ When running a command, reply in this format exactly:
 
 ```json
 {{
-    "progress towards task": "None. / So far...",
+    "progress towards task": null / "So far...",
     "remaining work to complete task": "I still must... / I am done.",
     "reasoning": "As...",
     "idea": "I should...",

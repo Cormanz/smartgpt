@@ -89,7 +89,23 @@ Make sure to tell the Employee to save important information to files.
 
 You must only act through your employee.
 You cannot do any work on your own.
-Your only goal is to handle loose planning and going from one step to the next through your Employee."
+Your only goal is to handle loose planning and going from one step to the next through your Employee.
+
+Info on Employee Requests:
+Do not give your employee specific commands, simply phrase your request with natural language.
+Provide a very narrow and specific request for the Employee.
+Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
+Make sure to tell the Employee to save important information to files!
+
+Info on Memory Queries:
+Your memory query is a very short summary of every topic in your mind that is relevant at this moment.
+Think of it like a search query.
+Your memory query will be used to help you find relevant observations and reflections.
+
+Info on Loose Plans:
+Loose plans are very unstructured, loose, high-level plans. 
+They are rapidly updated whenever necessary.
+They are only two short sentences."
         , personality, commands
     )));
     
@@ -128,7 +144,7 @@ Your only goal is to handle loose planning and going from one step to the next t
     let previous_loose_plan = previous_loose_plan.unwrap_or("None".to_string());
     let previous_request = previous_request.unwrap_or("None".to_string());
 
-    context.agents.boss.llm.message_history.push(Message::System(format!(
+    context.agents.boss.llm.message_history.push(Message::User(format!(
 "TASK
 {task:?}
 
@@ -145,23 +161,7 @@ OBSERVATIONS
     )));
 
     context.agents.boss.llm.message_history.push(Message::User(format!(
-r#"Info on Employee Requests:
-Do not give your employee specific commands, simply phrase your request with natural language.
-Provide a very narrow and specific request for the Employee.
-Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
-Make sure to tell the Employee to save important information to files!
-
-Info on Memory Queries:
-Your memory query is a very short summary of every topic in your mind that is relevant at this moment.
-Think of it like a search query.
-Your memory query will be used to help you find relevant observations and reflections.
-
-Info on Loose Plans:
-Loose plans are very unstructured, loose, high-level plans. 
-They are rapidly updated whenever necessary.
-They are only two short sentences.
-
-Respond in this format:
+r#"Respond in this format:
 
 ```json
 {{
@@ -173,6 +173,7 @@ Respond in this format:
     "memory query": "I am working on...",
     "action info": {{
       "reasoning": "Reasoning",
+      "decision": "report to manager" / "new employee request",
       "report to manager": "Dear Manager...",
       "new employee request": "Can you try..."
     }}
@@ -180,7 +181,7 @@ Respond in this format:
 ```
 
 All fields must be specified exactly as shown above.
-Keep all of the requests in the EXACT SAME JSON FORMAT, INCLUDING TYPES.
+Keep all of the requests in the EXACT SAME JSON FORMAT.
 If you do not want to put a specific field, put the field, but set its value to `null`.
 
 Ensure your response is in the exact JSON format as specified."#)));
