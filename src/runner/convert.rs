@@ -118,8 +118,11 @@ impl ToLua<'_> for ScriptValue {
             ScriptValue::Bool(bool) => Ok(bool.to_lua(lua)?),
             ScriptValue::List(list) => {
                 let array = lua.create_table()?;
-                for (i, value) in list.into_iter().enumerate() {
-                    array.set(i + 1, value.to_lua(lua)?)?;
+                for (i, value) in list.iter().enumerate() {
+                    array.set(i + 1, value.clone().to_lua(lua)?)?;
+                }
+                for (i, value) in list.iter().enumerate() {
+                    array.set((i + 1).to_string(), value.clone().to_lua(lua)?)?;
                 }
                 Ok(LuaValue::Table(array))
             }

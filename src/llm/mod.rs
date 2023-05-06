@@ -24,11 +24,24 @@ impl Display for ModelLoadError {
 
 impl Error for ModelLoadError {}
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Message {
     User(String),
     Assistant(String),
     System(String)
+}
+
+impl Display for Message {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let header = match self {
+            Self::Assistant(_) => "ASSISTANT",
+            Self::System(_) => "SYSTEM",
+            Self::User(_) => "USER"
+        };
+
+        write!(f, "-- {header} --\n")?;
+        write!(f, "{}", self.content())
+    }
 }
 
 impl Message {
@@ -92,12 +105,14 @@ pub trait LLMModel : Send + Sync {
 
 #[async_trait]
 pub trait LLMProvider {
-    fn get_name(&self) -> String;
+    fn is_enabled(&self) -> bool;
+    fn get_name(&self) -> &str;
     fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>>;
 }
 
 pub struct LLM {
     pub prompt: Vec<Message>,
+    pub end_prompt: Vec<Message>,
     pub message_history: Vec<Message>,
     pub model: Box<dyn LLMModel>
 }
@@ -107,7 +122,7 @@ impl LLM {
         self.model.get_tokens_remaining(messages)
     }
 
-    pub fn crop_to_tokens(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
+    pub fn crop_to_tokens_remaining(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
         while token_buffer > self.get_tokens_remaining(&self.get_messages())? {
             self.message_history.remove(0);
         }
@@ -118,6 +133,15 @@ impl LLM {
     pub fn get_messages(&self) -> Vec<Message> {
         let mut messages = self.prompt.clone();
         messages.extend(self.message_history.clone());
+        messages.extend(self.end_prompt.clone());
+        messages
+    }
+
+    pub fn get_messages_additional(&self, additional_history: impl IntoIterator<Item = Message>) -> Vec<Message> {
+        let mut messages = self.prompt.clone();
+        messages.extend(self.message_history.clone());
+        messages.extend(additional_history);
+        messages.extend(self.end_prompt.clone());
         messages
     }
 }

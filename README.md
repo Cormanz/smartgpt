@@ -64,6 +64,54 @@ cargo run --release --features faiss
 
 And that's it. You're done.
 
+# Memory Management
+
+_(This is a concept for how memory management will work. As this is the `dev` branc,h this is currently being implemented.)_
+
+Our memory management system is inspired by two sources primarily.
+- [Generative Agents: Interactive Simulacra of Human Behavior
+](https://arxiv.org/pdf/2304.03442.pdf)
+- [Memory with VectorDBs in AutoGPT](https://github.com/Significant-Gravitas/Auto-GPT)
+
+First, we initialize a **VectorDB** with two collections: `observations` and `reflections`.
+
+A **memory** is either an observation or a reflection.
+
+## Observations
+
+An observation is a **short sentence** that reflects one important **fact** or important **mental note**.
+
+After SmartGPT completes one task, it will save a few observations to the VectorDB.
+
+## Reflections
+
+A reflection is a **longer sentence** that reflects one **deeper insight** to remember.
+
+Reflections are created after a sufficient amount of tasks and the AI decides that making a reflection is a good idea.
+
+Reflections can be created over any memory: an observation or another reflection.
+
+## Queries
+
+SmartGPT will be asked to create a detailed query of all relevant topics. That query will be used for the VectorDBs.
+
+Any memory has three properties.
+- **Recency**: How long ago was the memory made?
+- **Recall**: How long ago was the memory last recalled?
+- **Relevance**: How close is the memory to the search query?
+
+First, observations. An initial query of **200** observations from the query will be made. Then, observations will be filtered down to **50** observations based on all three properties: recency, recall, and relevance.
+
+Then, reflections. An initial query of **50** reflections will be made. Then, the reflections will be indexed only on recall and relevance _(reflections are much deeper and more long-term, so recency won't be a factor.)_ This will bring it down to **15** reflections.
+
+## Pruning
+
+Memories have a recall score that goes from **1** to **0**.
+
+Each task that is run where the memory is ignored, that score is decayed by a certain decay factor _(this decay factor is much lower for reflections.)_
+
+Memories that are close enough to **0** will be pruned.
+
 # Plugin System
 
 The key benefit of SmartGPT is its plugin system, so I'll go depth into it here. A `Plugin` is defined as follows:

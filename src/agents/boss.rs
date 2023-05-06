@@ -1,14 +1,44 @@
-use std::{error::Error, fmt::Display};
-use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_employee, Choice, try_parse}};
+use std::{error::Error, fmt::{Display, Debug}};
+use crate::{ProgramInfo, AgentLLMs, Agents, Message, agents::{process_response, LINE_WRAP, run_employee, Choice, try_parse_yaml, try_parse_json}, Weights, AgentInfo};
 use colored::Colorize;
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, __private::de};
+
+use super::EmployeeResponse;
+
+#[derive(Clone)]
+pub enum Task {
+    Task(String),
+    Feedback(String, String)
+}
+
+impl Debug for Task {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Task::Task(task) => {
+                write!(f, "Your task is: {task:?}")
+            },
+            Task::Feedback(task, feedback) => {
+                write!(f, "Your initial task was: {task:?}\nYou must refine your task results with this feedback: {feedback:?}")
+            }
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct BossDecisionInfo {
+    #[serde(rename = "new employee request")] pub new_request: Option<String>,
+    #[serde(rename = "report to manager")] pub report: Option<String>
+}
+
 
 #[derive(Serialize, Deserialize)]
 pub struct BossDecision {
-    pub choice: String,
-    pub report: Option<String>,
-    #[serde(rename = "new request")] pub new_request: Option<String>
+    #[serde(rename = "action info")] pub info: BossDecisionInfo,
+    #[serde(rename = "new loose plan")] pub loose_plan: Option<String>,
+    #[serde(rename = "memory query")] pub memory_query: String,
+    pub observations: Option<Vec<String>>
 }
+
 
 #[derive(Debug, Clone)]
 pub struct NoManagerRequestError;
@@ -21,19 +51,25 @@ impl Display for NoManagerRequestError {
 
 impl Error for NoManagerRequestError {}
 
-pub fn run_boss(
-    program: &mut ProgramInfo, task: &str, first_prompt: bool, feedback: bool,
-) -> Result<String, Box<dyn Error>> {
+pub fn run_boss_once(
+    program: &mut ProgramInfo, task: Task, 
+    previous_loose_plan: Option<String>,
+    previous_request: Option<String>,
+    previous_employee_response: Option<EmployeeResponse>,
+    memory_query: Option<String>
+) -> Result<BossDecision, Box<dyn Error>> {
     let ProgramInfo { context, plugins, personality, .. } = program;
     let mut context = context.lock().unwrap();
 
-    if first_prompt {
-        let commands = plugins.iter()
-            .flat_map(|el| el.commands.iter())
-            .map(|el| el.name.clone())
-            .collect::<Vec<_>>()
-            .join(", ");
-        context.agents.boss.prompt.push(Message::System(format!(
+    context.agents.boss.llm.prompt.clear();
+    context.agents.boss.llm.message_history.clear();
+
+    let commands = plugins.iter()
+        .flat_map(|el| el.commands.iter())
+        .map(|el| el.name.clone())
+        .collect::<Vec<_>>()
+        .join(", ");
+    context.agents.boss.llm.prompt.push(Message::System(format!(
 "You are The Boss, a large language model.
 
 Personality: {}
@@ -42,158 +78,179 @@ You have been assigned one task by The Manager, a large language model. You will
 Your goal is to quickly and efficiently get the task done without refining it too much. You just want to get a sort of quicker, shallower answer.
 Complete your task as quickly as possible.
 
-You have access to one employee named The Employee, a large language model, who can run commands for you.
-These commands are: {}
+You have access to one employee named The Employee, a large language model, who will help you run tasks.
+Your Employee has access to the following resources: {}
 
 Your Employee is not meant to do detailed work, but simply to help you find information.
 
 Only ask The Employee for one thing at a time.
 Keep your Employee requests very simple.
+Make sure to tell the Employee to save important information to files.
+
+You must only act through your employee.
+You cannot do any work on your own.
+Your only goal is to handle loose planning and going from one step to the next through your Employee.
+
+Info on Employee Requests:
+Do not give your employee specific commands, simply phrase your request with natural language.
+Provide a very narrow and specific request for the Employee.
+Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
 Make sure to tell the Employee to save important information to files!
 
-You cannot do anywork on your own. You will do all of your work through your Employee."
-            , personality, commands
-        )));
-    }
+Info on Memory Queries:
+Your memory query is a very short summary of every topic in your mind that is relevant at this moment.
+Think of it like a search query.
+Your memory query will be used to help you find relevant observations and reflections.
 
-    if feedback {
-        context.agents.boss.message_history.push(Message::User(format!(
-"Hello, The Boss.
-
-The Manager has provided you with the following feedback: {:?}
-
-Continue to work with The Employee to complete your task based on this feedback.",
-                task
-            )));
-    } else if first_prompt {
-        context.agents.boss.message_history.push(Message::User(format!(
-"Hello, The Boss.
-
-Your task is {:?}
-Don't worry if you're unable to complete this task as an LLM, you will complete this task through your Employee.
-
-Write a 2-sentence loose plan of how you will achieve this.",
-                task
-            )));
+Info on Loose Plans:
+Loose plans are very unstructured, loose, high-level plans. 
+They are rapidly updated whenever necessary.
+They are only two short sentences."
+        , personality, commands
+    )));
+    
+    let AgentInfo { llm, observations, .. } = &mut context.agents.boss;
+    let observations = observations.get_memories_sync(
+        &llm,
+        memory_query.as_deref().unwrap_or("None"),
+        200,
+        Weights {
+            recall: 1.,
+            recency: 1.,
+            relevance: 1.
+        },
+        50
+    )?;
+    let observation_text = if observations.len() == 0 {
+        "None found.".to_string()
     } else {
-        context.agents.employee.prompt.clear();
-        context.agents.employee.message_history.clear();
+        observations.iter().enumerate()
+            .map(|(ind, observation)| format!("{ind}. {}", observation.content))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
 
-        context.agents.boss.message_history.push(Message::User(format!(
-            "Hello, The Boss.
+    drop(llm);
+    drop(observations);
 
-Your task is {:?}
-
-Keep in mind that you have been given a new Employee. You may need to brief them on any details they need to complete their tasks.
-
-Write a 2-sentence loose plan of how you will achieve this.",
-                task
-        )));
-    }
-
-    context.agents.boss.crop_to_tokens(1000)?;
-
-    let response = context.agents.boss.model.get_response_sync(&context.agents.boss.get_messages(), None, None)?;
-    context.agents.boss.message_history.push(Message::Assistant(response.clone()));
-
-    let task_list = process_response(&response, LINE_WRAP);
+    let formatted_observations = process_response(&observation_text, LINE_WRAP);
 
     println!("{}", "BOSS".blue());
-    println!("{}", "The boss has created a loose plan to achieve its goal.".white());
+    println!("{}", "The boss has found its observations.".white());
     println!();
-    println!("{task_list}");
+    println!("{formatted_observations}");
     println!();
 
-    let mut new_prompt = true;
-    let mut new_request: Option<String> = None;
+    let previous_loose_plan = previous_loose_plan.unwrap_or("None".to_string());
+    let previous_request = previous_request.unwrap_or("None".to_string());
 
-    drop(context);
+    context.agents.boss.llm.message_history.push(Message::User(format!(
+"TASK
+{task:?}
+
+PREVIOUS LOOSE PLAN
+{previous_loose_plan}
+
+PREVIOUS REQUEST
+    Request: {previous_request}
+    Response from Empoloyee: {}
+
+OBSERVATIONS
+{observation_text}",
+        previous_employee_response.map(|resp| resp.report).as_deref().unwrap_or("None")
+    )));
+
+    context.agents.boss.llm.message_history.push(Message::User(format!(
+r#"Respond in this format:
+
+```json
+{{
+    "observations": [
+      "A",
+      "B"
+    ],
+    "new loose plan": "I should...",
+    "memory query": "I am working on...",
+    "action info": {{
+      "reasoning": "Reasoning",
+      "decision": "report to manager" / "new employee request",
+      "report to manager": "Dear Manager...",
+      "new employee request": "Can you try..."
+    }}
+}}
+```
+
+All fields must be specified exactly as shown above.
+Keep all of the requests in the EXACT SAME JSON FORMAT.
+If you do not want to put a specific field, put the field, but set its value to `null`.
+
+Ensure your response is in the exact JSON format as specified."#)));
+
+    let (response, decision) = try_parse_json::<BossDecision>(&context.agents.boss.llm, 2, Some(1000))?;
+    context.agents.boss.llm.message_history.push(Message::Assistant(response.clone()));
+
+    let formatted_response = process_response(&response, LINE_WRAP);
+
+    println!("{}", "BOSS".blue());
+    println!("{}", "The boss has made a decision.".white());
+    println!();
+    println!("{formatted_response}");
+    println!();
+
+    Ok(decision)
+}
+
+pub fn run_boss(
+    program: &mut ProgramInfo, task: Task
+) -> Result<String, Box<dyn Error>> {
+    let mut previous_loose_plan: Option<String> = None;
+    let mut previous_request: Option<String> = None;
+    let mut previous_employee_response: Option<EmployeeResponse> = None;
+    let mut memory_query: Option<String> = None;
+    let mut new_prompt = match task {
+        Task::Feedback(_, _) => false,
+        Task::Task(_) => true
+    };
     loop {
-        let response = match &new_request {
-            Some(request) => request.clone(),
-            None => {
-                let ProgramInfo { context, plugins, personality, .. } = program;
-                let mut context = context.lock().unwrap();
-        
-                context.agents.boss.message_history.push(Message::User(
-                    "Create one simple request for The Employee. 
-        Do not give your employee specific commands, simply phrase your request with natural language.
-        Provide a very narrow and specific request for the Employee.
-        Remember: Your Employee is not meant to do detailed work, but simply to help you find information.
-        Make sure to tell the Employee to save important information to files!"
-                        .to_string()
-                ));
-        
-                let response = context.agents.boss.model.get_response_sync(&context.agents.boss.get_messages(), None, None)?;
-                let boss_request = process_response(&response, LINE_WRAP);
+        let decision = run_boss_once(
+            program, task.clone(),
+            previous_loose_plan.clone(),
+            previous_request.clone(), previous_employee_response.clone(),
+            memory_query.clone()
+        )?;
 
-                println!("{}", "BOSS".blue());
-                println!("{}", "The boss has assigned a task to its employee, The Employee.".white());
-                println!();
-                println!("{boss_request}");
-                println!();
-
-                drop(context);
-
-                response
+        /*if let Some(observations) = decision.observations.clone() {
+            for observation in observations {
+                let mut context = program.context.lock().unwrap();
+                let AgentInfo { llm, observations, .. } = &mut context.agents.boss;
+                observations.store_memory_sync(llm, &observation)?;
             }
-        };
+        }*/
 
-        let employee_response = run_employee(program, &response, new_prompt)?;
-        new_prompt = false;
-
-        let output = format!(
-r#"The Employee has responded:
-{}
-
-You now have three choices.
-A. I have finished the task The Manager provided me with. I shall report back with the information to The Manager.
-B. I have not finished the task. The Employee's response provided me with plenty of new information, so I will update my loose plan.
-C. I have not finished the task. I shall proceed onto asking the Employee my next request.
-
-Provide your response in one of these formats depending on the choice:
-
-reasoning: Reasoning
-choice: A
-report: |-
-    Dear Manager...
-
-reasoning: Reasoning
-choice: B
-new loose plan: |-
-    First...
-new request: |-
-    Can you try...
-
-reasoning: Reasoning
-choice: C
-new request: |-
-    Can you try...
-
-Do not surround your response in code-blocks. Respond with pure YAML only. Ensure your response can be parsed by serde_yaml.
-"#,
-        employee_response
-);
-
-        let ProgramInfo { context, plugins, personality, .. } = program;
-        let mut context = context.lock().unwrap();
-
-        context.agents.boss.message_history.push(Message::User(output));
-        
-        let (response, decision): (_, BossDecision) = try_parse(&context.agents.boss, 3, Some(300))?;
-        context.agents.boss.message_history.push(Message::Assistant(response.clone()));
-        let response = process_response(&response, LINE_WRAP);
-
-        println!("{}", "BOSS".blue());
-        println!("{}", "The boss has made a decision on whether to keep going.".white());
-        println!();
-        println!("{response}");
-        println!();
-    
-        if decision.choice == "A" {
-            return Ok(decision.report.ok_or(NoManagerRequestError)?)
+        if let Some(report) = decision.info.report {
+            return Ok(report);
         }
 
-        new_request = decision.new_request;
+        if let Some(loose_plan) = decision.loose_plan {
+            previous_loose_plan = Some(loose_plan);
+        }
+
+        if let Some(request) = decision.info.new_request {
+            let employee_response = run_employee(
+                program, &request, new_prompt, 
+                previous_employee_response.map(|el| el.memory_query)
+            )?;
+
+            for observation in &employee_response.observations {
+                let mut context = program.context.lock().unwrap();
+                let AgentInfo { llm, observations, .. } = &mut context.agents.boss;
+                observations.store_memory_sync(llm, &observation)?;
+            }
+
+            previous_request = Some(request);
+            previous_employee_response = Some(employee_response);
+        }
+
+        memory_query = Some(decision.memory_query);
     }
 }

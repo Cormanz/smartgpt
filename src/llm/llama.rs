@@ -79,8 +79,12 @@ pub struct LlamaConfig {
 pub struct LlamaProvider;
 
 impl LLMProvider for LlamaProvider {
-    fn get_name(&self) -> String {
-        "llama".to_string()
+    fn is_enabled(&self) -> bool {
+        true
+    }
+
+    fn get_name(&self) -> &str {
+        "llama"
     }
 
     fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
