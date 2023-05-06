@@ -66,7 +66,7 @@ And that's it. You're done.
 
 # Memory Management
 
-_(This is a concept for how memory management will work. As this is the `dev` branc,h this is currently being implemented.)_
+As of now, only **observations** and **queries** are implemented.
 
 Our memory management system is inspired by two sources primarily.
 - [Generative Agents: Interactive Simulacra of Human Behavior
