@@ -5,7 +5,7 @@ use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as L
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::try_parse_json};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::try_parse_json, LLM};
 
 use super::{run::run_command, ParsedResponse};
 
@@ -37,7 +37,7 @@ pub struct EmployeeThought {
     action: EmployeeAction
 }
 
-pub fn run_employee(program: &mut ProgramInfo, task: &str) -> Result<(), Box<dyn Error>> {
+pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut LLM) -> T) -> Result<T, Box<dyn Error>> {
     let ProgramInfo { 
         context, plugins, personality,
         disabled_commands, .. 
@@ -116,8 +116,6 @@ Keep every field in that exact order.
 
         if command_name == "finish" {
             break;
-
-            return Ok(());
         }
 
         let command = plugins.iter()
@@ -144,5 +142,5 @@ Keep every field in that exact order.
         )));
     }
 
-    Ok(())
+    Ok(end(&mut context.agents.employee.llm))
 }

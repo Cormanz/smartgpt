@@ -42,3 +42,10 @@ pub fn ask_for_findings(llm: &mut LLM) -> Result<FindingsReport, Box<dyn Error>>
 
     Ok(try_parse_json::<FindingsReport>(llm, 2, Some(300))?.data)
 }
+
+pub fn to_points(points: &[String]) -> String {
+    points.iter()                
+        .map(|el| format!("- {el}"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}

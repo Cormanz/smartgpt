@@ -15,7 +15,7 @@ mod findings;
 mod manager;
 
 pub fn run_auto(program: &mut ProgramInfo) -> Result<(), Box<dyn Error>> {
-    run_manager(program, 0, &program.task.clone())
+    run_manager(program, 0, &program.task.clone(), |_| {})
 }
 
 #[derive(Debug, Clone)]
