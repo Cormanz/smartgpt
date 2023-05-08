@@ -2,6 +2,8 @@
 
 SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 and GPT-4) with the ability to complete complex tasks without user input by breaking them down into smaller problems, and collecting information using the internet and other external sources.
 
+If you're interested in keeping up with the progress of SmartGPT or contacting me, you can contact me on the [Octagon discord](https://discord.gg/rMnTeZWTBb), a hub for discussion and news of large language models and adjacent technologies.
+
 [Demonstration Video](https://www.youtube.com/watch?v=3EpmZ0-6sR0)
 
 ## Why?
@@ -66,7 +68,7 @@ And that's it. You're done.
 
 # Memory Management
 
-_(This is a concept for how memory management will work. As this is the `dev` branc,h this is currently being implemented.)_
+As of now, only **observations** and **queries** are implemented.
 
 Our memory management system is inspired by two sources primarily.
 - [Generative Agents: Interactive Simulacra of Human Behavior
