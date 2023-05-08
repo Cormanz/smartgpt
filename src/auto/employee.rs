@@ -2,7 +2,7 @@ use std::{error::Error, sync::{Arc, Mutex}, fmt::Display, ascii::AsciiExt};
 
 use colored::Colorize;
 use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as LuaError};
-use serde::{Deserialize, Serialize, __private::de};
+use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
 use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::try_parse_json};
@@ -37,9 +37,9 @@ pub struct EmployeeThought {
     action: EmployeeAction
 }
 
-pub fn run_employee(program: &mut ProgramInfo) -> Result<(), Box<dyn Error>> {
+pub fn run_employee(program: &mut ProgramInfo, task: &str) -> Result<(), Box<dyn Error>> {
     let ProgramInfo { 
-        context, plugins, personality, task,
+        context, plugins, personality,
         disabled_commands, .. 
     } = program;
     let mut context = context.lock().unwrap();
@@ -90,7 +90,7 @@ Reply in this format:
 }}
 ```
 
-Reply in that format exactly.
+Reply in that exact JSON format exactly.
 Make sure every field is filled in detail.
 Keep every field in that exact order.
 "#)));
@@ -115,7 +115,7 @@ Keep every field in that exact order.
         let args = thoughts.action.args.clone();
 
         if command_name == "finish" {
-            println!("YAY!");
+            break;
 
             return Ok(());
         }

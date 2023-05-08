@@ -7,13 +7,15 @@ use colored::Colorize;
 
 use crate::{LLM, ProgramInfo};
 
-use self::employee::run_employee;
+use self::{employee::run_employee, manager::run_manager};
 
 mod employee;
 mod run;
+mod findings;
+mod manager;
 
 pub fn run_auto(program: &mut ProgramInfo) -> Result<(), Box<dyn Error>> {
-    run_employee(program)
+    run_manager(program, 0, &program.task.clone())
 }
 
 #[derive(Debug, Clone)]

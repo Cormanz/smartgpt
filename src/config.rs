@@ -39,6 +39,7 @@ pub struct AgentConfig {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentLLMs {
+    managers: Vec<AgentConfig>,
     employee: AgentConfig,
     fast: AgentConfig,
 }
@@ -143,6 +144,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         variables: HashMap::new(),
         plugin_data: crate::PluginStore(HashMap::new()),
         agents: Agents {
+            managers: config.agents.managers.iter().map(|el| create_agent(el.clone())).collect::<Result<_, _>>()?,
             employee: create_agent(config.agents.employee)?,
             fast: create_agent(config.agents.fast)?
         }

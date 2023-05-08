@@ -57,6 +57,7 @@ pub struct AgentInfo {
 
 pub struct Agents {
     pub employee: AgentInfo,
+    pub managers: Vec<AgentInfo>,
     pub fast: AgentInfo
 }
 
