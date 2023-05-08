@@ -15,7 +15,21 @@ mod findings;
 mod manager;
 
 pub fn run_auto(program: &mut ProgramInfo) -> Result<(), Box<dyn Error>> {
-    run_manager(program, 0, &program.task.clone(), |_| {})
+    let ProgramInfo { 
+        context, task, ..
+    } = program;
+    let mut context = context.lock().unwrap();
+
+    let task = task.clone();
+    let has_manager = context.agents.managers.len() >= 1;
+
+    drop(context);
+
+    if has_manager {
+        run_manager(program, 0, &task.clone(), |_| {})
+    } else {
+        run_employee(program, &task.clone(), |_| {})
+    }
 }
 
 #[derive(Debug, Clone)]

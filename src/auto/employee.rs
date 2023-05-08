@@ -23,7 +23,7 @@ impl Error for EmployeeError {}
 #[derive(Serialize, Deserialize)]
 pub struct EmployeeAction {
     pub command: String,
-    pub args: Vec<ScriptValue>
+    pub args: Option<Vec<ScriptValue>>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -112,7 +112,7 @@ Keep every field in that exact order.
         println!();
 
         let command_name = thoughts.action.command.clone();
-        let args = thoughts.action.args.clone();
+        let args = thoughts.action.args.clone().unwrap_or(vec![]);
 
         if command_name == "finish" {
             break;
