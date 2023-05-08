@@ -5,7 +5,7 @@ use serde_json::Value;
 mod faiss_memory;
 pub use faiss_memory::*;
 
-use crate::{agents::Agent, LLM};
+use crate::{LLM};
 
 #[derive(Debug, Clone)]
 pub struct MemorySystemLoadError(pub String);

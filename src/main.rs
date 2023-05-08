@@ -13,8 +13,8 @@ mod chunk;
 mod llm;
 mod config;
 mod runner;
-mod agents;
 mod memory;
+mod auto;
 
 pub use plugin::*;
 pub use prompt::*;
@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use serde_json::Value;
 
-use crate::agents::run_manager;
+use crate::auto::run_auto;
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
@@ -120,7 +120,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!();
 
-    run_manager(&mut program)?;
+    run_auto(&mut program)?;
 
     Ok(())
 }

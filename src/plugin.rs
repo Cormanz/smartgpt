@@ -56,10 +56,7 @@ pub struct AgentInfo {
 }
 
 pub struct Agents {
-    pub manager: AgentInfo,
-    pub boss: AgentInfo,
     pub employee: AgentInfo,
-    pub minion: AgentInfo,
     pub fast: AgentInfo
 }
 
