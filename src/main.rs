@@ -7,8 +7,8 @@ use async_openai::{
 };
 
 mod plugin;
-mod prompt;
 mod plugins;
+mod commands;
 mod chunk;
 mod llm;
 mod config;
@@ -17,8 +17,8 @@ mod memory;
 mod auto;
 
 pub use plugin::*;
-pub use prompt::*;
 pub use plugins::*;
+pub use commands::*;
 pub use chunk::*;
 pub use llm::*;
 pub use config::*;
@@ -62,7 +62,20 @@ impl Display for NoThoughtError {
 impl Error for NoThoughtError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = fs::read_to_string("config.yml")?;
+    let config = fs::read_to_string("config.yml");
+
+    let config = match config {
+        Ok(config) => config,
+        Err(_) => {
+            println!("{}", "Could not find 'config.yml'.".red());
+            println!("Generating new config.yml...");
+
+            fs::write("config.yml", DEFAULT_CONFIG)?;
+
+            fs::read_to_string("config.yml")?
+        }
+    };
+
     let mut program = load_config(&config)?;
 
     print!("\x1B[2J\x1B[1;1H");

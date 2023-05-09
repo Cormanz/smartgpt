@@ -1,9 +1,9 @@
-use std::{error::Error, fmt::Display, cmp::Reverse, cmp::Ordering::Equal};
+use std::{error::Error, fmt::Display, cmp::{Reverse, min}, cmp::Ordering::Equal};
 use async_trait::async_trait;
 use serde_json::Value;
 
-mod faiss_memory;
-pub use faiss_memory::*;
+mod local;
+pub use local::*;
 
 use crate::{LLM};
 
@@ -109,4 +109,13 @@ pub trait MemoryProvider {
     fn is_enabled(&self) -> bool;
     fn get_name(&self) -> String;
     fn create(&self, value: Value) -> Result<Box<dyn MemorySystem>, Box<dyn Error>>;
+}
+
+/// This is an implementation of Cosine Similarity.
+pub fn compare_embeddings(a: &Vec<f32>, b: &Vec<f32>) -> f32 {
+    let dot_product = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum::<f32>();
+    let norm_a = a.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
+    let norm_b = b.iter().map(|x| x.powi(2)).sum::<f32>().sqrt();
+    let min_length = min(a.len(), b.len()) as f32;
+    dot_product / (norm_a * norm_b * min_length)
 }

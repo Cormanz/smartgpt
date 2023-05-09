@@ -717,21 +717,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "faiss"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ed83a43b9c84394b72312aa961d24d34f418f7fb19105868a9ee1537a5851c3"
-dependencies = [
- "faiss-sys",
-]
-
-[[package]]
-name = "faiss-sys"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54c3ddf096a623ad11f807ff00725e9e243aa999187cb60f6ecaea83baa6a6e0"
-
-[[package]]
 name = "fancy-regex"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1354,24 +1339,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lua-src"
-version = "544.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "708ba3c844d5e9d38def4a09dd871c17c370f519b3c4b7261fbabe4a613a814c"
-dependencies = [
- "cc",
-]
-
-[[package]]
-name = "luajit-src"
-version = "210.4.5+resty2cf5186"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27b7992a40e602786272d84c6f2beca44a588ededcfd57b48ec6f82008a7cb97"
-dependencies = [
- "cc",
-]
-
-[[package]]
 name = "lz4_flex"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1484,25 +1451,6 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.45.0",
-]
-
-[[package]]
-name = "mlua"
-version = "0.8.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea8ce6788556a67d90567809c7de94dfef2ff1f47ff897aeee935bcfbcdf5735"
-dependencies = [
- "bstr 0.2.17",
- "cc",
- "futures-core",
- "futures-task",
- "futures-util",
- "lua-src",
- "luajit-src",
- "num-traits",
- "once_cell",
- "pkg-config",
- "rustc-hash",
 ]
 
 [[package]]
@@ -2352,9 +2300,7 @@ dependencies = [
  "async-recursion",
  "async-trait",
  "colored",
- "faiss",
  "llama-rs",
- "mlua",
  "num-traits",
  "rand",
  "regex",

@@ -1,11 +1,14 @@
-use std::{collections::HashMap, error::Error, fmt::Display, ascii::AsciiExt, process, sync::{Mutex, Arc}};
+use std::{collections::HashMap, error::Error, fmt::Display, process, sync::{Mutex, Arc}};
 
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use async_openai::Client as OpenAIClient;
 
-use crate::{CommandContext, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_faiss, MemorySystem};
+use crate::{CommandContext, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem};
+
+mod default;
+pub use default::*;
 
 #[derive(Debug, Clone)]
 pub struct NoLLMError;
@@ -104,7 +107,7 @@ pub fn create_llm_providers() -> Vec<Box<dyn LLMProvider>> {
 
 pub fn create_memory_providers() -> Vec<Box<dyn MemoryProvider>> {
     vec![
-        create_memory_faiss()
+        create_memory_local()
     ]
 }
 

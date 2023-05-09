@@ -28,6 +28,31 @@ SmartGPT is an **incredibly experimental** application. Our goal is to unlock ma
 
 However, SmartGPT is also housing some of the most innovative ideas and experiments in the AutoGPT space right now, and although most are unsuccessful, a few hit the dart-board and stick.
 
+## Quickstart
+
+Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+
+1. Clone the Repository.
+```
+git clone https://github.com/Cormanz/smartgpt.git
+```
+
+Alternatively, [create a Github Codespace](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=626190057) and run it there.
+
+2. Run it your first time.
+```
+cargo run --release
+```
+
+Then, it will auto-generate a `config.yml`.
+
+3. Fill in and optionally modify your `config.yml`, then run it again.
+```
+cargo run --release
+```
+
+And that's it. You're done.
+
 # How SmartGPT Works
 
 ## Autos
