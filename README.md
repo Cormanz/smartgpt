@@ -51,6 +51,8 @@ Then, it will auto-generate a `config.yml`.
 cargo run --release
 ```
 
+[Read more in the Installation section of the documentation.](https://corman.gitbook.io/smartgpt/installation)
+
 And that's it. You're done.
 
 # How SmartGPT Works
@@ -66,21 +68,31 @@ Assistants are highly experimental, so we recommend Runners.
 
 Autos have **agents**. An agent is an LLM that handles planning, reasoning, and task execution. The Auto starts with your **top manager**, and asks it to run the task. Then, that manager will delegate tasks all the way down to your **employee**, which will run the tasks.
 
+[Read more in the Autos section of the documentation.](https://corman.gitbook.io/smartgpt/autos/autos)
+
 ## Managers
 
 Managers are a type of agent that plan and reason. They'll be given a task, and plan out that task into subtasks. Then, one subtask at a time, they'll delegate it down to their employee (a lower-level manager, or the task-running employee.)
+
+[Read more in the Managers section of the documentation.](https://corman.gitbook.io/smartgpt/autos/agent-trees#managers)
 
 ## Employee
 
 Employees are the lowest agent in the hierarchy. They're given a task, and they execute it one command at a time. They're much like the core application of AutoGPT, but they have a much more compact thought-loop.
 
+[Read more in the Employees section of the documentation.](https://corman.gitbook.io/smartgpt/autos/agent-trees#employees)
+
 ## Memory
 
 Agents all have **memory**. After completing a task, the agent will save a list of all observations into long-term memory. Once it starts another task, it will pull all long-term memories related to the task (using a VectorDB for this.)
 
+[Read more in the Memory section of the documentation.](https://corman.gitbook.io/smartgpt/systems/memory)
+
 ## Plugin System
 
 Autos can use a set of **tools** such as `google_search`, `browse_url`, etc. You define these using plugins. Plugins define their own set of commands, and can have their own data.
+
+[Read more in the Memory section of the documentation.](https://corman.gitbook.io/smartgpt/systems/plugins)
 
 # License
 
