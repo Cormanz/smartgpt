@@ -2,7 +2,7 @@ use std::error::Error;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{LLM, Message};
+use crate::{LLM, Message, AgentInfo};
 
 use super::try_parse_json;
 
@@ -16,11 +16,11 @@ pub fn create_runner_prompt() -> String {
 r#"Now, please write a response back to the user. Tell the user, in detail, everything you did, the outcome, and any permanent changes that were carried out."#)
 }
 
-pub fn ask_for_responses(llm: &mut LLM) -> Result<String, Box<dyn Error>> {
-    llm.message_history.push(Message::User(create_runner_prompt()));
+pub fn ask_for_responses(agent: &mut AgentInfo) -> Result<String, Box<dyn Error>> {
+    agent.llm.message_history.push(Message::User(create_runner_prompt()));
 
-    let response = llm.model.get_response_sync(
-        &llm.get_messages(), Some(300), None
+    let response = agent.llm.model.get_response_sync(
+        &agent.llm.get_messages(), Some(300), None
     )?;
 
     Ok(response)
@@ -42,12 +42,12 @@ Reply in this JSON format:
 Provide a response as an assistant to the initial request in the above format."#)
 }
 
-pub fn ask_for_assistant_response(llm: &mut LLM, context: &str, request: &str) -> Result<String, Box<dyn Error>> {
-    llm.message_history.push(Message::User(create_assistant_prompt(context, request)));
+pub fn ask_for_assistant_response(agent: &mut AgentInfo, context: &str, request: &str) -> Result<String, Box<dyn Error>> {
+    agent.llm.message_history.push(Message::User(create_assistant_prompt(context, request)));
 
-    let response = try_parse_json::<Response>(llm, 2, Some(200))?.data.response;
+    let response = try_parse_json::<Response>(&agent.llm, 2, Some(200))?.data.response;
 
-    llm.message_history.pop();
+    agent.llm.message_history.pop();
 
     Ok(response)
 }

@@ -14,6 +14,7 @@ use self::responses::{ask_for_responses, ask_for_assistant_response};
 mod agents;
 mod run;
 mod responses;
+mod classify;
 
 pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
@@ -58,6 +59,7 @@ And this new message from the user:
 {request}
 
 Reply with a modified version of the user's message, so that it can be understood without the context.
+Include citations in [Brackets]
 If it does not require any context, just say DONE"
 ))
     ];

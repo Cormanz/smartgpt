@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{LLM, Message, auto::try_parse_json};
+use crate::{LLM, Message, auto::try_parse_json, AgentInfo};
 
 use serde::{Deserialize, Serialize};
 
@@ -36,10 +36,15 @@ Respond in this exact format:
 Ensure your response is fully valid JSON."#)
 }
 
-pub fn ask_for_findings(llm: &mut LLM) -> Result<FindingsReport, Box<dyn Error>> {
-    llm.message_history.push(Message::User(create_findings_prompt()));
+pub fn ask_for_findings(agent: &mut AgentInfo) -> Result<FindingsReport, Box<dyn Error>> {
+    agent.llm.message_history.push(Message::User(create_findings_prompt()));
 
-    Ok(try_parse_json::<FindingsReport>(llm, 2, Some(300))?.data)
+    let report = try_parse_json::<FindingsReport>(&agent.llm, 2, Some(300))?.data;
+    for finding in report.findings.iter().chain(report.changes.iter()) {
+        agent.observations.store_memory_sync(&agent.llm, finding)?;
+    }
+
+    Ok(report)
 }
 
 pub fn to_points(points: &[String]) -> String {

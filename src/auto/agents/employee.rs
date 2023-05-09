@@ -5,7 +5,7 @@ use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as L
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::to_points}, LLM};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::to_points}, LLM, AgentInfo, Weights};
 
 #[derive(Debug, Clone)]
 pub struct EmployeeError(pub String);
@@ -35,7 +35,7 @@ pub struct EmployeeThought {
     action: EmployeeAction
 }
 
-pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut LLM) -> T) -> Result<T, Box<dyn Error>> {
+pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut AgentInfo) -> T) -> Result<T, Box<dyn Error>> {
     let ProgramInfo { 
         context, plugins, personality,
         disabled_commands, .. 
@@ -56,6 +56,27 @@ Your goal is to complete that task, one command at a time.
 Do it as fast as possible.
 "#
     )));
+
+    let AgentInfo { observations, llm, .. } = &mut context.agents.employee;
+    let observations = observations.get_memories_sync(
+        &llm,
+        task,
+        200,
+        Weights {
+            recall: 1.,
+            recency: 1.,
+            relevance: 1.
+        },
+        50
+    )?;
+    let observations = if observations.len() == 0 {
+        None
+    } else {
+        Some(observations.iter().enumerate()
+            .map(|(ind, observation)| format!("{ind}. {}", observation.content))
+            .collect::<Vec<_>>()
+            .join("\n"))
+    };
     
     context.agents.employee.llm.prompt.push(Message::User(format!(
 "You have access to these resources as commands:
@@ -67,6 +88,14 @@ You may only use these commands.
 These are the only commands available. Do not use any other commands.",
         cmds
     )));
+
+    if let Some(observations) = observations {
+        context.agents.employee.llm.prompt.push(Message::User(format!(
+"Here are your long-term memories:
+
+{observations}"
+        )))
+    }
 
     context.agents.employee.llm.prompt.push(Message::User(format!(r#"
 Your task is: {task}
@@ -157,5 +186,5 @@ These are your commands: {}",
         )));
     }
 
-    Ok(end(&mut context.agents.employee.llm))
+    Ok(end(&mut context.agents.employee))
 }

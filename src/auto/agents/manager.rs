@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, agents::{findings::{ask_for_findings, to_points}, employee::run_employee}}, LLM};
+use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, agents::{findings::{ask_for_findings, to_points}, employee::run_employee}}, LLM, AgentInfo, Weights};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ pub struct ManagerThought {
     action: ManagerAction
 }
 
-pub fn run_manager<T>(program: &mut ProgramInfo, layer: usize, task: &str, end: impl Fn(&mut LLM) -> T) -> Result<T, Box<dyn Error>> {
+pub fn run_manager<T>(program: &mut ProgramInfo, layer: usize, task: &str, end: impl Fn(&mut AgentInfo) -> T) -> Result<T, Box<dyn Error>> {
     let ProgramInfo { 
         context, personality, ..
     } = program;
@@ -40,6 +40,35 @@ Your goal is to delegate those subtasks, one at a time.
 Do it as fast as possible.
 "#
     )));
+
+    let AgentInfo { observations, llm, .. } = &mut context.agents.managers[layer];
+    let observations = observations.get_memories_sync(
+        &llm,
+        task,
+        200,
+        Weights {
+            recall: 1.,
+            recency: 1.,
+            relevance: 1.
+        },
+        50
+    )?;
+    let observations = if observations.len() == 0 {
+        None
+    } else {
+        Some(observations.iter().enumerate()
+            .map(|(ind, observation)| format!("{ind}. {}", observation.content))
+            .collect::<Vec<_>>()
+            .join("\n"))
+    };
+
+    if let Some(observations) = observations {
+        context.agents.managers[layer].llm.prompt.push(Message::User(format!(
+"Here are your long-term memories:
+
+{observations}"
+        )))
+    }
 
     context.agents.managers[layer].llm.prompt.push(Message::User(format!(
         r#"
@@ -142,5 +171,5 @@ Changes carried out:
     } = program;
     let mut context = context.lock().unwrap();
 
-    return Ok(end(&mut context.agents.managers[layer].llm));
+    return Ok(end(&mut context.agents.managers[layer]));
 }
