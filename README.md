@@ -4,15 +4,17 @@ SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 
 
 If you're interested in keeping up with the progress of SmartGPT or contacting me, you can contact me on the [Octagon discord](https://discord.gg/rMnTeZWTBb), a hub for discussion and news of large language models and adjacent technologies.
 
-[Demonstration Video](https://www.youtube.com/watch?v=3EpmZ0-6sR0)
+https://github.com/Cormanz/smartgpt/assets/32941017/53bdcf83-4b2e-4798-b3f2-1a233b43c0e1
 
 ## Why?
 
 There are many existing solutions to allowing LLMs to perform more complex tasks, such as [Auto-GPT](https://github.com/Torantulino/Auto-GPT) and [BabyAGI](https://github.com/yoheinakajima/babyagi). So, why SmartGPT?
 
-- **Modularity**: SmartGPT is designed in such a way that you can easily add, remove, or toggle any part of it. Commands are abstracted into plugins, and LLMs are abstracted into their own interfaces that they have to implement.
+- **Modularity**: SmartGPT is completely modular. It's designed in such a way that everything is completely separate, and you can easily compose Autos to your own needs. Other tools like AutoGPT have plugin systems, but SmartGPT was built from the ground up for plugin support.
 
-- **Reasoning**: As far as I know, SmartGPT excels in reasoning tasks by far compared to other solutions, because it divides your task into multiple agents (Manager, Boss, Employee, Minion), and gives each agent a different task involving reasoning. This compartmentalization allows for much more impressive feats of reasoning. It also allows for you to potentially save on plenty of token-costs as context is split up between many of the agents, and you can use smaller models with the experimental LLAMA support potentially.
+- **Flexibility**: SmartGPT has one `config.yml` file that is automatically generated (TODO) holding all of the information for your use-case. In that config, you can easily change anything: which LLM you're using, which commands you want to allow, even how your Auto is structured.
+
+- **Planning and Reasoning**: SmartGPT is incredibly experimental, and we have been constantly trying out new prompts, systems, and etc. Currently, we have a system where you can define a setup of **managers** and an **employee** to allow for recursive task planning and reasoning, providing high quality performance.
 
 - **Configuration**: SmartGPT is incredibly easy to configure simply by using a simple `config.yml` file both for users, and for developers (who can parse their configurations using [Serde](https://serde.rs/))
 
@@ -20,30 +22,15 @@ There are two main shortcomings, however.
 
 - **Ecosystem**: [AutoGPT](https://github.com/Torantulino/Auto-GPT) is a much more polished and refined tool, with many more commands and integrations with memory systems, as well as being much more well-tested than SmartGPT.
 
-- **Memory Management**: As of right now, there is no memory system in SmartGPT. We're currently working to create a memory management system that would be much more flexible and work with multiple agents. However, even then, we'd still lack the ecosystem of memory management systems with different databases like Pinecone. This is an area that needs work.
+- **Memory Management**: As of right now, there is a very simple yet limited memory system in SmartGPT. Our plan is to refine this by adding first-class support for VectorDBs, and add in self-reflections.
 
 ## Disclaimer
 
-SmartGPT isn't a ready-for-use application, it's an experiment by me, mostly for my own pleasure. It can also use a significant amount of tokens, and may run requests you didn't authorize, so it's not recommended to leave it running on its own for long periods of time. You are also held liable to the constraints of any services used with SmartGPT, i.e. OpenAI's GPT3, Wolfram Alpha, etc, if toggled and used.
+SmartGPT is an **incredibly experimental** application. Our goal is to unlock maximum potential out of LLMs, and stability is sacrificed for this. Backwards compatibility is a no-no word here. Because of this, we also can't guarantee that using SmartGPT will be as intuitive as it could.
 
-It should also be noted that SmartGPT is a **very experimental** application that prioritizes rapid development over stability. Our goal is to pioneer the prompts and features of this, throwing ideas into the pool and seeing what floats, without any sort of priority on polishing, at least for now.
+However, SmartGPT is also housing some of the most innovative ideas and experiments in the AutoGPT space right now, and although most are unsuccessful, a few hit the dart-board and stick.
 
-## Agents
-
-SmartGPT has the following agents:
-
-- **Manager**: Splits the main task into a few high-level subtasks, passing those to The Boss one by one.
-- **Boss**: Takes its task and creates a loose plan, then splitting it into subtasks one by one, giving each subtask to the Employee.
-- **Employee**: Takes its task, writes psuedo-code, passes it to The Minion.
-- **Minion**: Refines the psuedo-code into a LUA script, runs it.
-
-## LUA integration
-
-SmartGPT is integrated with [LUA](https://www.lua.org/) to allow for simple scripts to be run. This is a massive improvement over existing frameworks, because they have to run each command one by one. However, this could still be unstable and may need work.
-
-## How To Use
-
-Note: Installing only seems to work on Linux due to some of the crate dependencies. Consider using [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install) for Windows, or run SmartGPT in Github Codespaces.
+## Quickstart
 
 Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 
@@ -52,128 +39,62 @@ Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/
 git clone https://github.com/Cormanz/smartgpt.git
 ```
 
-2. Install Faiss
+Alternatively, [create a Github Codespace](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=626190057) and run it there.
 
-Install FAISS as explained [here](https://github.com/Enet4/faiss-rs#installing-as-a-dependency)
-
-Note: We're working on a memory system that doesn't require FAISS, but for now, it's needed.
-
-3. Run the Repository.
+2. Run it your first time.
 ```
 cargo run --release
-cargo run --release --features faiss
 ```
+
+Then, it will auto-generate a `config.yml`.
+
+3. Fill in and optionally modify your `config.yml`, then run it again.
+```
+cargo run --release
+```
+
+[Read more in the Installation section of the documentation.](https://corman.gitbook.io/smartgpt/installation)
 
 And that's it. You're done.
 
-# Memory Management
+# How SmartGPT Works
 
-As of now, only **observations** and **queries** are implemented.
+## Autos
 
-Our memory management system is inspired by two sources primarily.
-- [Generative Agents: Interactive Simulacra of Human Behavior
-](https://arxiv.org/pdf/2304.03442.pdf)
-- [Memory with VectorDBs in AutoGPT](https://github.com/Significant-Gravitas/Auto-GPT)
+**Auto**s are the building blocks of SmartGPT. There are two types of Autos.
 
-First, we initialize a **VectorDB** with two collections: `observations` and `reflections`.
+- **Runner**: A runner is given a single task, and is asked to complete it.
+- **Assistants**: An Assistant Auto can be conversed with, and will give you responses back, in context of the conversation.
 
-A **memory** is either an observation or a reflection.
+Assistants are highly experimental, so we recommend Runners.
 
-## Observations
+Autos have **agents**. An agent is an LLM that handles planning, reasoning, and task execution. The Auto starts with your **top manager**, and asks it to run the task. Then, that manager will delegate tasks all the way down to your **employee**, which will run the tasks.
 
-An observation is a **short sentence** that reflects one important **fact** or important **mental note**.
+[Read more in the Autos section of the documentation.](https://corman.gitbook.io/smartgpt/autos/autos)
 
-After SmartGPT completes one task, it will save a few observations to the VectorDB.
+## Managers
 
-## Reflections
+Managers are a type of agent that plan and reason. They'll be given a task, and plan out that task into subtasks. Then, one subtask at a time, they'll delegate it down to their employee (a lower-level manager, or the task-running employee.)
 
-A reflection is a **longer sentence** that reflects one **deeper insight** to remember.
+[Read more in the Managers section of the documentation.](https://corman.gitbook.io/smartgpt/autos/agent-trees#managers)
 
-Reflections are created after a sufficient amount of tasks and the AI decides that making a reflection is a good idea.
+## Employee
 
-Reflections can be created over any memory: an observation or another reflection.
+Employees are the lowest agent in the hierarchy. They're given a task, and they execute it one command at a time. They're much like the core application of AutoGPT, but they have a much more compact thought-loop.
 
-## Queries
+[Read more in the Employees section of the documentation.](https://corman.gitbook.io/smartgpt/autos/agent-trees#employees)
 
-SmartGPT will be asked to create a detailed query of all relevant topics. That query will be used for the VectorDBs.
+## Memory
 
-Any memory has three properties.
-- **Recency**: How long ago was the memory made?
-- **Recall**: How long ago was the memory last recalled?
-- **Relevance**: How close is the memory to the search query?
+Agents all have **memory**. After completing a task, the agent will save a list of all observations into long-term memory. Once it starts another task, it will pull all long-term memories related to the task (using a VectorDB for this.)
 
-First, observations. An initial query of **200** observations from the query will be made. Then, observations will be filtered down to **50** observations based on all three properties: recency, recall, and relevance.
+[Read more in the Memory section of the documentation.](https://corman.gitbook.io/smartgpt/systems/memory)
 
-Then, reflections. An initial query of **50** reflections will be made. Then, the reflections will be indexed only on recall and relevance _(reflections are much deeper and more long-term, so recency won't be a factor.)_ This will bring it down to **15** reflections.
+## Plugin System
 
-## Pruning
+Autos can use a set of **tools** such as `google_search`, `browse_url`, etc. You define these using plugins. Plugins define their own set of commands, and can have their own data.
 
-Memories have a recall score that goes from **1** to **0**.
-
-Each task that is run where the memory is ignored, that score is decayed by a certain decay factor _(this decay factor is much lower for reflections.)_
-
-Memories that are close enough to **0** will be pruned.
-
-# Plugin System
-
-The key benefit of SmartGPT is its plugin system, so I'll go depth into it here. A `Plugin` is defined as follows:
-
-```rust
-pub struct Plugin {
-    pub name: String,
-    pub cycle: Box<dyn PluginCycle>,
-    pub dependencies: Vec<String>,
-    pub commands: Vec<Command>
-}
-```
-
-Plugins have a `name`, a set of `dependencies` for which plugins they require you also have, and a set of `commands` they register.
-
-A `Command` is defined as follows:
-
-```rust
-pub struct Command {
-    pub name: String,
-    pub purpose: String,
-    pub args: Vec<(String, String)>,
-    pub run: Box<dyn CommandImpl>
-}
-```
-
-Commands have a `name`, a `purpose`, and `args`. The latter two help describe how the function is used to the LLM. They also have a `run`, which is a dynamic trait that defines what happens when the command is used.
-
-```rust
-#[async_trait]
-pub trait CommandImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: HashMap<String, String>) -> Result<String, Box<dyn Error>>;
-}
-```
-
-`args` is provided as a `HashMap`. It's left as an exercise to the command-manager to parse those arguments, but usually, it's pretty easy using Rust's `?` operator.
-
-Back to plugins, plugins also have a `cycle` dynamic trait, for a `PluginCycle`.
-
-```rust
-#[async_trait]
-pub trait PluginCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>>;
-
-    async fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>>;
-}
-```
-
-`create_context` defines whether or not the function will put extra text at the beginning of the prompt, and if so, what. This is mainly used to remind the LLM of what files it has, and what memories its pulled.
-
-`create_data` defines the long-term data that the plugin stores. Because of how Rust works, it's very tricky to convert the `PluginData` trait back into any one of its members, like `MemoryData`. Instead, you call invocations on `PluginData`, and parse out a response. Here's an example:
-
-```rust
-    invoke::<bool>(chatgpt_info, "push", ChatGPTMessage {
-        role: ChatGPTRole::User,
-        content: query.to_string()
-    }).await?;
-```
-
-We take in our plugin data of `chatgpt_info`, tell it to `push` a new message, and it will return a `bool`. It's not the prettiest syntax, but decoupling plugin data from the rest of SmartGPT was one of the goals of the product, so this compromise was necessary (unless there's a better way to do this in Rust.)
+[Read more in the Plugin System section of the documentation.](https://corman.gitbook.io/smartgpt/systems/plugins)
 
 # License
 

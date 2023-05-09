@@ -1,11 +1,14 @@
-use std::{collections::HashMap, error::Error, fmt::Display, ascii::AsciiExt, process, sync::{Mutex, Arc}};
+use std::{collections::HashMap, error::Error, fmt::Display, process, sync::{Mutex, Arc}};
 
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 use async_openai::Client as OpenAIClient;
 
-use crate::{CommandContext, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_faiss, MemorySystem};
+use crate::{CommandContext, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem};
+
+mod default;
+pub use default::*;
 
 #[derive(Debug, Clone)]
 pub struct NoLLMError;
@@ -39,19 +42,17 @@ pub struct AgentConfig {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentLLMs {
-    manager: AgentConfig,
-    boss: AgentConfig,
+    managers: Vec<AgentConfig>,
     employee: AgentConfig,
-    minion: AgentConfig,
     fast: AgentConfig,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    pub name: String,
-    pub role: String,
-    pub task: String,
+    #[serde(rename = "type")]
+    pub auto_type: AutoType,
+    pub personality: String,
     pub agents: AgentLLMs,
     pub plugins: HashMap<String, Value>,
     #[serde(rename = "disabled commands")] pub disabled_commands: Vec<String>
@@ -66,10 +67,18 @@ pub struct Llm {
     pub openai_key: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AutoType {
+    #[serde(rename = "runner")] Runner {
+        task: String
+    },
+    #[serde(rename = "assistant")] Assistant
+}
+
 pub struct ProgramInfo {
-    pub name: String,
     pub personality: String,
-    pub task: String,
+    pub auto_type: AutoType,
     pub plugins: Vec<Plugin>,
     pub context: Arc<Mutex<CommandContext>>,
     pub disabled_commands: Vec<String>
@@ -98,7 +107,7 @@ pub fn create_llm_providers() -> Vec<Box<dyn LLMProvider>> {
 
 pub fn create_memory_providers() -> Vec<Box<dyn MemoryProvider>> {
     vec![
-        create_memory_faiss()
+        create_memory_local()
     ]
 }
 
@@ -141,15 +150,13 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     let config: Config = serde_yaml::from_str(config)?;
 
     let mut context = CommandContext {
-        task: config.task.clone(),
+        auto_type: config.auto_type.clone(),
         command_out: vec![],
         variables: HashMap::new(),
         plugin_data: crate::PluginStore(HashMap::new()),
         agents: Agents {
-            manager: create_agent(config.agents.manager)?,
-            boss: create_agent(config.agents.boss)?,
+            managers: config.agents.managers.iter().map(|el| create_agent(el.clone())).collect::<Result<_, _>>()?,
             employee: create_agent(config.agents.employee)?,
-            minion: create_agent(config.agents.minion)?,
             fast: create_agent(config.agents.fast)?
         }
     };
@@ -180,9 +187,8 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     }
 
     Ok(ProgramInfo {
-        name: config.name,
-        personality: config.role,
-        task: config.task.clone(),
+        personality: config.personality,
+        auto_type: config.auto_type.clone(),
         plugins: used_plugins,
         context: Arc::new(Mutex::new(context)),
         disabled_commands: config.disabled_commands

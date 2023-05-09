@@ -1,4 +1,4 @@
-use std::{error::Error, time::Duration, fmt::Display, mem::take, collections::HashMap, process, fs};
+use std::{error::Error, time::Duration, fmt::Display, mem::take, collections::HashMap, process, fs, io};
 
 use colored::Colorize;
 use reqwest::{self, Client, header::{USER_AGENT, HeaderMap}};
@@ -7,18 +7,18 @@ use async_openai::{
 };
 
 mod plugin;
-mod prompt;
 mod plugins;
+mod commands;
 mod chunk;
 mod llm;
 mod config;
 mod runner;
-mod agents;
 mod memory;
+mod auto;
 
 pub use plugin::*;
-pub use prompt::*;
 pub use plugins::*;
+pub use commands::*;
 pub use chunk::*;
 pub use llm::*;
 pub use config::*;
@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use serde_json::Value;
 
-use crate::agents::run_manager;
+use crate::auto::{run_task_auto, run_assistant_auto};
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
@@ -62,13 +62,25 @@ impl Display for NoThoughtError {
 impl Error for NoThoughtError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = fs::read_to_string("config.yml")?;
+    let config = fs::read_to_string("config.yml");
+
+    let config = match config {
+        Ok(config) => config,
+        Err(_) => {
+            println!("{}", "Could not find 'config.yml'.".red());
+            println!("Generating new config.yml...");
+
+            fs::write("config.yml", DEFAULT_CONFIG)?;
+
+            fs::read_to_string("config.yml")?
+        }
+    };
+
     let mut program = load_config(&config)?;
 
     print!("\x1B[2J\x1B[1;1H");
-    println!("{}: {}", "AI Name".blue(), program.name);
-    println!("{}: {}", "Role".blue(), program.personality);
-    println!("{}: {}", "Task".blue(), program.task);
+    println!("{}: {}", "Personality".blue(), program.personality);
+    println!("{}: {:?}", "Type".blue(), program.auto_type.clone());
 
     println!("{}:", "Plugins".blue());
     let mut exit_dependency_error = false;
@@ -120,7 +132,32 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!();
 
-    run_manager(&mut program)?;
+    match program.auto_type.clone() {
+        AutoType::Assistant => {
+            let mut messages: Vec<Message> = vec![];
+            let stdin = io::stdin();
+            loop {
+                println!("{}", "> User".yellow());
+                
+                let mut input = String::new();
+                stdin.read_line(&mut input).unwrap();
+
+                println!();
+
+                let response = run_assistant_auto(&mut program, &messages, &input)?;
+
+                messages.push(Message::User(input));
+                messages.push(Message::Assistant(response.clone()));
+
+                println!("{}", "> Assistant".yellow());
+                println!("{}", response);
+                println!();
+            }
+        },
+        AutoType::Runner { task } => {
+            run_task_auto(&mut program, &task)?;
+        }
+    }
 
     Ok(())
 }
