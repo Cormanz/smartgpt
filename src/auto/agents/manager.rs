@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, employee::run_employee, findings::{ask_for_findings, to_points}}, LLM};
+use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, agents::{findings::{ask_for_findings, to_points}, employee::run_employee}}, LLM};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 

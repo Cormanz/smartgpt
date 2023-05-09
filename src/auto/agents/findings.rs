@@ -1,10 +1,9 @@
 use std::error::Error;
 
-use crate::{LLM, Message};
+use crate::{LLM, Message, auto::try_parse_json};
 
 use serde::{Deserialize, Serialize};
 
-use super::try_parse_json;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct FindingsReport {
     pub findings: Vec<String>,

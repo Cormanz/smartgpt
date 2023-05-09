@@ -5,9 +5,7 @@ use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as L
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::try_parse_json, LLM};
-
-use super::{run::run_command, ParsedResponse};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::to_points}, LLM};
 
 #[derive(Debug, Clone)]
 pub struct EmployeeError(pub String);
@@ -58,15 +56,18 @@ Your goal is to complete that task, one command at a time.
 Do it as fast as possible.
 "#
     )));
-
-    context.agents.employee.llm.end_prompt.push(Message::User(format!(
-"You have access to these commands:
+    
+    context.agents.employee.llm.prompt.push(Message::User(format!(
+"You have access to these resources as commands:
 {}
     finish() -> None
-        A special command. Use this command when you are done with your assignment.",
+        A special command. Use this command when you are done with your assignment.
+        
+You may only use these commands.
+These are the only commands available. Do not use any other commands.",
         cmds
     )));
-    
+
     context.agents.employee.llm.prompt.push(Message::User(format!(r#"
 Your task is: {task}
 "#,
@@ -90,6 +91,9 @@ Reply in this format:
 }}
 ```
 
+Focus on reasoning regarding your commands. 
+Try to break down your problems in terms of what commands can be used.
+
 Reply in that exact JSON format exactly.
 Make sure every field is filled in detail.
 Keep every field in that exact order.
@@ -106,6 +110,7 @@ Keep every field in that exact order.
         let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(400))?;
         let ParsedResponse { data: thoughts, raw } = thoughts;
 
+        println!();
         println!("{dashes} {employee} {dashes}");
         println!();
         println!("{}", serde_yaml::to_string(&thoughts)?);
@@ -120,25 +125,35 @@ Keep every field in that exact order.
 
         let command = plugins.iter()
             .flat_map(|el| &el.commands)
-            .find(|el| el.name == command_name)
-            .ok_or(EmployeeError(format!("Cannot find command {}", command_name)))?;
+            .find(|el| el.name == command_name);
 
         let mut out = String::new();
-        let rt = Runtime::new().unwrap();
-        rt.block_on(async {
-            run_command(
-                &mut out, 
-                command_name.clone(), 
-                command.box_clone(), 
-                &mut context, 
-                args
-            ).await
-        })?;
+        match command {
+            Some(command) => {
+                let rt = Runtime::new().unwrap();
+                rt.block_on(async {
+                    run_command(
+                        &mut out, 
+                        command_name.clone(), 
+                        command.box_clone(), 
+                        &mut context, 
+                        args
+                    ).await
+                })?;
+        
+            },
+            None => {
+                out.push_str(&format!(
+"No such command named '{command_name}.' 
+These are your commands: {}",
+    to_points(&plugins.iter().flat_map(|el| &el.commands).map(|el| el.name.clone()).collect::<Vec<_>>())))
+            }
+        }
 
         context.agents.employee.llm.message_history.push(Message::Assistant(raw));
         context.agents.employee.llm.message_history.push(Message::User(out));
         context.agents.employee.llm.message_history.push(Message::User(format!(
-            r#"Please run your next command. If you are done, keep your 'command name' field as 'finish'"#
+            r#"Please run your next command. If you are done, set the 'command' field to 'finish'"#
         )));
     }
 

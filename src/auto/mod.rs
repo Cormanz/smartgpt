@@ -5,30 +5,81 @@ use serde_yaml::Value;
 
 use colored::Colorize;
 
-use crate::{LLM, ProgramInfo};
+use crate::{LLM, ProgramInfo, Message};
 
-use self::{employee::run_employee, manager::run_manager};
+use agents::{employee::run_employee, manager::run_manager};
 
-mod employee;
+use self::responses::{ask_for_responses, ask_for_assistant_response};
+
+mod agents;
 mod run;
-mod findings;
-mod manager;
+mod responses;
 
-pub fn run_auto(program: &mut ProgramInfo) -> Result<(), Box<dyn Error>> {
+pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
-        context, task, ..
+        context, ..
     } = program;
-    let mut context = context.lock().unwrap();
+    let context = context.lock().unwrap();
 
-    let task = task.clone();
     let has_manager = context.agents.managers.len() >= 1;
 
     drop(context);
 
     if has_manager {
-        run_manager(program, 0, &task.clone(), |_| {})
+        run_manager(program, 0, task.clone(), ask_for_responses)?
     } else {
-        run_employee(program, &task.clone(), |_| {})
+        run_employee(program, task.clone(), ask_for_responses)?
+    }
+}
+
+pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str) -> Result<String, Box<dyn Error>> {
+    let ProgramInfo { 
+        context, ..
+    } = program;
+    let mut context = context.lock().unwrap();
+
+    let mut new_messages = messages.to_vec();
+    new_messages.push(Message::User(format!(
+r#"Summarize the conversation context of all previous messages by the user and the assistant in this chat. 
+If none, say "No previous conversation context."#)));
+
+    let conversation_context = context.agents.fast.llm.model.get_response_sync(
+        &new_messages, Some(300), None
+    )?;
+    
+    let task_request = vec![
+Message::User(format!(
+"Given this conversation context:
+
+{conversation_context}
+
+And this new message from the user:
+
+{request}
+
+Reply with a modified version of the user's message, so that it can be understood without the context.
+If it does not require any context, just say DONE"
+))
+    ];
+
+    let mut task = context.agents.fast.llm.model.get_response_sync(
+        &task_request, Some(300), None
+    )?;
+    let has_manager = context.agents.managers.len() >= 1;
+    
+    if task.to_ascii_lowercase().contains("done") {
+        task = request.to_string();
+    }
+    task = task.trim().to_string();
+    task = format!(
+"Generate a response to this request: '{task}'.");
+    
+    drop(context);
+
+    if has_manager {
+        run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+    } else {
+        run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
     }
 }
 
@@ -60,11 +111,11 @@ pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens:
     for i in 0..tries {
         let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
         let processed_response = response.trim();
-        let processed_response = processed_response.strip_prefix(&format!("```{lang}"))
-            .unwrap_or(&response)
-            .to_string();
         let processed_response = processed_response.strip_prefix("```")
             .unwrap_or(&processed_response)
+            .to_string();
+        let processed_response = processed_response.strip_prefix(&format!("{lang}"))
+            .unwrap_or(&response)
             .to_string();
         let processed_response = processed_response.strip_suffix("```")
             .unwrap_or(&processed_response)

@@ -44,12 +44,12 @@ pub struct AgentLLMs {
     fast: AgentConfig,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    pub name: String,
-    pub role: String,
-    pub task: String,
+    #[serde(rename = "type")]
+    pub auto_type: AutoType,
+    pub personality: String,
     pub agents: AgentLLMs,
     pub plugins: HashMap<String, Value>,
     #[serde(rename = "disabled commands")] pub disabled_commands: Vec<String>
@@ -64,10 +64,16 @@ pub struct Llm {
     pub openai_key: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AutoType {
+    #[serde(rename = "runner")] Runner(String),
+    #[serde(rename = "assistant")] Assistant
+}
+
 pub struct ProgramInfo {
-    pub name: String,
     pub personality: String,
-    pub task: String,
+    pub auto_type: AutoType,
     pub plugins: Vec<Plugin>,
     pub context: Arc<Mutex<CommandContext>>,
     pub disabled_commands: Vec<String>
@@ -139,7 +145,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     let config: Config = serde_yaml::from_str(config)?;
 
     let mut context = CommandContext {
-        task: config.task.clone(),
+        auto_type: config.auto_type.clone(),
         command_out: vec![],
         variables: HashMap::new(),
         plugin_data: crate::PluginStore(HashMap::new()),
@@ -176,9 +182,8 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     }
 
     Ok(ProgramInfo {
-        name: config.name,
-        personality: config.role,
-        task: config.task.clone(),
+        personality: config.personality,
+        auto_type: config.auto_type.clone(),
         plugins: used_plugins,
         context: Arc::new(Mutex::new(context)),
         disabled_commands: config.disabled_commands
