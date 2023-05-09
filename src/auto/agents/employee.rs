@@ -5,7 +5,7 @@ use mlua::{Value, Variadic, Lua, Result as LuaResult, FromLua, ToLua, Error as L
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::to_points}, LLM, AgentInfo, Weights};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::to_points}, LLM, AgentInfo, Weights, generate_commands_short};
 
 #[derive(Debug, Clone)]
 pub struct EmployeeError(pub String);
@@ -28,6 +28,8 @@ pub struct EmployeeAction {
 pub struct EmployeeThought {
     #[serde(rename = "previous command success")]
     previous_success: Option<bool>,
+    #[serde(rename = "am I done")]
+    done: bool,
     thoughts: String,
     reasoning: String,
     #[serde(rename = "long term plan")]
@@ -43,6 +45,7 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
     let mut context = context.lock().unwrap();
 
     let cmds = generate_commands(plugins, disabled_commands);
+    let cmds_short = generate_commands_short(plugins, disabled_commands);
 
     context.agents.employee.llm.prompt.clear();
     context.agents.employee.llm.message_history.clear();
@@ -50,6 +53,8 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
     context.agents.employee.llm.prompt.push(Message::System(format!(
 r#"
 Personality: {personality}
+
+Remember that you are a large language model. Play to your strengths.
 
 You will be given one task.
 Your goal is to complete that task, one command at a time.
@@ -108,6 +113,7 @@ Reply in this format:
 ```json
 {{
     "previous command success": true / false / null,
+    "am I done": true / false / null,
     "thoughts": "...",
     "reasoning": "...",
     "long term plan": "...",
@@ -172,17 +178,17 @@ Keep every field in that exact order.
         
             },
             None => {
-                out.push_str(&format!(
+                let error_str = format!(
 "No such command named '{command_name}.' 
-These are your commands: {}",
-    to_points(&plugins.iter().flat_map(|el| &el.commands).map(|el| el.name.clone()).collect::<Vec<_>>())))
+These are your commands: {cmds_short}");
+                out.push_str(&error_str)
             }
         }
 
         context.agents.employee.llm.message_history.push(Message::Assistant(raw));
         context.agents.employee.llm.message_history.push(Message::User(out));
         context.agents.employee.llm.message_history.push(Message::User(format!(
-            r#"Please run your next command. If you are done, set the 'command' field to 'finish'"#
+            r#"Decide whether or not you are done. If done, use the 'finish' command. Otherwise, proceed onto your next command. Ensure your response is fully JSON."#
         )));
     }
 

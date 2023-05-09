@@ -9,7 +9,7 @@ use crate::{LLM, ProgramInfo, Message};
 
 use agents::{employee::run_employee, manager::run_manager};
 
-use self::responses::{ask_for_responses, ask_for_assistant_response};
+use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task};
 
 mod agents;
 mod run;
@@ -41,47 +41,59 @@ pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], reque
 
     let mut new_messages = messages.to_vec();
     new_messages.push(Message::User(format!(
-r#"Summarize the conversation context of all previous messages by the user and the assistant in this chat. 
-If none, say "No previous conversation context."#)));
+r#"Summarize the conversation."#)));
 
-    let conversation_context = context.agents.fast.llm.model.get_response_sync(
-        &new_messages, Some(300), None
-    )?;
-    
-    let task_request = vec![
-Message::User(format!(
-"Given this conversation context:
+    let conversation_context = match messages.len() {
+        0 => "None.".to_string(),
+        _ => context.agents.fast.llm.model.get_response_sync(
+            &new_messages, Some(300), None
+        )?
+    };
 
-{conversation_context}
-
-And this new message from the user:
-
-{request}
-
-Reply with a modified version of the user's message, so that it can be understood without the context.
-Include citations in [Brackets]
-If it does not require any context, just say DONE"
-))
-    ];
-
-    let mut task = context.agents.fast.llm.model.get_response_sync(
-        &task_request, Some(300), None
-    )?;
-    let has_manager = context.agents.managers.len() >= 1;
-    
-    if task.to_ascii_lowercase().contains("done") {
-        task = request.to_string();
-    }
-    task = task.trim().to_string();
-    task = format!(
-"Generate a response to this request: '{task}'.");
-    
     drop(context);
+    if is_task(program, request)? {
+        let ProgramInfo { 
+            context, ..
+        } = program;
+        let mut context = context.lock().unwrap();
 
-    if has_manager {
-        run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+        let has_manager: bool = context.agents.managers.len() >= 1;
+
+        let mut task = request.trim().to_string();
+        task = format!(
+"Given this relevant conversation context: {conversation_context}
+
+Generate a response to this request: {task}");
+        
+        drop(context);
+    
+        if has_manager {
+            run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+        } else {
+            run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+        }
     } else {
-        run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+        let ProgramInfo { 
+            context, ..
+        } = program;
+        let mut context = context.lock().unwrap();
+
+        context.agents.fast.llm.prompt.clear();
+        context.agents.fast.llm.message_history.clear();
+        
+        context.agents.fast.llm.prompt.push(Message::System(format!(
+r#"Respond in this conversation context:
+
+{conversation_context}"#
+        )));
+
+        context.agents.fast.llm.message_history.push(Message::User(request.to_string()));
+
+        context.agents.fast.llm.model.get_response_sync(
+            &context.agents.fast.llm.get_messages(),
+            Some(200),
+            None
+        )
     }
 }
 

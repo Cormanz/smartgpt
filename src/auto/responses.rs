@@ -39,7 +39,8 @@ Reply in this JSON format:
     "response": "..."
 }}
 
-Provide a response as an assistant to the initial request in the above format."#)
+Provide a response as an assistant to the initial request in the above format.
+Make sure you include where you got the information from in your response, in parantheses."#)
 }
 
 pub fn ask_for_assistant_response(agent: &mut AgentInfo, context: &str, request: &str) -> Result<String, Box<dyn Error>> {
