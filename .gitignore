@@ -1,6 +1,9 @@
+# Build files
 /target
-secret-thing
+
+# Project files
 files/*
-resources/*
 config.yml
+
+# LLM files
 ggml-vicuna*
