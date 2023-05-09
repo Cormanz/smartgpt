@@ -92,7 +92,7 @@ Agents all have **memory**. After completing a task, the agent will save a list 
 
 Autos can use a set of **tools** such as `google_search`, `browse_url`, etc. You define these using plugins. Plugins define their own set of commands, and can have their own data.
 
-[Read more in the Memory section of the documentation.](https://corman.gitbook.io/smartgpt/systems/plugins)
+[Read more in the Plugin System section of the documentation.](https://corman.gitbook.io/smartgpt/systems/plugins)
 
 # License
 
