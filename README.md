@@ -52,11 +52,11 @@ Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/
 git clone https://github.com/Cormanz/smartgpt.git
 ```
 
-2. Install Faiss _(if you don't use local long-term memory, you can skip this)_
+2. Install Faiss
 
 Install FAISS as explained [here](https://github.com/Enet4/faiss-rs#installing-as-a-dependency)
 
-If you still use the `memory` plugin without installing FAISS, it simply won't use the memory features. You'll know this because it won't log `Found Memories`.
+Note: We're working on a memory system that doesn't require FAISS, but for now, it's needed.
 
 3. Run the Repository.
 ```
@@ -179,5 +179,5 @@ We take in our plugin data of `chatgpt_info`, tell it to `push` a new message, a
 
 `smartgpt` is available under the
 [MIT license](https://opensource.org/licenses/MIT). See
-[LICENSE](https://github.com/Cormanz/smartgpt/blob/main/LICENSE) for the full
+[LICENSE](https://github.com/Cormanz/smartgpt/blob/main/LICENSE.md) for the full
 license text.
