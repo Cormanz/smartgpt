@@ -67,7 +67,9 @@ pub struct Llm {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AutoType {
-    #[serde(rename = "runner")] Runner(String),
+    #[serde(rename = "runner")] Runner {
+        task: String
+    },
     #[serde(rename = "assistant")] Assistant
 }
 

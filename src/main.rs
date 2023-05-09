@@ -141,7 +141,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!();
             }
         },
-        AutoType::Runner(task) => {
+        AutoType::Runner { task } => {
             run_task_auto(&mut program, &task)?;
         }
     }
