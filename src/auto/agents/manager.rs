@@ -4,6 +4,8 @@ use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, agents:
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
+use super::findings::get_observations;
+
 #[derive(Serialize, Deserialize)]
 pub enum ManagerAction {
     #[serde(rename = "delegate one of the tasks")] Delegate {
@@ -41,34 +43,14 @@ Do it as fast as possible.
 "#
     )));
 
-    let AgentInfo { observations, llm, .. } = &mut context.agents.managers[layer];
-    let observations = observations.get_memories_sync(
-        &llm,
-        task,
-        200,
-        Weights {
-            recall: 1.,
-            recency: 1.,
-            relevance: 1.
-        },
-        50
-    )?;
-    let observations = if observations.len() == 0 {
-        None
-    } else {
-        Some(observations.iter().enumerate()
-            .map(|(ind, observation)| format!("{ind}. {}", observation.content))
-            .collect::<Vec<_>>()
-            .join("\n"))
-    };
+    let observations = get_observations(&mut context.agents.managers[layer], task)?
+        .unwrap_or("None found.".to_string());
 
-    if let Some(observations) = observations {
-        context.agents.managers[layer].llm.prompt.push(Message::User(format!(
+    context.agents.managers[layer].llm.prompt.push(Message::User(format!(
 "Here are your long-term memories:
 
 {observations}"
-        )))
-    }
+    )));
 
     context.agents.managers[layer].llm.prompt.push(Message::User(format!(
         r#"
@@ -148,6 +130,8 @@ Keep every field in that exact order.
         let findings_str = to_points(&results.findings);
         let changes_str = to_points(&results.changes);
         
+        context.agents.managers[layer].llm.message_history.push(Message::Assistant(raw));
+        
         context.agents.managers[layer].llm.message_history.push(Message::User(format!(
 r#"Your task was completed.
 
@@ -163,6 +147,23 @@ Changes carried out:
             r#"Potentially refine your plan. Then, delegate one task (or finish.)"#
         )));
 
+        let remaining_tokens = context.agents.managers[layer].llm.get_tokens_remaining(
+            &context.agents.managers[layer].llm.get_messages()
+        )?;
+
+        if remaining_tokens < 750 {
+            ask_for_findings(&mut context.agents.managers[layer])?;
+            context.agents.managers[layer].llm.crop_to_tokens_remaining(2500);
+
+            let observations = get_observations(&mut context.agents.managers[layer], task)?
+                .unwrap_or("None found.".to_string());
+            context.agents.managers[layer].llm.prompt[1].set_content(&format!(
+"Here are your long-term memories:
+
+{observations}"
+            ));
+        }
+        
         drop(context);
     }
     

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{LLM, Message, auto::try_parse_json, AgentInfo};
+use crate::{LLM, Message, auto::try_parse_json, AgentInfo, Weights};
 
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +40,9 @@ pub fn ask_for_findings(agent: &mut AgentInfo) -> Result<FindingsReport, Box<dyn
     agent.llm.message_history.push(Message::User(create_findings_prompt()));
 
     let report = try_parse_json::<FindingsReport>(&agent.llm, 2, Some(300))?.data;
+
+    agent.llm.message_history.pop();
+
     for finding in report.findings.iter().chain(report.changes.iter()) {
         agent.observations.store_memory_sync(&agent.llm, finding)?;
     }
@@ -52,4 +55,27 @@ pub fn to_points(points: &[String]) -> String {
         .map(|el| format!("- {el}"))
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+pub fn get_observations(agent: &mut AgentInfo, task: &str) -> Result<Option<String>, Box<dyn Error>> {
+    let observations = agent.observations.get_memories_sync(
+        &agent.llm,
+        task,
+        200,
+        Weights {
+            recall: 1.,
+            recency: 1.,
+            relevance: 1.
+        },
+        50
+    )?;
+    let observations = if observations.len() == 0 {
+        None
+    } else {
+        Some(observations.iter().enumerate()
+            .map(|(ind, observation)| format!("{ind}. {}", observation.content))
+            .collect::<Vec<_>>()
+            .join("\n"))
+    };
+    Ok(observations)
 }
