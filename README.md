@@ -9,13 +9,15 @@ SmartGPT is an experimental and open-source application designed to provide nume
 
 https://github.com/Cormanz/smartgpt/assets/32941017/53bdcf83-4b2e-4798-b3f2-1a233b43c0e1
 
+## [Documentation here!](https://corman.gitbook.io/smartgpt/)
+
 # Why?
 
 With so many projects designed similarly in the AI space, it may be a bit challenging to find the differences between them, so here, the differences can be described.
 
 - **Modularity**: With first class plugin support, developers from all walks of life can design their own systems. That's right Jim, you can control your toaster.
 
-- **Flexibility**: If you have a problem, you can probably configure it! Unlike other similar projects, SmartGPT has a highly configurable ecosystem in place which can be easily modified with a nifty [config.yml](config.example.yml).
+- **Flexibility**: If you have a problem, you can probably configure it! Unlike other similar projects, SmartGPT has a highly configurable ecosystem in place which can be easily modified with a nifty [`config.yml`](config.example.yml).
 
 - **Planning and Reasoning**: The boss-manager-employee style is a little less common, but its implementation will blow you away with its ability to develop complex thought processes. 
 
@@ -26,3 +28,13 @@ Regardless of these amazing facts, there are many shortcomings.
 - **Ecosystem**: Due to its popularity, [AutoGPT](https://github.com/Torantulino/Auto-GPT) is a very polished and refined tool. It has many more commands and integrations with memory systems. To go with this, the codebase has been through large scrutiny, so it is generally less buggy and more tested than SmartGPT.
 
 - **Memory Management**: Due to the extreme youth of this project, there is only one simple but limited memory system. However, this will change with time.
+
+# Quickstart
+
+0. Install [`cargo`](https://doc.rust-lang.org/cargo/getting-started/installation.html), preferably the latest stable version.
+
+1. Clone the repository wih `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
+
+2. Run it in release mode with `cargo run --release`. This will create a `config.yml` for you.
+
+3. Adjust the config to your liking, and execute it once again.
