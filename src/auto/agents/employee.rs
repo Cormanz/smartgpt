@@ -4,7 +4,9 @@ use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::to_points}, LLM, AgentInfo, Weights, generate_commands_short};
+use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRunError, Expression, Command, CommandContext, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::{to_points, ask_for_findings}}, LLM, AgentInfo, Weights, generate_commands_short};
+
+use super::findings::get_observations;
 
 #[derive(Debug, Clone)]
 pub struct EmployeeError(pub String);
@@ -61,26 +63,8 @@ Do it as fast as possible.
 "#
     )));
 
-    let AgentInfo { observations, llm, .. } = &mut context.agents.employee;
-    let observations = observations.get_memories_sync(
-        &llm,
-        task,
-        200,
-        Weights {
-            recall: 1.,
-            recency: 1.,
-            relevance: 1.
-        },
-        50
-    )?;
-    let observations = if observations.len() == 0 {
-        None
-    } else {
-        Some(observations.iter().enumerate()
-            .map(|(ind, observation)| format!("{ind}. {}", observation.content))
-            .collect::<Vec<_>>()
-            .join("\n"))
-    };
+    let observations = get_observations(&mut context.agents.employee, task)?
+        .unwrap_or("None found.".to_string());
     
     context.agents.employee.llm.prompt.push(Message::User(format!(
 "You have access to these resources as commands:
@@ -93,13 +77,11 @@ These are the only commands available. Do not use any other commands.",
         cmds
     )));
 
-    if let Some(observations) = observations {
-        context.agents.employee.llm.prompt.push(Message::User(format!(
+    context.agents.employee.llm.prompt.push(Message::User(format!(
 "Here are your long-term memories:
 
 {observations}"
-        )))
-    }
+    )));
 
     context.agents.employee.llm.prompt.push(Message::User(format!(r#"
 Your task is: {task}
@@ -189,6 +171,23 @@ These are your commands: {cmds_short}");
         context.agents.employee.llm.message_history.push(Message::User(format!(
             r#"Decide whether or not you are done. If done, use the 'finish' command. Otherwise, proceed onto your next command. Ensure your response is fully JSON."#
         )));
+
+        let remaining_tokens = context.agents.employee.llm.get_tokens_remaining(
+            &context.agents.employee.llm.get_messages()
+        )?;
+
+        if remaining_tokens < 750 {
+            ask_for_findings(&mut context.agents.employee)?;
+            context.agents.employee.llm.crop_to_tokens_remaining(2500);
+
+            let observations = get_observations(&mut context.agents.employee, task)?
+                .unwrap_or("None found.".to_string());
+            context.agents.employee.llm.prompt[2].set_content(&format!(
+"Here are your long-term memories:
+
+{observations}"
+            ));
+        }
     }
 
     Ok(end(&mut context.agents.employee))
