@@ -3,7 +3,6 @@
     <a href="LICENSE.md">
         <img alt="License" src="https://img.shields.io/github/license/Cormanz/smartgpt?style=flat-square" />
     </a>
-    <p>Complete complex tasks with LLMs.</p>
 </h1>
 
 SmartGPT is an experimental and open-source application designed to provide numerous LLMs with the ability to complete complex tasks without user input by breaking them down into subtasks.
