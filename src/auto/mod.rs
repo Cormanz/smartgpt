@@ -2,6 +2,7 @@ use std::{fmt::Display, error::Error};
 
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_yaml::Value;
+use json5;
 
 use colored::Colorize;
 
@@ -117,15 +118,20 @@ pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens:
     try_parse_base(llm, tries, max_tokens, "yml", |str| serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
 }
 
-pub fn try_parse_json<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
     for i in 0..tries {
         let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
         let processed_response = find_text_between_braces(&response).unwrap_or("None".to_string());
-        match serde_json::from_str(&processed_response) {
+
+        // We use JSON5 to allow for more lenient parsing for models like GPT3.5.
+        match json5::from_str::<T>(&processed_response) {
             Ok(data) => {
+                // We serialize it back to JSON itself to help GPT3.5 maintain consistency.
+                let pretty_response = serde_json::to_string_pretty(&data)?;
+
                 return Ok(ParsedResponse {
                     data,
-                    raw: format!("```json\n{processed_response}\n```")  
+                    raw: format!("```json\n{pretty_response}\n```")  
                 })
             },
             Err(err) => {

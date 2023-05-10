@@ -123,7 +123,7 @@ Keep every field in that exact order.
     let employee = "Employee".blue();
 
     loop {
-        let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(400))?;
+        let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(1000))?;
         let ParsedResponse { data: thoughts, raw } = thoughts;
 
         println!();
@@ -176,9 +176,9 @@ These are your commands: {cmds_short}");
             &context.agents.employee.llm.get_messages()
         )?;
 
-        if remaining_tokens < 750 {
+        if remaining_tokens < 1250 {
             ask_for_findings(&mut context.agents.employee)?;
-            context.agents.employee.llm.crop_to_tokens_remaining(2500);
+            context.agents.employee.llm.crop_to_tokens_remaining(2800)?;
 
             let observations = get_observations(&mut context.agents.employee, task)?
                 .unwrap_or("None found.".to_string());

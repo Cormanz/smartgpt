@@ -151,9 +151,9 @@ Changes carried out:
             &context.agents.managers[layer].llm.get_messages()
         )?;
 
-        if remaining_tokens < 750 {
+        if remaining_tokens < 1250 {
             ask_for_findings(&mut context.agents.managers[layer])?;
-            context.agents.managers[layer].llm.crop_to_tokens_remaining(2500);
+            context.agents.managers[layer].llm.crop_to_tokens_remaining(2800)?;
 
             let observations = get_observations(&mut context.agents.managers[layer], task)?
                 .unwrap_or("None found.".to_string());
