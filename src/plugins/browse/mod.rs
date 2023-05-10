@@ -112,6 +112,8 @@ pub async fn browse_url(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Res
 
         ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
 
+        ctx.agents.fast.llm.message_history.push(Message::User(summary_prompt.clone()));
+
         let response = ctx.agents.fast.llm.model.get_response(
             &ctx.agents.fast.llm.get_messages(),
             None,

@@ -169,7 +169,7 @@ These are your commands: {cmds_short}");
         context.agents.employee.llm.message_history.push(Message::Assistant(raw));
         context.agents.employee.llm.message_history.push(Message::User(out));
         context.agents.employee.llm.message_history.push(Message::User(format!(
-            r#"Decide whether or not you are done. If done, use the 'finish' command. Otherwise, proceed onto your next command. Ensure your response is fully JSON."#
+            r#"Decide whether or not you are done. If done, use the 'finish' command. Otherwise, proceed onto your next command. Ensure your response is the exact JSON format, no plaintext."#
         )));
 
         let remaining_tokens = context.agents.employee.llm.get_tokens_remaining(
