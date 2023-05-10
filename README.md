@@ -39,7 +39,7 @@ Prerequisites: [Rust and Cargo](https://doc.rust-lang.org/cargo/getting-started/
 git clone https://github.com/Cormanz/smartgpt.git
 ```
 
-Alternatively, [create a Github Codespace](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=626190057) and run it there.
+Alternatively, [create a GitHub Codespace](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=626190057) and run it there.
 
 2. Run it your first time.
 ```
