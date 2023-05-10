@@ -1,8 +1,8 @@
 mod chatgpt;
-mod llama;
+mod local;
 
 pub use chatgpt::*;
-pub use llama::*;
+pub use local::*;
 use tokio::runtime::Runtime;
 
 use std::{error::Error, fmt::Display};

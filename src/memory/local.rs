@@ -3,7 +3,7 @@ use std::error::Error;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{LLM, Memory, MemoryProvider, MemorySystemLoadError, RelevantMemory, compare_embeddings};
+use crate::{LLM, Memory, MemoryProvider, NoLocalModelError, RelevantMemory, compare_embeddings};
 
 use super::MemorySystem;
 
