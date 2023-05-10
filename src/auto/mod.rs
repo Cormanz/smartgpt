@@ -9,7 +9,7 @@ use crate::{LLM, ProgramInfo, Message};
 
 use agents::{employee::run_employee, manager::run_manager};
 
-use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task};
+use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task, agents::processing::find_text_between_braces};
 
 mod agents;
 mod run;
@@ -118,7 +118,25 @@ pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens:
 }
 
 pub fn try_parse_json<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
-    try_parse_base(llm, tries, max_tokens, "json", |str| serde_json::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
+    for i in 0..tries {
+        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
+        let processed_response = find_text_between_braces(&response).unwrap_or("None".to_string());
+        match serde_json::from_str(&processed_response) {
+            Ok(data) => {
+                return Ok(ParsedResponse {
+                    data,
+                    raw: format!("```json\n{processed_response}\n```")  
+                })
+            },
+            Err(err) => {
+                println!("{}", format!("Try {} failed.", i + 1).red());
+                println!("{response}");
+                println!("{err}");
+            }
+        }
+    }
+    
+    Err(Box::new(CannotParseError))
 }
 
 pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, lang: &str, parse: impl Fn(&str) -> Result<T, Box<dyn Error>>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
