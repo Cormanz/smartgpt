@@ -20,7 +20,7 @@ pub fn ask_for_responses(agent: &mut AgentInfo) -> Result<String, Box<dyn Error>
     agent.llm.message_history.push(Message::User(create_runner_prompt()));
 
     let response = agent.llm.model.get_response_sync(
-        &agent.llm.get_messages(), Some(300), None
+        &agent.llm.get_messages(), Some(1000), None
     )?;
 
     Ok(response)
@@ -38,6 +38,8 @@ Reply in this JSON format:
 {{
     "response": "..."
 }}
+
+Respond in that exact JSON format exactly.
 
 Provide a response as an assistant to the initial request in the above format.
 Make sure you include where you got the information from in your response, in parantheses."#)

@@ -123,7 +123,7 @@ Keep every field in that exact order.
     let employee = "Employee".blue();
 
     loop {
-        let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(400))?;
+        let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(1000))?;
         let ParsedResponse { data: thoughts, raw } = thoughts;
 
         println!();
@@ -169,16 +169,16 @@ These are your commands: {cmds_short}");
         context.agents.employee.llm.message_history.push(Message::Assistant(raw));
         context.agents.employee.llm.message_history.push(Message::User(out));
         context.agents.employee.llm.message_history.push(Message::User(format!(
-            r#"Decide whether or not you are done. If done, use the 'finish' command. Otherwise, proceed onto your next command. Ensure your response is fully JSON."#
+            r#"Decide whether or not you are done. If done, use the 'finish' command. Otherwise, proceed onto your next command. Ensure your response is the exact JSON format, no plaintext."#
         )));
 
         let remaining_tokens = context.agents.employee.llm.get_tokens_remaining(
             &context.agents.employee.llm.get_messages()
         )?;
 
-        if remaining_tokens < 750 {
+        if remaining_tokens < 1250 {
             ask_for_findings(&mut context.agents.employee)?;
-            context.agents.employee.llm.crop_to_tokens_remaining(2500);
+            context.agents.employee.llm.crop_to_tokens_remaining(2800)?;
 
             let observations = get_observations(&mut context.agents.employee, task)?
                 .unwrap_or("None found.".to_string());
