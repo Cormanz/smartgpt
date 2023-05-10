@@ -176,9 +176,9 @@ These are your commands: {cmds_short}");
             &context.agents.employee.llm.get_messages()
         )?;
 
-        if remaining_tokens < 1250 {
+        if remaining_tokens < 1450 {
             ask_for_findings(&mut context.agents.employee)?;
-            context.agents.employee.llm.crop_to_tokens_remaining(2800)?;
+            context.agents.employee.llm.crop_to_tokens_remaining(2600)?;
 
             let observations = get_observations(&mut context.agents.employee, task)?
                 .unwrap_or("None found.".to_string());
