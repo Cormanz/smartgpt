@@ -8,8 +8,6 @@ use colored::Colorize;
 
 use crate::{LLM, ProgramInfo, Message, format_prompt};
 
-use agents::{employee::run_employee, manager::run_manager};
-
 use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task, agents::processing::find_text_between_braces};
 
 mod agents;
@@ -70,11 +68,13 @@ Generate a response to this request: {task}");
         
         drop(context);
     
-        if has_manager {
+        /*if has_manager {
             run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
         } else {
             run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
-        }
+        }*/
+
+        Ok(())
     } else {
         let ProgramInfo { 
             context, ..
