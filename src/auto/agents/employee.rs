@@ -33,7 +33,7 @@ pub struct EmployeeThought {
     done: bool,
     thoughts: String,
     reasoning: String,
-    #[serde(rename = "long term plan")]
+    criticism: String,
     plan: String,
     action: EmployeeAction
 }
@@ -58,8 +58,8 @@ Personality: {personality}
 Remember that you are a large language model. Play to your strengths.
 
 You will be given one task.
-Your goal is to complete that task, one command at a time.
-Do it as fast as possible.
+Try to work that task out, step by step, one command at a time.
+Complete this in as minimal tasks as possible.
 "#
     )));
 
@@ -97,7 +97,8 @@ Reply in this format:
     "am I done": true / false / null,
     "thoughts": "...",
     "reasoning": "...",
-    "long term plan": "...",
+    "criticism": "...",
+    "plan": "...",
     "action": {{
         "command": "...",
         "args": [
@@ -176,9 +177,9 @@ These are your commands: {cmds_short}");
             &context.agents.employee.llm.get_messages()
         )?;
 
-        if remaining_tokens < 1250 {
+        if remaining_tokens < 1450 {
             ask_for_findings(&mut context.agents.employee)?;
-            context.agents.employee.llm.crop_to_tokens_remaining(2800)?;
+            context.agents.employee.llm.crop_to_tokens_remaining(2600)?;
 
             let observations = get_observations(&mut context.agents.employee, task)?
                 .unwrap_or("None found.".to_string());

@@ -18,7 +18,10 @@ pub enum ManagerAction {
 pub struct ManagerThought {
     thoughts: String,
     reasoning: String,
-    plan: String,
+    criticism: String,
+    #[serde(rename = "do I need to revise my plan")]
+    revise: bool,
+    plan: Vec<String>,
     action: ManagerAction
 }
 
@@ -65,7 +68,13 @@ Reply in this format:
 {{
     "thoughts": "...",
     "reasoning": "...",
-    "plan": "...",
+    "criticism": "...",
+    "do I need to revise my plan": true / false,
+    "plan": [
+        "step A", 
+        "step B", 
+        "step C"
+    ],
     "action": {{
         "delegate one of the tasks": {{
             "task": "..."
@@ -75,6 +84,8 @@ Reply in this format:
     }}
 }}
 ```
+
+Ensure your delegated task is explained in detail.
 
 Reply in that exact JSON format exactly.
 Make sure every field is filled in detail.
@@ -151,9 +162,9 @@ Changes carried out:
             &context.agents.managers[layer].llm.get_messages()
         )?;
 
-        if remaining_tokens < 1250 {
+        if remaining_tokens < 1450 {
             ask_for_findings(&mut context.agents.managers[layer])?;
-            context.agents.managers[layer].llm.crop_to_tokens_remaining(2800)?;
+            context.agents.managers[layer].llm.crop_to_tokens_remaining(2600)?;
 
             let observations = get_observations(&mut context.agents.managers[layer], task)?
                 .unwrap_or("None found.".to_string());

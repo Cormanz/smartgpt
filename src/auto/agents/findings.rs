@@ -39,7 +39,7 @@ Ensure your response is fully valid JSON."#)
 pub fn ask_for_findings(agent: &mut AgentInfo) -> Result<FindingsReport, Box<dyn Error>> {
     agent.llm.message_history.push(Message::User(create_findings_prompt()));
 
-    let report = try_parse_json::<FindingsReport>(&agent.llm, 2, Some(600))?.data;
+    let report = try_parse_json::<FindingsReport>(&agent.llm, 2, Some(300))?.data;
 
     agent.llm.message_history.pop();
 

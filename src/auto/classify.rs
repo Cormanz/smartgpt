@@ -11,7 +11,7 @@ pub struct Classification {
     #[serde(rename = "thoughts on how to classify it")]
     thoughts: String,
     
-    #[serde(rename = "request classification")]
+    #[serde(rename = "message classification")]
     classification: String,
 }
 
@@ -26,10 +26,10 @@ pub fn is_task(program: &mut ProgramInfo, task: &str) -> Result<bool, Box<dyn Er
     context.agents.fast.llm.message_history.clear();
     
     context.agents.fast.llm.prompt.push(Message::Assistant(format!(r#"
-Given a request, respond with one of the following.
+Given a message respond with one of the following.
 
-"conversational": A conversational request
-"task": A task
+"conversational": A conversational message
+"task": A task or request
 "#)));
 
 
@@ -39,7 +39,7 @@ Respond in this format:
 ```json
 {{
     "thoughts on how to classify it": "...",
-    "request classification": "..."
+    "message classification": "..."
 }}
 ```"#)));
 

@@ -19,7 +19,7 @@ serde_yaml = "0.9.21"
 tokenizers = "0.13.3"
 tokio = { version = "1.27.0", features = ["macros", "io-util", "rt", "rt-multi-thread"] }
 tiktoken-rs = { version = "0.4.1", features = ["async-openai"] }
-llama-rs = { git = "https://github.com/rustformers/llama-rs" }
 rand = "0.8.5"
 textwrap = "0.16.0"
 json5 = "0.4.1"
+llm = "0.1.1"
