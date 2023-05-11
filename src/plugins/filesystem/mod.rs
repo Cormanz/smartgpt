@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions};
+use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions, path::Path};
 
 use async_trait::async_trait;
 use serde_json::Value;
@@ -39,6 +39,10 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 
+    if !Path::new("./files/").exists() {
+            fs::create_dir("./files/")?;
+    }
+
     let mut file = OpenOptions::new()
         .write(true)
         .append(append)
@@ -64,9 +68,9 @@ pub async fn file_read(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Resu
     let path: String = args.get(0).ok_or(FilesNoArgError("file_read", "path"))?.clone().try_into()?;
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
-    
+
     let content = fs::read_to_string(format!("files/{path}"))?;
-    
+
     Ok(content.to_string().into())
 }
 
@@ -156,7 +160,7 @@ pub fn create_filesystem() -> Plugin {
             Command {
                 name: "file_write".to_string(),
                 purpose: "Override a file with content. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
-                args: vec![ 
+                args: vec![
                     CommandArgument::new("path", "The path of the file that is being written to.", "String"),
                     CommandArgument::new("...contents", "The content to be added to the file. You can use as many arguments for content as you like.", "String")
                 ],
@@ -166,7 +170,7 @@ pub fn create_filesystem() -> Plugin {
             Command {
                 name: "file_append".to_string(),
                 purpose: "Add content to an existing file. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
-                args: vec![ 
+                args: vec![
                     CommandArgument::new("path", "The path of the file that is being written to.", "String"),
                     CommandArgument::new("...contents", "The content to be added to the file. You can use as many arguments for content as you like.", "String")
                 ],
@@ -183,7 +187,7 @@ pub fn create_filesystem() -> Plugin {
             Command {
                 name: "file_read".to_string(),
                 purpose: "Read a file.".to_string(),
-                args: vec![ 
+                args: vec![
                     CommandArgument::new("path", "The path of the file that is read.", "String")
                 ],
                 return_type: "String".to_string(),
