@@ -1,5 +1,11 @@
 use std::{error::Error, sync::{Arc, Mutex}, fmt::Display, ascii::AsciiExt};
 
+pub mod reflector;
+pub mod brainstormer;
+
+use reflector::*;
+use brainstormer::*;
+
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
@@ -8,3 +14,20 @@ use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRun
 
 use super::findings::get_observations;
 
+pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut AgentInfo) -> T) -> Result<T, Box<dyn Error>> {
+    // Ask the Reflector for initial observations.
+    let InitialObservations { ideas } = initial_observations(program, task)?;
+
+    let ProgramInfo { 
+        context, ..
+    } = program;
+    let mut context = context.lock().unwrap();
+
+    // Save those observations to long-term memory.
+    for idea in ideas {
+        let AgentInfo { llm, observations, .. } = &mut context.agents.employee;
+        observations.store_memory_sync(llm, &idea)?;
+    }
+
+    panic!("T");
+}

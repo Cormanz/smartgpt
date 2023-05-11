@@ -8,7 +8,7 @@ use colored::Colorize;
 
 use crate::{LLM, ProgramInfo, Message, format_prompt};
 
-use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task, agents::processing::find_text_between_braces};
+use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task, agents::{processing::find_text_between_braces, employee::run_employee}};
 
 mod agents;
 mod run;
@@ -26,7 +26,7 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     drop(context);
 
     if has_manager {
-        run_manager(program, 0, task.clone(), ask_for_responses)?
+        run_employee(program, task.clone(), ask_for_responses)?
     } else {
         run_employee(program, task.clone(), ask_for_responses)?
     }
@@ -68,13 +68,11 @@ Generate a response to this request: {task}");
         
         drop(context);
     
-        /*if has_manager {
-            run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+        if has_manager {
+            run_employee(program, &task.clone(), ask_for_responses)?
         } else {
-            run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
-        }*/
-
-        Ok(())
+            run_employee(program, &task.clone(), ask_for_responses)?
+        }
     } else {
         let ProgramInfo { 
             context, ..
