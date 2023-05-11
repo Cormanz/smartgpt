@@ -18,6 +18,7 @@ pub enum ManagerAction {
 pub struct ManagerThought {
     thoughts: String,
     reasoning: String,
+    criticism: String,
     #[serde(rename = "do I need to revise my plan")]
     revise: bool,
     plan: Vec<String>,
@@ -67,6 +68,7 @@ Reply in this format:
 {{
     "thoughts": "...",
     "reasoning": "...",
+    "criticism": "...",
     "do I need to revise my plan": true / false,
     "plan": [
         "step A", 
@@ -82,6 +84,8 @@ Reply in this format:
     }}
 }}
 ```
+
+Ensure your delegated task is explained in detail.
 
 Reply in that exact JSON format exactly.
 Make sure every field is filled in detail.

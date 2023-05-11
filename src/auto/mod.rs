@@ -6,7 +6,7 @@ use json5;
 
 use colored::Colorize;
 
-use crate::{LLM, ProgramInfo, Message};
+use crate::{LLM, ProgramInfo, Message, format_prompt};
 
 use agents::{employee::run_employee, manager::run_manager};
 
@@ -45,7 +45,7 @@ pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], reque
 r#"Summarize the conversation."#)));
 
     let conversation_context = match messages.len() {
-        0 => "None.".to_string(),
+        0 => "No conversation context.".to_string(),
         _ => context.agents.fast.llm.model.get_response_sync(
             &new_messages, Some(300), None
         )?
@@ -53,6 +53,8 @@ r#"Summarize the conversation."#)));
 
     drop(context);
     if is_task(program, request)? {
+        println!("{}", "Running task...".green());
+
         let ProgramInfo { 
             context, ..
         } = program;

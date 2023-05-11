@@ -1,7 +1,7 @@
 use std::{error::Error, collections::HashSet, sync::Mutex, fmt::Display, ops::DerefMut, path::Path};
 
 use async_trait::async_trait;
-use llm::{InferenceSession, Model, InferenceParameters, Vocabulary, TokenBias, load_dynamic, ModelParameters};
+use llm::{InferenceSession, Model, InferenceParameters, Vocabulary, TokenBias, load_dynamic, ModelParameters, InferenceSessionConfig, InferenceRequest, OutputRequest};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -18,7 +18,56 @@ impl Display for NoLocalModelError {
 
 impl Error for NoLocalModelError {}
 
-use crate::{LLMProvider, LLMModel, Message, ModelLoadError};
+use crate::{LLMProvider, LLMModel, Message, ModelLoadError, format_prompt};
+
+pub struct LocalLLM {
+    pub model: Box<dyn Model>
+}
+
+#[async_trait]
+impl LLMModel for LocalLLM {
+    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
+        let session_config = InferenceSessionConfig::default();
+        let mut session = self.model.start_session(session_config);
+    
+        let mut rng = thread_rng();
+
+        let mut text = String::new();
+        let prompt = format_prompt(messages);
+
+        session.infer(
+            self.model.as_ref(), &mut rng,
+            &InferenceRequest {
+                prompt: &prompt,
+                maximum_token_count: max_tokens.map(|el| el as usize),
+                parameters: Some(&InferenceParameters {
+                    temperature: temperature.unwrap_or(0.7),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+            &mut OutputRequest {
+                all_logits: Default::default(),
+                embeddings: None
+            },
+            |token| {
+                text.push_str(token);
+
+                Ok::<_, ModelLoadError>(())
+            }
+        )?;
+    
+        Ok(text.strip_prefix(&prompt).unwrap_or(&text).to_string())
+    }
+
+    async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
+        Ok(vec![])
+    }
+
+    fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>> {
+        Ok(20000)
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct LocalLLMConfig {
@@ -36,7 +85,7 @@ impl LLMProvider for LocalLLMProvider {
     }
 
     fn get_name(&self) -> &str {
-        "llama"
+        "local"
     }
 
     fn create(&self, value: Value) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
@@ -64,9 +113,9 @@ impl LLMProvider for LocalLLMProvider {
                 ..Default::default()
             },
             |_| {}
-        );
+        )?;
 
-        panic!("E");
+        Ok(Box::new(LocalLLM { model }))
     }
 }
 

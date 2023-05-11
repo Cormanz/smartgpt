@@ -33,7 +33,7 @@ pub struct EmployeeThought {
     done: bool,
     thoughts: String,
     reasoning: String,
-    #[serde(rename = "long term plan")]
+    criticism: String,
     plan: String,
     action: EmployeeAction
 }
@@ -58,8 +58,8 @@ Personality: {personality}
 Remember that you are a large language model. Play to your strengths.
 
 You will be given one task.
-Your goal is to complete that task, one command at a time.
-Do it as fast as possible.
+Try to work that task out, step by step, one command at a time.
+Complete this in as minimal tasks as possible.
 "#
     )));
 
@@ -97,7 +97,8 @@ Reply in this format:
     "am I done": true / false / null,
     "thoughts": "...",
     "reasoning": "...",
-    "long term plan": "...",
+    "criticism": "...",
+    "plan": "...",
     "action": {{
         "command": "...",
         "args": [

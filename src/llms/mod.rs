@@ -145,3 +145,23 @@ impl LLM {
         messages
     }
 }
+
+pub fn format_prompt(messages: &[Message]) -> String {
+    let mut out = String::new();
+    
+    for message in messages {
+        out.push_str(&format!("{}: {}", 
+            match message {
+                Message::System(_) => "HUMAN",
+                Message::User(_) => "HUMAN",
+                Message::Assistant(_) => "ASSISTANT"
+            },
+            message.content()
+        ));
+        out.push_str("\n");
+    }
+
+    out.push_str("ASSISTANT: ");
+
+    out
+}
