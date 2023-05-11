@@ -18,9 +18,9 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
     // Ask the Reflector for initial observations.
     let InitialObservations { ideas } = initial_observations(program, task)?;
 
-    let ProgramInfo { 
-        context, ..
-    } = program;
+    println!("Initial Ideas: {ideas:?}");
+
+    let ProgramInfo { context, .. } = program;
     let mut context = context.lock().unwrap();
 
     // Save those observations to long-term memory.
@@ -28,6 +28,12 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
         let AgentInfo { llm, observations, .. } = &mut context.agents.employee;
         observations.store_memory_sync(llm, &idea)?;
     }
+    
+    println!("Saved...");
+
+    drop(context);
+    let brainwave = brainstorm(program, task)?;
+    println!("{:?}", brainwave);
 
     panic!("T");
 }
