@@ -56,7 +56,7 @@ pub async fn ask_wolfram(ctx: &mut CommandContext, query: &str) -> Result<String
     Ok(extract_text_from_wolfram(&xml))
 }
 
-pub async fn wolfram(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn wolfram(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     let query: String = args.get(0).ok_or(WolframNoQueryError)?.clone().try_into()?;
     let response = ask_wolfram(ctx, &query).await?;
     
@@ -67,7 +67,7 @@ pub struct WolframImpl;
 
 #[async_trait]
 impl CommandImpl for WolframImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         wolfram(ctx, args).await
     }
 

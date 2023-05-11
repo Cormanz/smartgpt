@@ -79,14 +79,19 @@ fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
     chunks
 }
 
-pub async fn browse_url(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+#[derive(Serialize, Deserialize)]
+pub struct BrowseArgs {
+    pub url: String
+}
+
+pub async fn browse_url(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     let browse_info = ctx.plugin_data.get_data("Browse")?;
 
     let params: [(&str, &str); 0] = [];
-    let url: String = args.get(0).ok_or(BrowseNoArgError)?.clone().try_into()?;   
+    let args: BrowseArgs = args.parse()?;
 
     let body = invoke::<String>(browse_info, "browse", BrowseRequest {
-        url: url.to_string(),
+        url: args.url.to_string(),
         params: params.iter()
             .map(|el| (el.0.to_string(), el.1.to_string()))
             .collect::<Vec<_>>()
@@ -130,7 +135,7 @@ pub struct BrowseURL;
 
 #[async_trait]
 impl CommandImpl for BrowseURL {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         browse_url(ctx, args).await
     }
 

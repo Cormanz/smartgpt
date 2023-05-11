@@ -84,14 +84,18 @@ impl Debug for Expression {
                 write!(f, "] ")
             }
             Expression::Dict(dict) => {
-                write!(f, "{{ ")?;
+                write!(f, "{{")?;
+                if dict.len() > 0 {
+                    write!(f, " ")?;
+                }
                 for (ind, (key, value)) in dict.iter().enumerate() {
                     write!(f, "{:?}: {:?}", key, value)?;
                     if ind < dict.len() - 1 {
                         write!(f, ", ")?;
                     }
                 }
-                write!(f, "}} ")                
+                write!(f, " ")?;
+                write!(f, "}}")                
             }
             Expression::FunctionCall(name, args) => {
                 write!(f, "{}(", name)?;

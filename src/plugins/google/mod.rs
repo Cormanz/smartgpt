@@ -21,7 +21,14 @@ impl Display for GoogleNoQueryError {
 
 impl Error for GoogleNoQueryError {}
 
-pub async fn google(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+#[derive(Serialize, Deserialize)]
+pub struct GoogleArgs {
+    pub query: String
+}
+
+pub async fn google(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+    let args: GoogleArgs = args.parse()?;
+
     let wolfram_info = ctx.plugin_data.get_data("Google")?;
 
     let api_key = invoke::<String>(wolfram_info, "get api key", true).await?;
@@ -30,12 +37,10 @@ pub async fn google(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<
     let cse_id = invoke::<String>(wolfram_info, "get cse id", true).await?;
     let cse_id: &str = &cse_id;
 
-    let query: String = args.get(0).ok_or(GoogleNoQueryError)?.clone().try_into()?;
-
     let params = [
         ("key", api_key),
         ("cx", cse_id),
-        ("q", &query),
+        ("q", &args.query),
         ("num", "7")
     ];
     
@@ -57,7 +62,13 @@ pub async fn google(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<
             println!("{:?}", err);
             println!("{}", body);
             return Ok(ScriptValue::Dict(HashMap::from_iter([
-                ("error".to_string(), format!("Unable to parse your Google request for \"{query}\" Try modifying your query or waiting a bit.").into())
+                (
+                    "error".to_string(), 
+                    format!(
+                        "Unable to parse your Google request for \"{}\" Try modifying your query or waiting a bit.", 
+                        args.query
+                    ).into()
+                )
             ])));
         }
     };
@@ -70,7 +81,7 @@ pub struct GoogleImpl;
 
 #[async_trait]
 impl CommandImpl for GoogleImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         google(ctx, args).await
     }
 

@@ -6,7 +6,7 @@ use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycl
 use std::fs;
 
 
-pub async fn none(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn none(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     Ok(ScriptValue::None)
 }
 
@@ -14,7 +14,7 @@ pub struct NoneImpl;
 
 #[async_trait]
 impl CommandImpl for NoneImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         none(ctx, args).await
     }
 

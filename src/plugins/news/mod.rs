@@ -48,7 +48,7 @@ pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<ScriptVal
     Ok(serde_json::from_str(&json)?)
 }
 
-pub async fn news(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn news(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     let query: String = args.get(0).ok_or(NewsNoQueryError)?.clone().try_into()?;
     let response = ask_news(ctx, &query).await?;
     
@@ -59,7 +59,7 @@ pub struct NewsImpl;
 
 #[async_trait]
 impl CommandImpl for NewsImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         news(ctx, args).await
     }
 

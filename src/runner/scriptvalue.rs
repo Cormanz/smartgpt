@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Display, error::Error};
 use async_recursion::async_recursion;
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 
 use crate::{Statement, Expression, Primitive, CommandContext, Plugin};
 
@@ -36,6 +38,13 @@ pub enum ScriptValue {
     List(Vec<ScriptValue>),
     Dict(HashMap<String, ScriptValue>),
     None
+}
+
+impl ScriptValue {
+    pub fn parse<T : DeserializeOwned>(&self) -> Result<T, Box<dyn Error>> {
+        let value = serde_json::to_value(self)?;
+        Ok(serde_json::from_value(value)?)
+    }
 }
 
 impl From<ScriptValue> for Expression {
