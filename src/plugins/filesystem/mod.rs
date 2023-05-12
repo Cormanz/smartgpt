@@ -1,6 +1,7 @@
 use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions, path::Path};
 
 use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chunks, PluginData, ScriptValue, CommandArgument};
@@ -17,26 +18,22 @@ impl<'a> Display for FilesNoArgError<'a> {
 
 impl<'a> Error for FilesNoArgError<'a> {}
 
-pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct FileWriteArgs {
+    pub path: String,
+    pub content: String
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct FileReadArgs {
+    pub path: String
+}
+
+pub async fn file_write(ctx: &mut CommandContext, args: ScriptValue, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
     let command_name = if append { "file_append" } else { "file_write" };
-    let path: String = args.get(0)
-        .ok_or(FilesNoArgError(command_name, "path"))?
-        .clone().try_into()?;
+    let args: FileWriteArgs = args.parse()?;
 
-    let mut content = String::new();
-    let contents = args.iter()
-        .skip(1);
-
-    for arg in contents {
-        let arg_content: String = arg.clone().try_into()?;
-        content.push_str(&arg_content);
-    }
-
-    if args.len() <= 1 {
-        return Err(Box::new(FilesNoArgError(command_name, "content")));
-    }
-
-    let path = path.strip_prefix("./").unwrap_or(&path).to_string();
+    let path = args.path.strip_prefix("./").unwrap_or(&args.path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 
     if !Path::new("./files/").exists() {
@@ -48,12 +45,12 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
         .append(append)
         .create(true)
         .open(format!("./files/{path}"))?;
-    writeln!(file, "{}", content)?;
+    writeln!(file, "{}", args.content)?;
 
     Ok(ScriptValue::None)
 }
 
-pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_list(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     let files = fs::read_dir("./files/")?;
     let files = files
         .map(|el| el.map(|el| el.path().display().to_string()))
@@ -64,8 +61,8 @@ pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Resu
     Ok(ScriptValue::List(files.iter().map(|el| el.clone().into()).collect()))
 }
 
-pub async fn file_read(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let path: String = args.get(0).ok_or(FilesNoArgError("file_read", "path"))?.clone().try_into()?;
+pub async fn file_read(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+    let FileReadArgs { path } = args.parse()?;
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 
@@ -78,7 +75,7 @@ pub struct FileWriteImpl;
 
 #[async_trait]
 impl CommandImpl for FileWriteImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         file_write(ctx, args, false).await
     }
 
@@ -91,7 +88,7 @@ pub struct FileAppendImpl;
 
 #[async_trait]
 impl CommandImpl for FileAppendImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         file_write(ctx, args, true).await
     }
 
@@ -105,7 +102,7 @@ pub struct FileListImpl;
 
 #[async_trait]
 impl CommandImpl for FileListImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         file_list(ctx, args).await
     }
 
@@ -118,7 +115,7 @@ pub struct FileReadImpl;
 
 #[async_trait]
 impl CommandImpl for FileReadImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
         file_read(ctx, args).await
     }
 

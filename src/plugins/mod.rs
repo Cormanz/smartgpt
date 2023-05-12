@@ -1,6 +1,6 @@
 mod none;
 mod google;
-//mod filesystem;
+mod filesystem;
 mod browse;
 //mod wolfram;
 //mod chatgpt;
@@ -10,7 +10,7 @@ mod browse;
 pub use none::*;
 //pub use shutdown::*;
 pub use google::*;
-//pub use filesystem::*;
+pub use filesystem::*;
 pub use browse::*;
 //pub use wolfram::*;
 //pub use chatgpt::*;

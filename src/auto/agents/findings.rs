@@ -57,17 +57,13 @@ pub fn to_points(points: &[String]) -> String {
         .join("\n")
 }
 
-pub fn get_observations(agent: &mut AgentInfo, task: &str) -> Result<Option<String>, Box<dyn Error>> {
+pub fn get_observations(agent: &mut AgentInfo, task: &str, count: usize, weights: Weights) -> Result<Option<String>, Box<dyn Error>> {
     let observations = agent.observations.get_memories_sync(
         &agent.llm,
         task,
         200,
-        Weights {
-            recall: 1.,
-            recency: 1.,
-            relevance: 1.
-        },
-        50
+        weights,
+        30
     )?;
     let observations = if observations.len() == 0 {
         None
@@ -78,4 +74,23 @@ pub fn get_observations(agent: &mut AgentInfo, task: &str) -> Result<Option<Stri
             .join("\n"))
     };
     Ok(observations)
+}
+
+pub fn get_reflections(agent: &mut AgentInfo, task: &str, count: usize, weights: Weights) -> Result<Option<String>, Box<dyn Error>> {
+    let reflections = agent.reflections.get_memories_sync(
+        &agent.llm,
+        task,
+        200,
+        weights,
+        10
+    )?;
+    let reflections = if reflections.len() == 0 {
+        None
+    } else {
+        Some(reflections.iter().enumerate()
+            .map(|(ind, observation)| format!("{ind}. {}", observation.content))
+            .collect::<Vec<_>>()
+            .join("\n"))
+    };
+    Ok(reflections)
 }

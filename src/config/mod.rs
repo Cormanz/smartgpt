@@ -7,8 +7,8 @@ use async_openai::Client as OpenAIClient;
 
 use crate::{
     CommandContext, EndGoals, LLM, ChatGPT, Plugin, 
-    create_browse, create_google, 
-    //create_filesystem, create_wolfram, create_chatgpt, create_news, create_wikipedia, 
+    create_browse, create_google, create_filesystem,
+    //create_wolfram, create_chatgpt, create_news, create_wikipedia, 
     create_none, 
     LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem
 };
@@ -94,8 +94,8 @@ pub fn list_plugins() -> Vec<Plugin> {
     vec![
         create_browse(),
         create_google(),
-        /*create_filesystem(),
-        create_wolfram(),
+        create_filesystem(),
+        /*create_wolfram(),
         create_chatgpt(),
         create_news(),
         create_wikipedia(),*/

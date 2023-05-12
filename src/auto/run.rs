@@ -13,7 +13,7 @@ pub async fn run_command(
     let json = serde_yaml::to_string(&result)
         .map_err(|_| GPTRunError("Could not parse ScriptValue as JSON.".to_string()))?;
 
-    let text = format!("Command {name} {:?} returned:\n{}", args, json);
+    let text = format!("Tool use {name} {:?} returned:\n{}", args, json);
     out.push_str(&text);
 
     Ok(result)

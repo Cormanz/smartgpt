@@ -38,6 +38,14 @@ impl MemorySystem for LocalMemorySystem {
 
         Ok(results)
     }
+
+    async fn decay_recency(&mut self, decay_factor: f32) -> Result<(), Box<dyn Error>> {
+        for memory in &mut self.memory {
+            memory.recency *= decay_factor;
+        }
+
+        Ok(())
+    }
 }
 
 pub struct LocalProvider;
