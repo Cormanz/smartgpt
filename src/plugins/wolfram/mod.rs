@@ -19,6 +19,11 @@ impl Display for WolframNoQueryError {
 
 impl Error for WolframNoQueryError {}
 
+#[derive(Serialize, Deserialize)]
+pub struct WolframArgs {
+    pub query: String
+}
+
 pub fn extract_text_from_wolfram(html: &str) -> String {
     let re = Regex::new(r#"<plaintext>([^<]+)"#).unwrap();
 
@@ -57,8 +62,14 @@ pub async fn ask_wolfram(ctx: &mut CommandContext, query: &str) -> Result<String
 }
 
 pub async fn wolfram(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-    let query: String = args.get(0).ok_or(WolframNoQueryError)?.clone().try_into()?;
+    let WolframArgs { query } = args.parse()?;
     let response = ask_wolfram(ctx, &query).await?;
+
+    let response = if response.trim().len() > 0 {
+        response
+    } else {
+        "Sorry, but Wolfram Alpha did not understand your query. Try just showing the equation.".to_string()
+    };
     
     Ok(response.into())
 }

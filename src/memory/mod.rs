@@ -78,7 +78,7 @@ pub trait MemorySystem : Send + Sync {
                 }
             })
             .collect::<Vec<_>>();
-        memories.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(Equal));
+        memories.sort_by(|a, b| b.memory.recency.partial_cmp(&a.memory.recency).unwrap_or(Equal));
         let memories = memories.iter()
             .map(|el| el.memory.clone())
             .take(count)

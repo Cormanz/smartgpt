@@ -13,29 +13,34 @@ pub struct Action {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Brainwave {
     pub thoughts: String,
+    #[serde(rename = "tool-oriented idea")]
     pub idea: String,
+    #[serde(rename = "action based on idea")]
     pub action: Action
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CommandObservations {
-    #[serde(rename = "was the tool use successful")]
+    #[serde(rename = "was I successful")]
     pub tool_success: bool,
+    #[serde(rename = "what did I do")]
+    pub explanation: String,
+    #[serde(rename = "mental notes from tool use output")]
+    pub notes: Option<Vec<String>>,
     #[serde(rename = "permanent changes")]
-    pub changes: Option<Vec<String>>,
-    #[serde(rename = "mental notes")]
-    pub notes: Option<Vec<String>>
+    pub changes: Option<Vec<String>>
 }
 
 pub fn prompt_brainstormer(agent: &mut AgentInfo, personality: &str) {
     agent.llm.prompt.push(Message::System(format!(
-        r#"
-        Role: 
-        {personality}
-        
-        You are The Brainstormer. Your goal is to complete the task one idea at a time, and then have the Executor use one of its resources to run your idea.
-        Keep in mind that both you are a large language model.
-        "#
+r#"
+Role: 
+{personality}
+
+Your goal is to brainstorm effective and creative solutions to the task given, and then execute them using task-oriented actions.
+You keep track of memories using short-term observations and long-term reflections.
+You are a large language model.
+"#
     )));
 }
 
@@ -55,9 +60,13 @@ pub fn prompt_brainstorm_session(agent: &mut AgentInfo, personality: &str, task:
     agent.llm.prompt.push(Message::User(format!(
 r#"
 Tools:
-google_search {{ "query": String }}
-browse_url {{ "url": String }}
-file_append {{ "path": String, "content": String }}
+google_search {{ "query": "..." }}
+wolfram {{ "query": "solve ..." }}
+    Use pure mathematical equations, don't give wolfram any additional context
+browse_url {{ "url": "..." }}
+    You can only read paragraph-only content from websites, you cannot interact with them.
+file_append {{ "path": "...", "content": "..." }}
+none {{}}
 
 Task: 
 {task}
@@ -74,13 +83,17 @@ These are long-term reflections you have saved. Reflections are very important; 
 Make use of your observations and reflections, they're your memory.
 
 You'll try to brainstorm a thought on how you can make progress on your task.
-You'll then choose one short idea of how you can make said progress in an tool-oriented way.
+
+You'll then choose one short idea of how you can make said progress, listing one specific tool that you will use.
+
 Then, based on that idea, choose an action with a tool.
+
+If your task is complete, use the tool of "none."
 
 {{
     "thoughts": "...",
-    "idea": "...",
-    "action": {{
+    "tool-oriented idea": "...",
+    "action based on idea": {{
         "tool": "...",
         "args": {{ ... }}
     }}
@@ -97,22 +110,26 @@ pub fn prompt_collect_observations(agent: &mut AgentInfo, out: &str) -> Result<(
     agent.llm.message_history.push(Message::User(out.into()));
     agent.llm.message_history.push(Message::User(format!(
 r#"
-Collect mental notes and permanent changes from your tool use.
+Tell me exactly what tool you used and why."
+
+Collect mental notes and permanent changes from the response you got from your tool use.
 Inside of each individual mental note, cite exact sources with URLs if possible.
-You can only have up to three mental notes.
 
 Permanent changes should only be for information such as file reading.
-
 If the tool use was not successful, you should make an observation about that.
+
+Make sure every mental note is directly related to your task in some way.
+You must have four mental notes which are all detailed.
 
 Please note that the "permanent changes" field can be `null`.
 
 {{
-    "was the tool use successful": true / false,
-    "permanent changes": [
-        "..."
+    "was I successful": true / false,
+    "what did I do": "...",
+    "mental notes from tool use output": [
+        "... (citation: ...)"
     ],
-    "mental notes": [
+    "permanent changes": [
         "..."
     ]
 }}

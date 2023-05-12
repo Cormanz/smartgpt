@@ -30,7 +30,7 @@ pub fn execute(program: &mut ProgramInfo, action: Action) -> Result<String, Box<
 
         },
         None => {
-            let error_str = format!("No such tool named '{}.'", action.tool);
+            let error_str = format!("Error: No such tool named '{}.' Try using one of the tools given to you.", action.tool);
             out.push_str(&error_str)
         }
     }

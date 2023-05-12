@@ -21,7 +21,7 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
     println!("{}", "Reflecting...".yellow());
     
     // Ask the Reflector for initial observations.
-    let InitialObservations { ideas } = initial_observations(program, task)?;
+    let InitialObservations { idea } = initial_observations(program, task)?;
 
     let ProgramInfo { context, .. } = program;
     let mut context = context.lock().unwrap();
@@ -30,7 +30,7 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
     println!("{}", "Ideas to complete task:".blue());
 
     // Save those observations to long-term memory.
-    for idea in ideas {
+    for idea in vec![ idea ] {
         println!("    {} {}", "-".black(), idea);
         
         let AgentInfo { llm, reflections, .. } = &mut context.agents.employee;
@@ -60,16 +60,18 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
             println!("{out}");
     
             // Collect observations from command
-            let CommandObservations { tool_success, changes, notes } = collect_observations(program, &out)?;
+            let CommandObservations { tool_success, explanation,  changes, notes } = collect_observations(program, &out)?;
     
             let ProgramInfo { context, .. } = program;
             let mut context = context.lock().unwrap();
     
             println!();
+            println!("{} {}", "What I Did:".blue(), explanation);
             println!("{} {}", "Previous Tool Success:".blue(), tool_success);
             println!("{}", "Mental Notes:".blue());
     
-            let mut memories = notes.unwrap_or(vec![]);
+            let mut memories = vec![ explanation ];
+            memories.extend(notes.unwrap_or(vec![]));
             memories.extend(changes.unwrap_or(vec![]));
     
             // Save those observations to long-term memory.
@@ -100,7 +102,7 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
 
         let mut context = context.lock().unwrap();
 
-        for reflection in reflections.reflections.unwrap_or(vec![]) {
+        for reflection in vec![ reflections.reflections ] {
             let AgentInfo { llm, reflections, .. } = &mut context.agents.employee;
             reflections.store_memory_sync(llm, &reflection)?;
         }

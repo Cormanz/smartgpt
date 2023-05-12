@@ -6,15 +6,18 @@ use crate::{ProgramInfo, Message, auto::{try_parse_json, agents::findings::{get_
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct InitialObservations {
-    pub ideas: Vec<String>
+    #[serde(rename = "brainstormed loose plan")]
+    pub idea: String
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Reflections {
-    pub progress: String,
-    #[serde(rename = "next step")]
+    #[serde(rename = "what have I done so far")]
+    pub current_step: String,
+    #[serde(rename = "what do I need to do next, long term")]
     pub next_step: String,
-    pub reflections: Option<Vec<String>>,
+    #[serde(rename = "quick plan for what to do next")]
+    pub reflections: String,
     #[serde(rename = "have I completed the task")]
     pub task_complete: bool
 }
@@ -47,11 +50,24 @@ r#"
 Task: 
 {task}
 
-Brainstorm three short ideas about how to best complete the task.
-Keep each idea short, simple, and quick.
+Tools:
+google_search {{ "query": "..." }}
+wolfram {{ "query": "solve ..." }}
+    Use pure mathematical equations.
+browse_url {{ "url": "..." }}
+    You can only read paragraph-only content from websites, you cannot interact with them.
+file_append {{ "path": "...", "content": "..." }}
+none {{}}
+
+Remember that you use tools one at a time to complete your tasks.
+You'll chain tools with arguments until you are successful.
+
+Knowing that, brainstorm a very loose one sentence plan for how you will solve this.
+
+Remember that you are working by yourself, and cannot work with anyone.
 
 {{
-    "ideas": [ "..." ]
+    "brainstormed loose plan": "..."
 }}
 
 Respond in this JSON format.
@@ -96,18 +112,18 @@ Observations:
 These are observations that you have saved.
 {observations}
 
-First, examine what progress has been made through the recent observations you've made.
+First, consider what you have done so far in detail based on your observations.
 
-Then, determine what needs to be further done in the long-term to complete the task: your next step.
+Then, consider what you need to do in the future.
 
-Finally, rephrase your next step into two or three shorter long-term reflections.
+Finally, create a list of ideas for what to do next, to save to long-term memory.
 
 Make sure you move onto a new step!
 
 {{
-    "progress": "...",
-    "next step": "...",
-    "reflections": [ "..." ],
+    "what have I done so far": "..",
+    "what do I need to do next, long term": "..",
+    "quick plan for what to do next": ".."
     "have I completed the task": true / false
 }}
 
