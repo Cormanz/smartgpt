@@ -62,6 +62,7 @@ impl LLMModel for ChatGPT {
 pub struct ChatGPTConfig {    
     #[serde(rename = "api key")] pub api_key: String,
     pub model: Option<String>,
+    #[serde(rename = "api base")] pub api_base: Option<String>,
     #[serde(rename = "embedding model")] pub embedding_model: Option<String>,
 }
 
@@ -83,7 +84,7 @@ impl LLMProvider for ChatGPTProvider {
         Ok(Box::new(ChatGPT {
             model: config.model.unwrap_or("gpt-3.5-turbo".to_string()),
             embedding_model: config.embedding_model.unwrap_or("text-embedding-ada-002".to_string()),
-            client: Client::new().with_api_key(config.api_key.clone())
+            client: Client::new().with_api_base(config.api_base.unwrap_or("https://api.openai.com/v1".to_owned())).with_api_key(config.api_key.clone())
         }))
     }
 }
