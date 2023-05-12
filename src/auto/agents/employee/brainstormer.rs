@@ -23,6 +23,8 @@ pub struct Brainwave {
 pub struct CommandObservations {
     #[serde(rename = "was I successful")]
     pub tool_success: bool,
+    #[serde(rename = "if successful is false, why?")]
+    pub fail_cause: Option<String>,
     #[serde(rename = "what did I do")]
     pub explanation: String,
     #[serde(rename = "mental notes from tool use output")]
@@ -125,6 +127,7 @@ Please note that the "permanent changes" field can be `null`.
 
 {{
     "was I successful": true / false,
+    "if successful is false, why?": "..." / null,
     "what did I do": "...",
     "mental notes from tool use output": [
         "... (citation: ...)"

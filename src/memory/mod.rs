@@ -78,10 +78,12 @@ pub trait MemorySystem : Send + Sync {
                 }
             })
             .collect::<Vec<_>>();
-        memories.sort_by(|a, b| b.memory.recency.partial_cmp(&a.memory.recency).unwrap_or(Equal));
+        memories.sort_by(|a, b| a.memory.recency.partial_cmp(&b.memory.recency).unwrap_or(Equal));
         let memories = memories.iter()
             .map(|el| el.memory.clone())
+            .rev()
             .take(count)
+            .rev()
             .collect::<Vec<_>>();
         Ok(memories)
     }

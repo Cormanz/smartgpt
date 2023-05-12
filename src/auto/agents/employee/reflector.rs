@@ -14,7 +14,7 @@ pub struct InitialObservations {
 pub struct Reflections {
     #[serde(rename = "what have I done so far")]
     pub current_step: String,
-    #[serde(rename = "what do I need to do next, long term")]
+    #[serde(rename = "having done this, what should my next step be to complete the task")]
     pub next_step: String,
     #[serde(rename = "quick plan for what to do next")]
     pub reflections: String,
@@ -122,7 +122,7 @@ Make sure you move onto a new step!
 
 {{
     "what have I done so far": "..",
-    "what do I need to do next, long term": "..",
+    "having done this, what should my next step be to complete the task": "..",
     "quick plan for what to do next": ".."
     "have I completed the task": true / false
 }}

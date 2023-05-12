@@ -60,7 +60,7 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
             println!("{out}");
     
             // Collect observations from command
-            let CommandObservations { tool_success, explanation,  changes, notes } = collect_observations(program, &out)?;
+            let CommandObservations { tool_success, fail_cause, explanation,  changes, notes } = collect_observations(program, &out)?;
     
             let ProgramInfo { context, .. } = program;
             let mut context = context.lock().unwrap();
@@ -68,9 +68,15 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
             println!();
             println!("{} {}", "What I Did:".blue(), explanation);
             println!("{} {}", "Previous Tool Success:".blue(), tool_success);
+            if let Some(fail_cause) = &fail_cause {
+                println!("{} {}", "Why It Failed:".blue(), fail_cause);
+            }
             println!("{}", "Mental Notes:".blue());
     
             let mut memories = vec![ explanation ];
+            if let Some(fail_cause) = fail_cause {
+                memories.push(fail_cause);
+            }
             memories.extend(notes.unwrap_or(vec![]));
             memories.extend(changes.unwrap_or(vec![]));
     
