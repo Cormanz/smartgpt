@@ -11,7 +11,7 @@
 
 SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 and GPT-4) with the ability to complete complex tasks without user input by breaking them down into smaller problems, and collecting information using the internet and other external sources.
 
-If you're interested in keeping up with the progress of SmartGPT or contacting me, you can contact me on the [Octagon discord](https://discord.gg/rMnTeZWTBb), a hub for discussion and news of large language models and adjacent technologies.
+If you're interested in keeping up with the progress of SmartGPT, want to contribute to development, or have issues to discuss, [join the SmartGPT Discord](https://discord.gg/5uezFE2XES)
 
 https://github.com/Cormanz/smartgpt/assets/32941017/53bdcf83-4b2e-4798-b3f2-1a233b43c0e1
 
