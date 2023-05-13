@@ -133,7 +133,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!();
 
     match program.auto_type.clone() {
-        AutoType::Assistant => {
+        AutoType::Assistant { token_limit } => {
             let mut messages: Vec<Message> = vec![];
             let stdin = io::stdin();
             loop {
@@ -144,7 +144,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 println!();
 
-                let response = run_assistant_auto(&mut program, &messages, &input)?;
+                let response = run_assistant_auto(&mut program, &messages, &input, token_limit)?;
 
                 messages.push(Message::User(input));
                 messages.push(Message::Assistant(response.clone()));

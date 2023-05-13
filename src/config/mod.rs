@@ -73,7 +73,9 @@ pub enum AutoType {
     #[serde(rename = "runner")] Runner {
         task: String
     },
-    #[serde(rename = "assistant")] Assistant
+    #[serde(rename = "assistant")] Assistant {
+        #[serde(rename = "assistant token limit")] token_limit: Option<u16>
+    },
 }
 
 pub struct ProgramInfo {

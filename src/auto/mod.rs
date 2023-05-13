@@ -6,7 +6,7 @@ use json5;
 
 use colored::Colorize;
 
-use crate::{LLM, ProgramInfo, Message, format_prompt};
+use crate::{LLM, ProgramInfo, Message };
 
 use agents::{employee::run_employee, manager::run_manager};
 
@@ -34,10 +34,13 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     }
 }
 
-pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str) -> Result<String, Box<dyn Error>> {
+pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
         context, ..
     } = program;
+
+    let token_limit_final: u16 = token_limit.unwrap_or(400u16);
+
     let mut context = context.lock().unwrap();
 
     let mut new_messages = messages.to_vec();
@@ -71,9 +74,9 @@ Generate a response to this request: {task}");
         drop(context);
     
         if has_manager {
-            run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+            run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request, token_limit))?
         } else {
-            run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request))?
+            run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request, token_limit))?
         }
     } else {
         let ProgramInfo { 
@@ -94,7 +97,7 @@ r#"Respond in this conversation context:
 
         context.agents.fast.llm.model.get_response_sync(
             &context.agents.fast.llm.get_messages(),
-            Some(200),
+            Some(token_limit_final),
             None
         )
     }
