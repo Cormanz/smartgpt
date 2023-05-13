@@ -37,16 +37,15 @@ There are two main shortcomings, however.
 
 SmartGPT is an **incredibly experimental** application. The goal is to unlock maximum potential out of LLMs, and stability is sacrificed for this. Backwards compatibility is a fever dream here. However, SmartGPT is also housing some of the most innovative ideas and experiments in the AutoGPT space right now, and although most are unsuccessful, a few hit the dart-board and stick.
 
-## Quickstart
+## Cargo Quickstart
 
-0. Install [`cargo`](https://doc.rust-lang.org/cargo/getting-started/installation.html), preferably the latest stable version.
+1. Install [`cargo`](https://doc.rust-lang.org/cargo/getting-started/installation.html), preferably the latest stable version.
 
-1. Clone the repository wih `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
+2. Clone the repository with `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
 
-2. Run it in release mode with `cargo run --release`. This will create a `config.yml` for you.
+3. Run it in release mode with `cargo run --release`. This will create a `config.yml` for you.
 
-3. Adjust the config to your liking, and execute it once again.
-
+4. Adjust the config to your liking, and execute it once again.
 
 If you want more information, [read the documentation](https://corman.gitbook.io/smartgpt/installation).
 
@@ -62,8 +61,6 @@ If you want more information, [read the documentation](https://corman.gitbook.io
 Assistants are highly experimental, so we recommend Runners.
 
 Autos have **agents**. An agent is an LLM that handles planning, reasoning, and task execution. The Auto starts with your **top manager**, and asks it to run the task. Then, that manager will delegate tasks all the way down to your **employee**, which will run the tasks.
-
-[Read more in the Autos section of the documentation.](https://corman.gitbook.io/smartgpt/autos/autos)
 
 ## Managers
 
