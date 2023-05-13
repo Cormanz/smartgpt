@@ -144,6 +144,12 @@ impl LLM {
         messages.extend(self.end_prompt.clone());
         messages
     }
+
+    pub fn clear_history(&mut self) {
+        self.prompt.clear();
+        self.end_prompt.clear();
+        self.message_history.clear();
+    }
 }
 
 pub fn format_prompt(messages: &[Message]) -> String {

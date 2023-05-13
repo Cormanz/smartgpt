@@ -22,8 +22,7 @@ pub fn is_task(program: &mut ProgramInfo, task: &str) -> Result<bool, Box<dyn Er
     } = program;
     let mut context = context.lock().unwrap();
     
-    context.agents.fast.llm.prompt.clear();
-    context.agents.fast.llm.message_history.clear();
+    context.agents.fast.llm.clear_history();
     
     context.agents.fast.llm.prompt.push(Message::Assistant(format!(r#"
 Given a message respond with one of the following.

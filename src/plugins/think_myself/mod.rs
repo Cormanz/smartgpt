@@ -1,12 +1,17 @@
 use std::{collections::HashMap, error::Error, fmt::Display};
 
 use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
 
 use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue};
 use std::fs;
 
+#[derive(Serialize, Deserialize)]
+pub struct SelfThoughts {
+    solution: String
+}
 
-pub async fn none(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn think_myself(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     Ok(ScriptValue::None)
 }
 
@@ -15,7 +20,7 @@ pub struct NoneImpl;
 #[async_trait]
 impl CommandImpl for NoneImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        none(ctx, args).await
+        think_myself(ctx, args).await
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -30,8 +35,8 @@ pub fn create_none() -> Plugin {
         cycle: Box::new(EmptyCycle),
         commands: vec![
             Command {
-                name: "none".to_string(),
-                purpose: "Do nothing.".to_string(),
+                name: "think_myself".to_string(),
+                purpose: "Think myself.".to_string(),
                 args: vec![],
                 return_type: "None".to_string(),
                 run: Box::new(NoneImpl)
