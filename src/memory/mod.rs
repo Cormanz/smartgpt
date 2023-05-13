@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, cmp::{Reverse, min}, cmp::Ordering::Equal};
+use std::{error::Error, fmt::Display, cmp::{min}, cmp::Ordering::Equal};
 use async_trait::async_trait;
 use serde_json::Value;
 
@@ -77,7 +77,7 @@ pub trait MemorySystem : Send + Sync {
     }
 
     fn store_memory_sync(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>> {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.store_memory(llm, memory))
     }
     
@@ -87,7 +87,7 @@ pub trait MemorySystem : Send + Sync {
         memory: &str,
         min_count: usize,
     ) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.get_memory_pool(llm, memory, min_count))
     }
     
@@ -99,7 +99,7 @@ pub trait MemorySystem : Send + Sync {
         weights: Weights,
         count: usize,
     ) -> Result<Vec<Memory>, Box<dyn Error>> {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.get_memories(llm, memory, min_count, weights, count))
     }
 }

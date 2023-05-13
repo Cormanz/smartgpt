@@ -1,11 +1,11 @@
-use std::{error::Error, fmt::Display, collections::HashMap, process::CommandArgs};
+use std::{error::Error};
 
-use async_openai::{types::{CreateChatCompletionRequest, CreateChatCompletionResponse, ChatCompletionRequestMessage, Role}, error::OpenAIError, Client};
+use async_openai::{types::{CreateChatCompletionRequest, CreateChatCompletionResponse, ChatCompletionRequestMessage, Role}, Client};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue, CommandArgument};
+use crate::{CommandContext, CommandImpl, Plugin, Command, CommandNoArgError, PluginData, PluginDataNoInvoke, invoke, PluginCycle, ScriptValue, CommandArgument};
 
 const CHAT_GPT_PROMPT: &str = r#"You are ChatGPT, a large language model trained by OpenAI, based on the GPT-3.5 architecture. As an assistant, your purpose is to provide helpful and informative responses to a wide variety of questions and topics, while also engaging in natural and friendly conversation with users.
 
@@ -201,7 +201,7 @@ pub struct ChatGPTCycle;
 
 #[async_trait]
 impl PluginCycle for ChatGPTCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
 

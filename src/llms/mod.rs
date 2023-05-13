@@ -7,11 +7,8 @@ use tokio::runtime::Runtime;
 
 use std::{error::Error, fmt::Display};
 
-use async_openai::{Client, types::{CreateChatCompletionResponse, CreateChatCompletionRequest, ChatCompletionRequestMessage, Role, CreateEmbeddingRequest, EmbeddingInput}, error::OpenAIError, Chat};
 use async_trait::async_trait;
-use serde::{Serialize, Deserialize};
 use serde_json::Value;
-use tiktoken_rs::async_openai::get_chat_completion_max_tokens;
 
 #[derive(Debug, Clone)]
 pub struct ModelLoadError(pub String);
@@ -90,13 +87,13 @@ pub trait LLMModel : Send + Sync {
     fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
 
     fn get_response_sync(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
-        let mut rt = Runtime::new()?;
+        let rt = Runtime::new()?;
         rt.block_on(async {
             self.get_response(messages, max_tokens, temperature).await
         })
     }
     fn get_base_embed_sync(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
-        let mut rt = Runtime::new()?;
+        let rt = Runtime::new()?;
         rt.block_on(async {
             self.get_base_embed(text).await
         })

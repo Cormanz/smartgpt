@@ -1,12 +1,11 @@
-use std::{collections::HashMap, error::Error, fmt::Display};
+use std::{error::Error};
 
 use async_trait::async_trait;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue};
-use std::fs;
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, ScriptValue};
 
 
-pub async fn none(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn none(_ctx: &mut CommandContext, _args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     Ok(ScriptValue::None)
 }
 

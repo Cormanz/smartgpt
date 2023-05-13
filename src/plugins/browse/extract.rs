@@ -1,8 +1,4 @@
-use std::{error::Error, collections::HashMap};
-
-use reqwest::Client;
-use select::{document::Document, predicate::{Name, Or}};
-use serde::{Serialize, Deserialize};
+use select::{document::Document, predicate::{Name}};
 
 pub fn extract_text_from_html(html: &str) -> String {
     let mut text = String::new();
