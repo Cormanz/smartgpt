@@ -1,7 +1,7 @@
-use std::{error::Error, collections::HashSet, sync::Mutex, fmt::Display, ops::DerefMut, path::Path};
+use std::{error::Error, fmt::Display, path::Path};
 
 use async_trait::async_trait;
-use llm::{InferenceSession, Model, InferenceParameters, Vocabulary, TokenBias, load_dynamic, ModelParameters, InferenceSessionConfig, InferenceRequest, OutputRequest};
+use llm::{Model, InferenceParameters, load_dynamic, ModelParameters, InferenceSessionConfig, InferenceRequest, OutputRequest};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -60,11 +60,11 @@ impl LLMModel for LocalLLM {
         Ok(text.strip_prefix(&prompt).unwrap_or(&text).to_string())
     }
 
-    async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
+    async fn get_base_embed(&self, _text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         Ok(vec![])
     }
 
-    fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>> {
+    fn get_tokens_remaining(&self, _text: &[Message]) -> Result<usize, Box<dyn Error>> {
         Ok(20000)
     }
 }

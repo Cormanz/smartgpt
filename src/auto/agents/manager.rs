@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, agents::{findings::{ask_for_findings, to_points}, employee::run_employee}}, LLM, AgentInfo, Weights};
+use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, agents::{findings::{ask_for_findings, to_points}, employee::run_employee}}, AgentInfo};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
@@ -105,7 +105,7 @@ Keep every field in that exact order.
         let ProgramInfo { 
             context, ..
         } = program;
-        let mut context = context.lock().unwrap();
+        let context = context.lock().unwrap();
 
         let thoughts = try_parse_json::<ManagerThought>(&context.agents.managers[layer].llm, 2, Some(400))?;
         let ParsedResponse { data: thoughts, raw } = thoughts;

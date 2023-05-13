@@ -1,7 +1,6 @@
 use std::{fmt::Display, error::Error};
 
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_yaml::Value;
+use serde::{ Serialize, de::DeserializeOwned};
 use json5;
 
 use colored::Colorize;
@@ -41,7 +40,7 @@ pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], reque
 
     let token_limit_final: u16 = token_limit.unwrap_or(400u16);
 
-    let mut context = context.lock().unwrap();
+    let context = context.lock().unwrap();
 
     let mut new_messages = messages.to_vec();
     new_messages.push(Message::User(format!(
@@ -61,7 +60,7 @@ r#"Summarize the conversation."#)));
         let ProgramInfo { 
             context, ..
         } = program;
-        let mut context = context.lock().unwrap();
+        let context = context.lock().unwrap();
 
         let has_manager: bool = context.agents.managers.len() >= 1;
 

@@ -1,10 +1,6 @@
-use std::{error::Error, time::Duration, fmt::Display, mem::take, collections::HashMap, process, fs, io};
+use std::{error::Error, fmt::Display, process, fs, io};
 
 use colored::Colorize;
-use reqwest::{self, Client, header::{USER_AGENT, HeaderMap}};
-use async_openai::{
-    Client as OpenAIClient, types::{CreateCompletionRequestArgs, CreateChatCompletionRequest, ChatCompletionRequestMessage, Role, CreateCompletionResponse, CreateChatCompletionResponse}, error::OpenAIError,
-};
 
 mod plugin;
 mod plugins;
@@ -26,7 +22,6 @@ pub use runner::*;
 pub use memory::*;
 
 use serde::{Deserialize, Serialize};
-use tokio::time::sleep;
 use serde_json::Value;
 
 use crate::auto::{run_task_auto, run_assistant_auto};

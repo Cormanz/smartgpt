@@ -1,9 +1,9 @@
-use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions, path::Path};
+use std::{error::Error, fmt::Display, fs::OpenOptions, path::Path};
 
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chunks, PluginData, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, PluginData, ScriptValue, CommandArgument};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -17,7 +17,7 @@ impl<'a> Display for FilesNoArgError<'a> {
 
 impl<'a> Error for FilesNoArgError<'a> {}
 
-pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_write(_ctx: &mut CommandContext, args: Vec<ScriptValue>, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
     let command_name = if append { "file_append" } else { "file_write" };
     let path: String = args.get(0)
         .ok_or(FilesNoArgError(command_name, "path"))?
@@ -53,7 +53,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: Vec<ScriptValue>, append
     Ok(ScriptValue::None)
 }
 
-pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_list(_ctx: &mut CommandContext, _args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let files = fs::read_dir("./files/")?;
     let files = files
         .map(|el| el.map(|el| el.path().display().to_string()))
@@ -64,7 +64,7 @@ pub async fn file_list(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Resu
     Ok(ScriptValue::List(files.iter().map(|el| el.clone().into()).collect()))
 }
 
-pub async fn file_read(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_read(_ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
     let path: String = args.get(0).ok_or(FilesNoArgError("file_read", "path"))?.clone().try_into()?;
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
@@ -131,7 +131,7 @@ pub struct FileCycle;
 
 #[async_trait]
 impl PluginCycle for FileCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         let files = fs::read_dir("files")?;
         let files = files
             .map(|el| el.map(|el| el.path().display().to_string()))
@@ -146,7 +146,7 @@ impl PluginCycle for FileCycle {
         }))
     }
 
-    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, _value: Value) -> Option<Box<dyn PluginData>> {
         None
     }
 }

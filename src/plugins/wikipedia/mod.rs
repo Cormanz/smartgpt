@@ -1,8 +1,5 @@
-use std::{error::Error, fmt::Display, collections::HashMap};
+use std::{error::Error, fmt::Display};
 use async_trait::async_trait;
-use regex::Regex;
-
-use select::{document::Document, predicate::Name};
 
 mod types;
 
@@ -63,7 +60,7 @@ pub async fn get_wikipedia(ctx: &mut CommandContext, name: &str) -> Result<Strin
     let content = page.extract.clone().unwrap_or("".to_string());
 
     let (content, length_warning) = apply_chunks(&content, 1, 5000);
-    let length_warning = length_warning
+    let _length_warning = length_warning
         .map(|el| format!("{el}\n\n"));
 
     let output = WikipediaOutput {
@@ -83,7 +80,7 @@ pub async fn wikipedia_search(ctx: &mut CommandContext, args: Vec<ScriptValue>) 
 }
 
 pub async fn wikipedia_get(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let name: String = args.get(0).ok_or(CommandNoArgError("wikipedia-browse", "name"))?.clone().try_into()?;;
+    let name: String = args.get(0).ok_or(CommandNoArgError("wikipedia-browse", "name"))?.clone().try_into()?;
     let response = get_wikipedia(ctx, &name).await?;
     
     Ok(response.into())

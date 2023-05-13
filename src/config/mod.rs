@@ -3,9 +3,8 @@ use std::{collections::HashMap, error::Error, fmt::Display, process, sync::{Mute
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
-use async_openai::Client as OpenAIClient;
 
-use crate::{CommandContext, EndGoals, LLM, ChatGPT, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem};
+use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem};
 
 mod default;
 pub use default::*;

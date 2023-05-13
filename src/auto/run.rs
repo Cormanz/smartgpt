@@ -1,6 +1,6 @@
-use std::{sync::{Mutex, Arc}, error::Error};
+use std::{error::Error};
 
-use crate::{ScriptValue, ProgramInfo, Command, CommandContext, Expression, GPTRunError};
+use crate::{ScriptValue, Command, CommandContext, Expression, GPTRunError};
 
 pub async fn run_command(
     out: &mut String,

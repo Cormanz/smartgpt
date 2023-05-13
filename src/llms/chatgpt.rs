@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use async_openai::{Client, types::{CreateChatCompletionResponse, CreateChatCompletionRequest, ChatCompletionRequestMessage, Role, CreateEmbeddingRequest, EmbeddingInput}, error::OpenAIError, Chat};
+use async_openai::{Client, types::{CreateChatCompletionResponse, CreateChatCompletionRequest, ChatCompletionRequestMessage, Role, CreateEmbeddingRequest, EmbeddingInput}};
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;

@@ -2,7 +2,7 @@ use std::error::Error;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{LLM, Message, AgentInfo};
+use crate::{Message, AgentInfo};
 
 use super::try_parse_json;
 

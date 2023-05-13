@@ -3,7 +3,7 @@ use std::error::Error;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{LLM, Memory, MemoryProvider, NoLocalModelError, RelevantMemory, compare_embeddings};
+use crate::{LLM, Memory, MemoryProvider, RelevantMemory, compare_embeddings};
 
 use super::MemorySystem;
 
@@ -26,7 +26,7 @@ impl MemorySystem for LocalMemorySystem {
         Ok(())
     }
 
-    async fn get_memory_pool(&mut self, llm: &LLM, memory: &str, min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
+    async fn get_memory_pool(&mut self, llm: &LLM, memory: &str, _min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
         let embedding = llm.model.get_base_embed(memory).await?;
     
         let results: Vec<RelevantMemory> = self.memory.iter()
