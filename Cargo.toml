@@ -23,3 +23,6 @@ rand = "0.8.5"
 textwrap = "0.16.0"
 json5 = "0.4.1"
 llm = "0.1.1"
+redis = { version = "0.23.0", features = ["tokio-comp"] }
+sha2 = "0.9"
+hex = "0.4"

@@ -1,7 +1,14 @@
 services:
   smartgpt:
     build: .
+    depends_on:
+      - redis
     ports: 
       - "3001:3001"
     volumes:
       - .:/smartgpt
+    environment:
+      MEMORY_BACKEND: ${MEMORY_BACKEND:-redis}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+  redis:
+    image: "redis/redis-stack-server:latest"

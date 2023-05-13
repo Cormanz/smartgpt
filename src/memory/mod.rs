@@ -1,5 +1,6 @@
 use std::{error::Error, fmt::Display, cmp::{min}, cmp::Ordering::Equal};
 use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 mod local;
@@ -18,8 +19,9 @@ impl Display for MemorySystemLoadError {
 
 impl Error for MemorySystemLoadError {}
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Memory {
+    pub id: String,
     pub content: String,
     pub recall: f32,
     pub recency: f32,
