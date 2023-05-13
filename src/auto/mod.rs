@@ -34,7 +34,7 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     }
 }
 
-pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: &Option<u16>) -> Result<String, Box<dyn Error>> {
+pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
         context, ..
     } = program;

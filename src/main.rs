@@ -144,7 +144,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 println!();
 
-                let response = run_assistant_auto(&mut program, &messages, &input, &token_limit)?;
+                let response = run_assistant_auto(&mut program, &messages, &input, token_limit)?;
 
                 messages.push(Message::User(input));
                 messages.push(Message::Assistant(response.clone()));
