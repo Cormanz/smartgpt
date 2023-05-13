@@ -37,16 +37,27 @@ There are two main shortcomings, however.
 
 SmartGPT is an **incredibly experimental** application. The goal is to unlock maximum potential out of LLMs, and stability is sacrificed for this. Backwards compatibility is a fever dream here. However, SmartGPT is also housing some of the most innovative ideas and experiments in the AutoGPT space right now, and although most are unsuccessful, a few hit the dart-board and stick.
 
-## Quickstart
+## Cargo Quickstart
 
 0. Install [`cargo`](https://doc.rust-lang.org/cargo/getting-started/installation.html), preferably the latest stable version.
 
-1. Clone the repository wih `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
+1. Clone the repository with `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
 
 2. Run it in release mode with `cargo run --release`. This will create a `config.yml` for you.
 
 3. Adjust the config to your liking, and execute it once again.
 
+## Docker Quickstart
+
+0. Install [`docker compose`](https://docs.docker.com/compose/install/linux/), preferably the latest stable version.
+
+1. Clone the repository with `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
+
+2. Build the docker image with: `docker compose build`
+
+3. Run it in release mode `docker compose run --rm smartgpt`. This will create a `config.yml` for you.
+
+4. Adjust the config to your liking, and execute it once again.
 
 If you want more information, [read the documentation](https://corman.gitbook.io/smartgpt/installation).
 

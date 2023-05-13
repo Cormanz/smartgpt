@@ -1,0 +1,7 @@
+services:
+  smartgpt:
+    build: .
+    ports: 
+      - "3001:3001"
+    volumes:
+      - .:/smartgpt
