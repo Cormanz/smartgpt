@@ -136,7 +136,7 @@ impl From<String> for Expression {
 
 pub fn to_expr(node: ExprKind) -> Result<Expression, GPTParseError> {
     match node {
-        ExprKind::Call { func, args, keywords: _ } => {
+        ExprKind::Call { func, args, .. } => {
             let func = match func.node {
                 ExprKind::Name { id, .. } => Ok(id),
                 other => Err(GPTParseError(format!("Cannot handle function call applied to {:?}", other)))
@@ -148,7 +148,7 @@ pub fn to_expr(node: ExprKind) -> Result<Expression, GPTParseError> {
 
             Ok(Expression::FunctionCall(func, arguments))
         }
-        ExprKind::Subscript { value, slice, ctx: _ } => {
+        ExprKind::Subscript { value, slice, .. } => {
             let value = to_expr(value.node.clone())?;
             let slice = to_expr(slice.node.clone())?;
 
@@ -224,7 +224,7 @@ pub fn to_statement(statement: StmtKind) -> Result<Statement, GPTParseError> {
         StmtKind::Expr { value } => {
             to_expr(value.node).map(|el| Statement::Expression(el))
         }
-        StmtKind::Assign { targets, value, type_comment: _ } => {
+        StmtKind::Assign { targets, value, .. } => {
             let target = to_expr(targets[0].node.clone())?;
             let value = to_expr(value.node)?;
             Ok(Statement::Assign(target, value))
