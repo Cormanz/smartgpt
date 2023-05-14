@@ -143,8 +143,8 @@ impl MemorySystem for QdrantMemorySystem {
             let search_response = self.client.search_points(&search_request).await?;
             search_result = search_response.result;
         }
-        
-        let relevant_memories: Vec<RelevantMemory> = search_result
+
+        let relevant_memories_result: Result<Vec<_>, _> = search_result
             .iter()
             .map(|point| {
                 let json_string = serde_json::to_value(&point.payload).unwrap_or("".into());
@@ -152,16 +152,7 @@ impl MemorySystem for QdrantMemorySystem {
                 let payload: QdrantPayload = match serde_json::from_value(json_string) {
                     Ok(p) => p,
                     Err(e) => {
-                        eprintln!("Failed to parse json_string into QdrantPayload: {}", e);
-                        return RelevantMemory {
-                            memory: Memory {
-                                content: "".to_string(),
-                                recall: 1.0,
-                                recency: 1.0,
-                                embedding: vec![]
-                            },
-                            relevance: 0.0,
-                        };
+                        return Err(Box::new(e));
                     }
                 };
 
@@ -181,13 +172,17 @@ impl MemorySystem for QdrantMemorySystem {
                 };
                 let relevance = point.score;
 
-                RelevantMemory {
+                Ok(RelevantMemory {
                     memory,
                     relevance,
-                }
+                })
             })
             .collect();
-        Ok(relevant_memories)
+
+        match relevant_memories_result {
+            Ok(relevant_memories) => Ok(relevant_memories),
+            Err(e) => Err(e),
+        }
 
     }
 }
