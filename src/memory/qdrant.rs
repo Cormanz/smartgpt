@@ -1,5 +1,8 @@
 use std::collections::HashMap;
 use std::error::Error;
+use std::sync::Arc;
+use std::vec;
+use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::{LLM, Memory, MemoryProvider, RelevantMemory, compare_embeddings};
@@ -20,7 +23,9 @@ use sha2::{Sha256, Digest};
 
 
 pub struct QdrantMemorySystem {
-    client: QdrantClient
+    client: QdrantClient,
+    latest_point_id: Arc<Mutex<Option<u64>>>,
+    collection_name: String
 }
 
 #[async_trait]
@@ -28,21 +33,12 @@ impl MemorySystem for QdrantMemorySystem {
     async fn store_memory(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>> {
         let embedding = llm.model.get_base_embed(memory).await?;
 
-        let mut hasher = Sha256::new();
-        hasher.update(memory.as_bytes());
-        let id = hex::encode(hasher.finalize());
-
         let memory_struct = Memory {
             content: memory.to_string(),
             recency: 1.0,
             recall: 1.0,
             embedding: embedding.clone(),
         };
-
-
-        let collection_name = "qdrant_memory"; // Replace with the actual collection name
-
-        // Convert the Memory struct into a HashMap<String, Value>
 
         let mut memory_map: HashMap<String, Value> = HashMap::new();
         memory_map.insert("content".to_string(), Value {
@@ -55,8 +51,15 @@ impl MemorySystem for QdrantMemorySystem {
             kind: Some(Kind::DoubleValue(memory_struct.recall as f64)),
         });
 
+        let mut latest_point_id = self.latest_point_id.lock().await;
+        let point_id_val = match *latest_point_id {
+            Some(id) => id + 1,
+            None => 1,
+        };
+        *latest_point_id = Some(point_id_val);
+
         let point_id = PointId {
-            point_id_options: Some(point_id::PointIdOptions::Uuid(Uuid::new_v4().to_string())),
+            point_id_options: Some(point_id::PointIdOptions::Num(point_id_val)),
         };
         
         let vectors = Vectors {
@@ -67,7 +70,7 @@ impl MemorySystem for QdrantMemorySystem {
 
         self.client
         .upsert_points(
-            collection_name,
+            self.collection_name.to_string(),
             vec![PointStruct {
                 id: Some(point_id),
                 payload: memory_map,
@@ -87,28 +90,58 @@ impl MemorySystem for QdrantMemorySystem {
         _min_count: usize,
     ) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
         let embedding = llm.model.get_base_embed(memory).await?;
+        let latest_point_id_option = self.latest_point_id.lock().await.clone();
+        let latest_point_id = latest_point_id_option.unwrap_or(0);
 
-        let search_request = RecommendPoints {
-            collection_name: "qdrant_memory".to_string(),
-            limit: _min_count as u64,
-            with_payload: Some(WithPayloadSelector {
-                selector_options: Some(with_payload_selector::SelectorOptions::Enable(true)),
-            }),
-            params: None,
-            score_threshold: None,
-            offset: None,
-            with_vectors: None,
-            read_consistency: None,
-            positive: None,
-            negative: None,
-            filter: None,
-            using: None,
-            lookup_from: None
-        };
+        let mut points: Vec<PointId> = vec![];
+        let mut search_result = vec![];
+        if latest_point_id > 0 {
+            points.push(PointId {
+                point_id_options: Some(point_id::PointIdOptions::Num(latest_point_id)),
+            });
 
-        let search_response = self.client.recommend(&search_request).await?;
-        let relevant_memories: Vec<RelevantMemory> = search_response
-            .result
+            let recommend_request = RecommendPoints {
+                collection_name: self.collection_name.to_string(),
+                limit: _min_count as u64,
+                with_payload: Some(WithPayloadSelector {
+                    selector_options: Some(with_payload_selector::SelectorOptions::Enable(true)),
+                }),
+                params: None,
+                score_threshold: None,
+                offset: None,
+                with_vectors: None,
+                read_consistency: None,
+                positive: points,
+                negative: vec![],
+                filter: None,
+                using: None,
+                lookup_from: None
+            };
+
+            let recommend_response = self.client.recommend(&recommend_request).await?;
+            search_result = recommend_response.result;
+        } else {
+            let search_request = SearchPoints {
+                collection_name: self.collection_name.to_string(),
+                vector: embedding.clone(),
+                filter: None,
+                limit: _min_count as u64,
+                with_payload: Some(WithPayloadSelector {
+                    selector_options: Some(with_payload_selector::SelectorOptions::Enable(true)),
+                }),
+                params: None,
+                score_threshold: None,
+                offset: None,
+                vector_name: None,
+                with_vectors: None,
+                read_consistency: None
+            };
+
+            let search_response = self.client.search_points(&search_request).await?;
+            search_result = search_response.result;
+        }
+        
+        let relevant_memories: Vec<RelevantMemory> = search_result
             .iter()
             .map(|point| {
                 let content = match point.payload.get("content") {
@@ -149,7 +182,7 @@ impl MemorySystem for QdrantMemorySystem {
                     recency,
                     embedding: point_embedding.clone()
                 };
-                let relevance = compare_embeddings(&embedding, &point_embedding);
+                let relevance = point.score;
 
                 RelevantMemory {
                     memory,
@@ -181,19 +214,25 @@ impl MemoryProvider for QdrantProvider {
             QdrantClient::new(Some(config)).await
         })?;
 
+        let collection_name = "qdrant_memory";
+
         let collection_exists = rt.block_on(async {
-            client.has_collection("qdrant_memory".to_string()).await
+            client.has_collection(collection_name.to_string()).await
         })?;
 
         if !collection_exists {
             rt.block_on(async {
                 client.create_collection(
-                    &create_initial_collection("qdrant_memory".to_string())
+                    &create_initial_collection(collection_name.to_string())
                 ).await
             })?;
         }
 
-        Ok(Box::new(QdrantMemorySystem { client }))
+        Ok(Box::new(QdrantMemorySystem { 
+            client,
+            latest_point_id: Arc::new(Mutex::new(None)),
+            collection_name: collection_name.to_string()
+        }))
     }
 }
 
