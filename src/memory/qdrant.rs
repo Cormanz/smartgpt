@@ -2,50 +2,27 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 use std::vec;
+use serde::{Serialize, Deserialize};
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
-use crate::{LLM, Memory, MemoryProvider, RelevantMemory, compare_embeddings};
+use crate::{LLM, Memory, MemoryProvider, RelevantMemory};
 
 use qdrant_client::prelude::*;
 use qdrant_client::qdrant::value::Kind;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::vectors_config::Config;
-use qdrant_client::qdrant::with_payload_selector::SelectorOptions;
 use qdrant_client::qdrant::{CreateCollection, SearchPoints, VectorParams, VectorsConfig, PointId, Vectors, Vector, WithPayloadSelector, with_payload_selector, OptimizersConfigDiff, WalConfigDiff, HnswConfigDiff, QuantizationConfig, quantization_config, ScalarQuantization, RecommendPoints};
 use tokio::runtime::Runtime;
 
 use super::MemorySystem;
 
 use async_trait::async_trait;
-use serde_json::to_string;
-use sha2::{Sha256, Digest};
 
-
-trait FromValueKind {
-    fn from_value_kind(kind: &Option<Kind>) -> Self;
-}
-
-impl FromValueKind for String {
-    fn from_value_kind(kind: &Option<Kind>) -> Self {
-        match kind {
-            Some(Kind::StringValue(string_value)) => string_value.clone(),
-            _ => String::new(),
-        }
-    }
-}
-
-impl FromValueKind for f32 {
-    fn from_value_kind(kind: &Option<Kind>) -> Self {
-        match kind {
-            Some(Kind::DoubleValue(double_value)) => *double_value as f32,
-            _ => 0.0,
-        }
-    }
-}
-
-fn get_value<T: FromValueKind>(payload: &HashMap<String, Value>, key: &str) -> T {
-    T::from_value_kind(&payload.get(key).and_then(|value| value.kind.clone()))
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QdrantPayload {
+    content: String,
+    recall: f32,
+    recency: f32
 }
 
 pub struct QdrantMemorySystem {
@@ -102,7 +79,7 @@ impl MemorySystem for QdrantMemorySystem {
                 payload: memory_map,
                 vectors: Some(vectors)
             }],
-            None, // Optional ordering parameter can be set to None
+            None,
         )
         .await?;
 
@@ -170,9 +147,9 @@ impl MemorySystem for QdrantMemorySystem {
         let relevant_memories: Vec<RelevantMemory> = search_result
             .iter()
             .map(|point| {
-                let content: String = get_value(&point.payload, "content");
-                let recall: f32 = get_value(&point.payload, "recall");
-                let recency: f32 = get_value(&point.payload, "recency");
+                let json_string = serde_json::to_string(&point.payload).unwrap_or("".to_string());
+
+                let payload: QdrantPayload = serde_json::from_str(&json_string).unwrap();
 
                 let point_embedding = match &point.vectors {
                     Some(vectors) => match &vectors.vectors_options {
@@ -183,9 +160,9 @@ impl MemorySystem for QdrantMemorySystem {
                 };
 
                 let memory = Memory {
-                    content,
-                    recall,
-                    recency,
+                    content: payload.content,
+                    recall: payload.recall,
+                    recency: payload.recency,
                     embedding: point_embedding.clone()
                 };
                 let relevance = point.score;
