@@ -1,14 +1,17 @@
 services:
   smartgpt:
     build: .
-    depends_on:
-      - redis
+    # depends_on:
+    #   - qdrant
+    #   - redis
     ports: 
       - "3001:3001"
     volumes:
       - .:/smartgpt
     environment:
-      MEMORY_BACKEND: ${MEMORY_BACKEND:-redis}
+      QDRANT_HOST: ${QDRANT_HOST:-qdrant}
       REDIS_HOST: ${REDIS_HOST:-redis}
+  qdrant:
+    image: "qdrant/qdrant"
   redis:
     image: "redis/redis-stack-server:latest"
