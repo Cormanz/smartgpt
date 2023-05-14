@@ -10,7 +10,7 @@ use crate::{
     create_browse, create_google, create_filesystem, create_wolfram,
     //create_chatgpt, create_news, create_wikipedia, 
     create_none, 
-    LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem
+    LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem, PluginStore
 };
 
 mod default;
@@ -85,9 +85,7 @@ pub enum AutoType {
 pub struct ProgramInfo {
     pub personality: String,
     pub auto_type: AutoType,
-    pub plugins: Vec<Plugin>,
-    pub context: Arc<Mutex<CommandContext>>,
-    pub disabled_commands: Vec<String>
+    pub context: Arc<Mutex<CommandContext>>
 }
 
 pub fn list_plugins() -> Vec<Plugin> {
@@ -155,19 +153,6 @@ pub fn create_agent(agent: AgentConfig) -> Result<AgentInfo, Box<dyn Error>> {
 pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     let config: Config = serde_yaml::from_str(config)?;
 
-    let mut context = CommandContext {
-        auto_type: config.auto_type.clone(),
-        command_out: vec![],
-        variables: HashMap::new(),
-        plugin_data: crate::PluginStore(HashMap::new()),
-        agents: Agents {
-            managers: config.agents.managers.iter().map(|el| create_agent(el.clone())).collect::<Result<_, _>>()?,
-            employee: create_agent(config.agents.employee)?,
-            fast: create_agent(config.agents.fast)?
-        }
-    };
-
-    let mut used_plugins: Vec<Plugin> = vec![];
     let plugins = list_plugins();
     let mut exit = false;
     for (name, _) in &config.plugins {
@@ -180,6 +165,20 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     if exit {
         process::exit(1);
     }
+
+    let mut context = CommandContext {
+        auto_type: config.auto_type.clone(),
+        command_out: vec![],
+        variables: HashMap::new(),
+        plugin_data: PluginStore(HashMap::new()),
+        plugins: vec![],
+        disabled_commands: config.disabled_commands,
+        agents: Agents {
+            managers: config.agents.managers.iter().map(|el| create_agent(el.clone())).collect::<Result<_, _>>()?,
+            employee: create_agent(config.agents.employee)?,
+            fast: create_agent(config.agents.fast)?
+        }
+    };
     
     for plugin in plugins {
         if let Some(plugin_info) = config.plugins.get(&plugin.name.to_lowercase()) {
@@ -188,15 +187,13 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
                 context.plugin_data.0.insert(plugin.name.clone(), data);
             }
 
-            used_plugins.push(plugin);
+            context.plugins.push(plugin);
         }
     }
 
     Ok(ProgramInfo {
         personality: config.personality,
         auto_type: config.auto_type.clone(),
-        plugins: used_plugins,
-        context: Arc::new(Mutex::new(context)),
-        disabled_commands: config.disabled_commands
+        context: Arc::new(Mutex::new(context))
     })
 }

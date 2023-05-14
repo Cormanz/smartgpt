@@ -1,6 +1,15 @@
 use std::{sync::{Mutex, Arc}, error::Error};
 
+use serde::{Deserialize, Serialize};
+use tokio::runtime::Runtime;
+
 use crate::{ScriptValue, ProgramInfo, Command, CommandContext, Expression, GPTRunError};
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Action {
+    pub tool: String,
+    pub args: ScriptValue
+}
 
 pub async fn run_command(
     out: &mut String,
@@ -17,4 +26,34 @@ pub async fn run_command(
     out.push_str(&text);
 
     Ok(result)
+}
+
+pub fn run_action_sync(context: &mut CommandContext, action: Action) -> Result<String, Box<dyn Error>> {
+    let command = context.plugins.iter()
+        .flat_map(|el| &el.commands)
+        .find(|el| el.name == action.tool)
+        .map(|el| el.box_clone());
+
+    let mut out = String::new();
+    match command {
+        Some(command) => {
+            let rt = Runtime::new().unwrap();
+            rt.block_on(async {
+                run_command(
+                    &mut out, 
+                    action.tool.clone(), 
+                    command.box_clone(), 
+                    context, 
+                    action.args
+                ).await
+            })?;
+
+        },
+        None => {
+            let error_str = format!("Error: No such tool named '{}'.", action.tool.clone());
+            out.push_str(&error_str)
+        }
+    }
+
+    Ok(out)
 }

@@ -135,6 +135,13 @@ impl TryFrom<ScriptValue> for HashMap<String, ScriptValue> {
     }
 }
 
+impl From<&str> for ScriptValue {
+    fn from(string: &str) -> Self {
+        ScriptValue::String(string.to_string())
+    }
+}
+
+
 impl From<String> for ScriptValue {
     fn from(string: String) -> Self {
         ScriptValue::String(string)

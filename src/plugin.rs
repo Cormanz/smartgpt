@@ -65,8 +65,10 @@ pub struct CommandContext {
     pub auto_type: AutoType,
     pub plugin_data: PluginStore,
     pub agents: Agents,
+    pub plugins: Vec<Plugin>,
     pub variables: HashMap<String, ScriptValue>,
-    pub command_out: Vec<String>
+    pub command_out: Vec<String>,
+    pub disabled_commands: Vec<String>
 }
 
 
