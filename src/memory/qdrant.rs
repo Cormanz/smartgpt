@@ -11,7 +11,7 @@ use qdrant_client::prelude::*;
 use qdrant_client::qdrant::value::Kind;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::vectors_config::Config;
-use qdrant_client::qdrant::{CreateCollection, SearchPoints, VectorParams, VectorsConfig, PointId, Vectors, Vector, WithPayloadSelector, with_payload_selector, OptimizersConfigDiff, WalConfigDiff, HnswConfigDiff, QuantizationConfig, quantization_config, ScalarQuantization, RecommendPoints, ScoredPoint};
+use qdrant_client::qdrant::{CreateCollection, SearchPoints, VectorParams, VectorsConfig, PointId, Vectors, Vector, WithPayloadSelector, with_payload_selector, RecommendPoints, ScoredPoint};
 use tokio::runtime::Runtime;
 
 use super::MemorySystem;
@@ -97,7 +97,7 @@ impl MemorySystem for QdrantMemorySystem {
         let latest_point_id = latest_point_id_option.unwrap_or(0);
 
         let mut points: Vec<PointId> = vec![];
-        let mut search_result = vec![];
+        let search_result;
         if latest_point_id > 0 {
             points.push(PointId {
                 point_id_options: Some(point_id::PointIdOptions::Num(latest_point_id)),
@@ -174,7 +174,7 @@ impl MemoryProvider for QdrantProvider {
             init_qdrant_client().await
         })?;
 
-        let collection_name = "qdrant_memory";
+        let collection_name = "smartgpt_agent_memory";
 
         rt.block_on(async {
             create_collection_if_not_exists(&client, &collection_name).await
