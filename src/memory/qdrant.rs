@@ -159,6 +159,11 @@ impl MemorySystem for QdrantMemorySystem {
 
 pub struct QdrantProvider;
 
+#[derive(Serialize, Deserialize)]
+pub struct QdrantMemoryConfig {
+    pub collection: String
+}
+
 impl MemoryProvider for QdrantProvider {
     fn is_enabled(&self) -> bool {
         true
@@ -168,13 +173,14 @@ impl MemoryProvider for QdrantProvider {
         "qdrant".to_string()
     }
 
-    fn create(&self, _: serde_json::Value) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
+    fn create(&self, config: serde_json::Value) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
         let client = rt.block_on(async {
             init_qdrant_client().await
         })?;
 
-        let collection_name = "smartgpt_agent_memory";
+        let qdrant_config: QdrantMemoryConfig = serde_json::from_value(config)?;
+        let collection_name = qdrant_config.collection;
 
         rt.block_on(async {
             create_collection_if_not_exists(&client, &collection_name).await
