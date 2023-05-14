@@ -17,19 +17,8 @@ pub use react::*;
 pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut AgentInfo) -> T) -> Result<T, Box<dyn Error>> {
     let mut context = program.context.lock().unwrap();
     
-    println!("{}", use_tool(
-        &mut context,
-        &|context| &mut context.agents.employee,
-        Action {
-            tool: "browse_url".to_string(),
-            args: ScriptValue::Dict(HashMap::from([
-                (
-                    "url".to_string(),
-                    "https://github.com/Cormanz/smartgpt".into()
-                )
-            ]))
-        }
-    )?);
+    let response = run_react_agent(&mut context, &|context| &mut context.agents.employee, task)?;
+    println!("{response}");
 
     panic!("T");
 }
