@@ -90,7 +90,7 @@ impl MemorySystem for QdrantMemorySystem {
         &mut self,
         llm: &LLM,
         memory: &str,
-        _min_count: usize,
+        min_count: usize,
     ) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
         let embedding = llm.model.get_base_embed(memory).await?;
         let latest_point_id_option = self.latest_point_id.lock().await.clone();
@@ -105,7 +105,7 @@ impl MemorySystem for QdrantMemorySystem {
 
             let recommend_request = RecommendPoints {
                 collection_name: self.collection_name.to_string(),
-                limit: _min_count as u64,
+                limit: min_count as u64,
                 with_payload: Some(WithPayloadSelector {
                     selector_options: Some(with_payload_selector::SelectorOptions::Enable(true)),
                 }),
@@ -128,7 +128,7 @@ impl MemorySystem for QdrantMemorySystem {
                 collection_name: self.collection_name.to_string(),
                 vector: embedding.clone(),
                 filter: None,
-                limit: _min_count as u64,
+                limit: min_count as u64,
                 with_payload: Some(WithPayloadSelector {
                     selector_options: Some(with_payload_selector::SelectorOptions::Enable(true)),
                 }),
@@ -147,9 +147,23 @@ impl MemorySystem for QdrantMemorySystem {
         let relevant_memories: Vec<RelevantMemory> = search_result
             .iter()
             .map(|point| {
-                let json_string = serde_json::to_string(&point.payload).unwrap_or("".to_string());
+                let json_string = serde_json::to_value(&point.payload).unwrap_or("".into());
 
-                let payload: QdrantPayload = serde_json::from_str(&json_string).unwrap();
+                let payload: QdrantPayload = match serde_json::from_value(json_string) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        eprintln!("Failed to parse json_string into QdrantPayload: {}", e);
+                        return RelevantMemory {
+                            memory: Memory {
+                                content: "".to_string(),
+                                recall: 1.0,
+                                recency: 1.0,
+                                embedding: vec![]
+                            },
+                            relevance: 0.0,
+                        };
+                    }
+                };
 
                 let point_embedding = match &point.vectors {
                     Some(vectors) => match &vectors.vectors_options {
