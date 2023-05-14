@@ -207,7 +207,10 @@ impl MemoryProvider for QdrantProvider {
     }
 
     fn create(&self, _: serde_json::Value) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
-        let config = QdrantClientConfig::from_url("http://localhost:6334");
+        let qdrant_host = std::env::var("QDRANT_HOST")
+            .unwrap_or_else(|_| String::from("http://localhost:6334"));
+
+        let config = QdrantClientConfig::from_url(&qdrant_host);
 
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
         let client = rt.block_on(async {
@@ -221,16 +224,30 @@ impl MemoryProvider for QdrantProvider {
         })?;
 
         if !collection_exists {
-            rt.block_on(async {
+            let collection_creation_result = rt.block_on(async {
                 client.create_collection(
                     &create_initial_collection(collection_name.to_string())
                 ).await
+            });
+            match collection_creation_result {
+                Ok(_) => {},
+                Err(e) => {
+                    eprintln!("Failed to create collection: {}", e);
+                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, format!("{}", e))));
+                }
+            };
+    
+            let collection_exists = rt.block_on(async {
+                client.has_collection(collection_name.to_string()).await
             })?;
+            if !collection_exists {
+                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to create collection")));
+            }
         }
 
         Ok(Box::new(QdrantMemorySystem { 
             client,
-            latest_point_id: Arc::new(Mutex::new(None)),
+            latest_point_id: Arc::new(Mutex::new(Some(0))),
             collection_name: collection_name.to_string()
         }))
     }
