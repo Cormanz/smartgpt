@@ -22,6 +22,32 @@ use serde_json::to_string;
 use sha2::{Sha256, Digest};
 
 
+trait FromValueKind {
+    fn from_value_kind(kind: &Option<Kind>) -> Self;
+}
+
+impl FromValueKind for String {
+    fn from_value_kind(kind: &Option<Kind>) -> Self {
+        match kind {
+            Some(Kind::StringValue(string_value)) => string_value.clone(),
+            _ => String::new(),
+        }
+    }
+}
+
+impl FromValueKind for f32 {
+    fn from_value_kind(kind: &Option<Kind>) -> Self {
+        match kind {
+            Some(Kind::DoubleValue(double_value)) => *double_value as f32,
+            _ => 0.0,
+        }
+    }
+}
+
+fn get_value<T: FromValueKind>(payload: &HashMap<String, Value>, key: &str) -> T {
+    T::from_value_kind(&payload.get(key).and_then(|value| value.kind.clone()))
+}
+
 pub struct QdrantMemorySystem {
     client: QdrantClient,
     latest_point_id: Arc<Mutex<Option<u64>>>,
@@ -144,29 +170,9 @@ impl MemorySystem for QdrantMemorySystem {
         let relevant_memories: Vec<RelevantMemory> = search_result
             .iter()
             .map(|point| {
-                let content = match point.payload.get("content") {
-                    Some(value) => match &value.kind {
-                        Some(Kind::StringValue(string_value)) => string_value.clone(),
-                        _ => String::new(),
-                    },
-                    None => String::new(),
-                };
-        
-                let recall = match point.payload.get("recall") {
-                    Some(value) => match &value.kind {
-                        Some(Kind::DoubleValue(double_value)) => *double_value as f32,
-                        _ => 0.0,
-                    },
-                    None => 0.0,
-                };
-        
-                let recency = match point.payload.get("recency") {
-                    Some(value) => match &value.kind {
-                        Some(Kind::DoubleValue(double_value)) => *double_value as f32,
-                        _ => 0.0,
-                    },
-                    None => 0.0,
-                };
+                let content: String = get_value(&point.payload, "content");
+                let recall: f32 = get_value(&point.payload, "recall");
+                let recency: f32 = get_value(&point.payload, "recency");
 
                 let point_embedding = match &point.vectors {
                     Some(vectors) => match &vectors.vectors_options {
