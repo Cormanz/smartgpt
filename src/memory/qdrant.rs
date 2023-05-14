@@ -11,7 +11,7 @@ use qdrant_client::prelude::*;
 use qdrant_client::qdrant::value::Kind;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::vectors_config::Config;
-use qdrant_client::qdrant::{CreateCollection, SearchPoints, VectorParams, VectorsConfig, PointId, Vectors, Vector, WithPayloadSelector, with_payload_selector, OptimizersConfigDiff, WalConfigDiff, HnswConfigDiff, QuantizationConfig, quantization_config, ScalarQuantization, RecommendPoints};
+use qdrant_client::qdrant::{CreateCollection, SearchPoints, VectorParams, VectorsConfig, PointId, Vectors, Vector, WithPayloadSelector, with_payload_selector, OptimizersConfigDiff, WalConfigDiff, HnswConfigDiff, QuantizationConfig, quantization_config, ScalarQuantization, RecommendPoints, ScoredPoint};
 use tokio::runtime::Runtime;
 
 use super::MemorySystem;
@@ -146,37 +146,7 @@ impl MemorySystem for QdrantMemorySystem {
 
         let relevant_memories_result: Result<Vec<_>, _> = search_result
             .iter()
-            .map(|point| {
-                let json_string = serde_json::to_value(&point.payload).unwrap_or("".into());
-
-                let payload: QdrantPayload = match serde_json::from_value(json_string) {
-                    Ok(p) => p,
-                    Err(e) => {
-                        return Err(Box::new(e));
-                    }
-                };
-
-                let point_embedding = match &point.vectors {
-                    Some(vectors) => match &vectors.vectors_options {
-                        Some(VectorsOptions::Vector(vector)) => vector.data.clone(),
-                        _ => Vec::new(),
-                    },
-                    None => Vec::new(),
-                };
-
-                let memory = Memory {
-                    content: payload.content,
-                    recall: payload.recall,
-                    recency: payload.recency,
-                    embedding: point_embedding.clone()
-                };
-                let relevance = point.score;
-
-                Ok(RelevantMemory {
-                    memory,
-                    relevance,
-                })
-            })
+            .map(|point| convert_to_relevant_memory(point))
             .collect();
 
         match relevant_memories_result {
@@ -243,6 +213,38 @@ impl MemoryProvider for QdrantProvider {
             collection_name: collection_name.to_string()
         }))
     }
+}
+
+fn convert_to_relevant_memory(point: &ScoredPoint) -> Result<RelevantMemory, Box<dyn Error>> {
+    let json_string = serde_json::to_value(&point.payload).unwrap_or("".into());
+
+    let payload: QdrantPayload = match serde_json::from_value(json_string) {
+        Ok(p) => p,
+        Err(e) => {
+            return Err(Box::new(e));
+        }
+    };
+
+    let point_embedding = match &point.vectors {
+        Some(vectors) => match &vectors.vectors_options {
+            Some(VectorsOptions::Vector(vector)) => vector.data.clone(),
+            _ => Vec::new(),
+        },
+        None => Vec::new(),
+    };
+
+    let memory = Memory {
+        content: payload.content,
+        recall: payload.recall,
+        recency: payload.recency,
+        embedding: point_embedding.clone()
+    };
+    let relevance = point.score;
+
+    Ok(RelevantMemory {
+        memory,
+        relevance,
+    })
 }
 
 fn create_initial_collection(name: String) -> CreateCollection {
