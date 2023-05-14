@@ -14,6 +14,8 @@ pub fn log_yaml<T: Serialize>(data: &T) -> Result<(), Box<dyn Error>> {
 
 #[derive(Serialize, Deserialize)]
 pub struct Thoughts {
+    #[serde(rename = "analysis of if I completed my task")]
+    pub analysis: String,
     #[serde(rename = "is my task complete")]
     pub done: bool,
     pub thoughts: String,
@@ -103,21 +105,22 @@ Task:
 {task}
 
 Your goal is to complete your task.
-Complete your task as fast as possible.
-If you have completed your task, explain.
+Complete your task in as little actions as possible.
+Do not try to do additional work or clarification; just complete your task in a barebones way.
 
 Respond in this format:
 
 ```json
 {{
+    "analysis of if I completed my task": "...",
     "is my task complete": true / false,
     "thoughts": "...",
     "reasoning": "...",
     "criticism": "...",
-    "action": {{ 
+    "action": null / {{ 
         "tool": "...",
         "args": {{ ... }}
-    }} or null
+    }}
 }}
 ```
 "#)));
