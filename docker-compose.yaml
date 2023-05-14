@@ -13,5 +13,10 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
   qdrant:
     image: "qdrant/qdrant"
+    ports: 
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
   redis:
     image: "redis/redis-stack-server:latest"
