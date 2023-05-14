@@ -4,7 +4,9 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 mod local;
+mod qdrant;
 pub use local::*;
+pub use qdrant::*;
 
 use crate::{LLM};
 
@@ -19,9 +21,8 @@ impl Display for MemorySystemLoadError {
 
 impl Error for MemorySystemLoadError {}
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct Memory {
-    pub id: String,
     pub content: String,
     pub recall: f32,
     pub recency: f32,

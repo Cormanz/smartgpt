@@ -26,3 +26,7 @@ llm = "0.1.1"
 redis = { version = "0.23.0", features = ["tokio-comp"] }
 sha2 = "0.9"
 hex = "0.4"
+qdrant-client = "1.1.2"
+anyhow = "1.0.71"
+tonic = "0.9.2"
+uuid = { version = "0.8.2", features = ["v4"] }
