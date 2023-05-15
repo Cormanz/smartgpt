@@ -2,8 +2,8 @@
 <div align = "center">
     <a href="LICENSE.md">
         <img alt="License" src="https://img.shields.io/github/license/Cormanz/smartgpt?style=flat-square" />
-        <img alt = "Stars" src="https://img.shields.io/github/stars/Cormanz/smartgpt?style=social">
-        <img src = "https://img.shields.io/badge/use-experimental-informational">
+        <img alt = "Stars" src="https://img.shields.io/github/stars/Cormanz/smartgpt?style=flat-square">
+        <img src = "https://img.shields.io/badge/use-experimental-informational?style=flat-square">
     </a>
 </div>
 
