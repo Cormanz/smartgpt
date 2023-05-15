@@ -10,14 +10,23 @@ use super::findings::get_observations;
 
 mod actor;
 mod react;
+mod refine;
+mod planner;
 
 pub use actor::*;
 pub use react::*;
+pub use refine::*;
+pub use planner::*;
 
 pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut AgentInfo) -> T) -> Result<T, Box<dyn Error>> {
     let mut context = program.context.lock().unwrap();
     
-    let response = run_react_agent(&mut context, &|context| &mut context.agents.employee, task)?;
+    let refine_info = refine(&mut context, &|context| &mut context.agents.planner, task)?;
+    log_yaml(&refine_info)?;
+
+    let task = &refine_info.task;
+
+    let response = run_planner_agent(&mut context, task)?;
     println!("{response}");
 
     panic!("T");

@@ -1,6 +1,7 @@
 use std::{error::Error, fmt::Display, collections::HashMap, fs};
 use async_trait::async_trait;
 use colored::Colorize;
+use readability::extractor;
 use reqwest::{Client, header::{USER_AGENT, HeaderMap}};
 use textwrap::wrap;
 
@@ -90,14 +91,7 @@ pub async fn browse_url(ctx: &mut CommandContext, args: ScriptValue) -> Result<S
     let params: [(&str, &str); 0] = [];
     let args: BrowseArgs = args.parse()?;
 
-    let body = invoke::<String>(browse_info, "browse", BrowseRequest {
-        url: args.url.to_string(),
-        params: params.iter()
-            .map(|el| (el.0.to_string(), el.1.to_string()))
-            .collect::<Vec<_>>()
-    }).await?;
-
-    let content = extract_text_from_html(&body);
+    let content = extractor::scrape(&args.url)?.text;
 
     let mut summarized_content = String::new();
     let chunks = chunk_text(&content, 11000);

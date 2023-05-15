@@ -49,7 +49,8 @@ pub struct AgentConfig {
 #[serde(rename_all = "camelCase")]
 pub struct AgentLLMs {
     managers: Vec<AgentConfig>,
-    employee: AgentConfig,
+    react: AgentConfig,
+    planner: AgentConfig,
     fast: AgentConfig,
 }
 
@@ -175,7 +176,8 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         disabled_commands: config.disabled_commands,
         agents: Agents {
             managers: config.agents.managers.iter().map(|el| create_agent(el.clone())).collect::<Result<_, _>>()?,
-            employee: create_agent(config.agents.employee)?,
+            react: create_agent(config.agents.react)?,
+            planner: create_agent(config.agents.planner)?,
             fast: create_agent(config.agents.fast)?
         }
     };

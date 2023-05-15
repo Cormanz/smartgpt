@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
 use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json}};
@@ -14,13 +15,15 @@ pub fn log_yaml<T: Serialize>(data: &T) -> Result<(), Box<dyn Error>> {
 
 #[derive(Serialize, Deserialize)]
 pub struct Thoughts {
-    #[serde(rename = "analysis of if I completed my task")]
-    pub analysis: String,
-    #[serde(rename = "is my task complete")]
-    pub done: bool,
-    pub thoughts: String,
-    pub reasoning: String,
-    pub criticism: String,
+    #[serde(rename = "what have I done so far")]
+    pub progress: String,
+    #[serde(rename = "explanation of why or why not my task is complete")]
+    pub explanation: String,
+    #[serde(rename = "if my task is not complete, how do I finish it soon")]
+    pub soon: Option<String>,
+    pub thoughts: Option<String>,
+    pub reasoning: Option<String>,
+    pub criticism: Option<String>,
     pub action: Option<Action>
 }
 
@@ -32,7 +35,9 @@ pub fn explain_results(
    agent.llm.message_history.push(Message::System(format!(
 "Now that you have finished your task, write a detailed, readable and simple Markdown response.
 Your response should be easily understandable for a human, and convey all information in an accessible format.
-Respond in exact plaintext; no JSON."
+Ensure that sources are linked in the Markdown representation.
+Respond in exact plaintext; no JSON.
+Keep your response at four paragraphs or less."
     )));
 
     agent.llm.model.get_response_sync(&agent.llm.get_messages(), Some(600), None)
@@ -44,7 +49,7 @@ pub fn get_thoughts(
 ) -> Result<Thoughts, Box<dyn Error>> {
     Ok(
         try_parse_json(&get_agent(context).llm, 2, Some(1000))
-            .map(|res| {
+            .map(|res: crate::auto::ParsedResponse<Thoughts>| {
                 get_agent(context).llm.message_history.push(Message::Assistant(res.raw));
                 res.data
             })?
@@ -84,45 +89,50 @@ pub fn run_react_agent(
     task: &str
 ) -> Result<String, Box<dyn Error>> {
     let agent = get_agent(context);
-    agent.llm.clear_history();
-
-    agent.llm.message_history.push(Message::System(format!("
+    
+    agent.llm.prompt.push(Message::System(format!("
 You are an Agent.
-You will complete your task, one tool at a time.
+You will complete your task, one action at a time.
 ")));
 
-    agent.llm.message_history.push(Message::User(format!(r#"
+    agent.llm.prompt.push(Message::User(format!(r#"
 Tools:
 google_search {{ "query": "..." }}
 wolfram {{ "query": "..." }}
 browse_url {{ "url": "..." }}
     You can only read paragraph-only content from websites, you cannot interact with them.
 file_append {{ "path": "...", "content": "..." }}
-llm_process {{ "data": "...", "request": "..." }}
-    This uses a large language model to process a given set of data for insights.
 
 Task:
 {task}
 
-Your goal is to complete your task.
-Complete your task in as little actions as possible.
-Do not try to do additional work or clarification; just complete your task in a barebones way.
+Your goal is to complete your task by running actions.
+You will decide whether or not you have completed your task through a detailed analysis of at least one sentence.
 
-Respond in this format:
+If you have not, enact a thought process about how to complete your task further and then decide on the action to use.
+You must use at least one action before completing the task.
+
+Only focus on your task. Do not try to do more then what you are asked.
 
 ```json
 {{
-    "analysis of if I completed my task": "...",
-    "is my task complete": true / false,
-    "thoughts": "...",
-    "reasoning": "...",
-    "criticism": "...",
-    "action": null / {{ 
+    "what have I done so far": "progress",
+    "explanation of why or why not my task is complete": "explanation",
+    "if my task is not complete, how do I finish it soon": null / "...",
+    "thoughts": "thought",
+    "reasoning": "reasoning",
+    "criticism": "constructive self-criticism",
+    "action": {{ 
         "tool": "...",
         "args": {{ ... }}
     }}
 }}
 ```
+
+"action" may only be `null` if the task is complete.
+
+Respond in the above JSON format exactly.
+Ensure every field is filled in.
 "#)));
 
     loop {
@@ -138,12 +148,14 @@ r#"Your tool use gave the following result:
 
 {results}
 
-Please decide on your next action (or, determine that the task is complete.)"#
+Please decide on your next action to complete your initial task ({task})"#
                 )));
             },
             ActionResults::TaskComplete(completion_message) => {
                 return Ok(completion_message);
             }
         }
+
+        println!();
     }
 }
