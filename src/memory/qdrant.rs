@@ -25,6 +25,28 @@ pub struct QdrantPayload {
     recency: f32
 }
 
+impl QdrantPayload {
+    pub fn new(content: String, recall: f32, recency: f32) -> Self {
+        Self { content, recall, recency }
+    }
+
+    pub fn to_memory_map(&self) -> HashMap<String, Value> {
+        let mut memory_map = HashMap::new();
+    
+        memory_map.insert("content".to_string(), Value {
+            kind: Some(Kind::StringValue(self.content.clone())),
+        });
+        memory_map.insert("recency".to_string(), Value {
+            kind: Some(Kind::DoubleValue(self.recency as f64)),
+        });
+        memory_map.insert("recall".to_string(), Value {
+            kind: Some(Kind::DoubleValue(self.recall as f64)),
+        });
+
+        memory_map
+    }
+}
+
 pub struct QdrantMemorySystem {
     client: QdrantClient,
     latest_point_id: Arc<Mutex<Option<u64>>>,
@@ -43,16 +65,11 @@ impl MemorySystem for QdrantMemorySystem {
             embedding: embedding.clone(),
         };
 
-        let mut memory_map: HashMap<String, Value> = HashMap::new();
-        memory_map.insert("content".to_string(), Value {
-            kind: Some(Kind::StringValue(memory_struct.content.clone())),
-        });
-        memory_map.insert("recency".to_string(), Value {
-            kind: Some(Kind::DoubleValue(memory_struct.recency as f64)),
-        });
-        memory_map.insert("recall".to_string(), Value {
-            kind: Some(Kind::DoubleValue(memory_struct.recall as f64)),
-        });
+        let payload = QdrantPayload::new(
+            memory_struct.content.clone(),
+            memory_struct.recency,
+            memory_struct.recall
+        );
 
         let mut latest_point_id = self.latest_point_id.lock().await;
         let point_id_val = match *latest_point_id {
@@ -76,7 +93,7 @@ impl MemorySystem for QdrantMemorySystem {
             self.collection_name.to_string(),
             vec![PointStruct {
                 id: Some(point_id),
-                payload: memory_map,
+                payload: payload.to_memory_map(),
                 vectors: Some(vectors)
             }],
             None,
