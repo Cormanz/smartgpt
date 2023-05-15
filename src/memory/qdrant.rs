@@ -30,20 +30,12 @@ impl QdrantPayload {
         Self { content, recall, recency }
     }
 
-    pub fn to_memory_map(&self) -> HashMap<String, Value> {
-        let mut memory_map = HashMap::new();
-    
-        memory_map.insert("content".to_string(), Value {
-            kind: Some(Kind::StringValue(self.content.clone())),
-        });
-        memory_map.insert("recency".to_string(), Value {
-            kind: Some(Kind::DoubleValue(self.recency as f64)),
-        });
-        memory_map.insert("recall".to_string(), Value {
-            kind: Some(Kind::DoubleValue(self.recall as f64)),
-        });
+    pub fn to_memory_map(&self) -> Result<HashMap<String, Value>, serde_json::Error> {
+        let serialized_struct = serde_json::to_string(self)?;
 
-        memory_map
+        let memory_map: HashMap<String, Value> = serde_json::from_str(&serialized_struct)?;
+
+        Ok(memory_map)
     }
 }
 
@@ -93,7 +85,7 @@ impl MemorySystem for QdrantMemorySystem {
             self.collection_name.to_string(),
             vec![PointStruct {
                 id: Some(point_id),
-                payload: payload.to_memory_map(),
+                payload: payload.to_memory_map().unwrap_or_default(),
                 vectors: Some(vectors)
             }],
             None,
