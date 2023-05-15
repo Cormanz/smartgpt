@@ -85,7 +85,7 @@ impl MemorySystem for QdrantMemorySystem {
             self.collection_name.to_string(),
             vec![PointStruct {
                 id: Some(point_id),
-                payload: payload.to_memory_map().unwrap_or_default(),
+                payload: payload.to_memory_map()?,
                 vectors: Some(vectors)
             }],
             None,
