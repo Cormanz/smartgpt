@@ -7,9 +7,14 @@ use crate::{Message, AgentInfo, CommandContext, auto::{try_parse_json, agents::e
 use super::explain_results;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Step {
+    pub step: String,
+    pub tools: Vec<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PlanInfo {
-    #[serde(rename = "broad overarching stages")]
-    pub stages: Vec<String>
+    pub steps: Vec<Step>
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -19,8 +24,10 @@ pub struct FirstInstructInfo {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ThoughtInstructInfo {
-    pub reflection: String,
-    pub stage: String,
+    pub criticism: String,
+    #[serde(rename = "what I can learn from my criticism")]
+    pub learned: String,
+    pub step: String,
     #[serde(rename = "explanation of why or why not my task is complete")]
     pub explanation: String,
     pub instruction: Option<String>
@@ -43,22 +50,31 @@ The Agent is not smart, so you must talk very simply to it.
 You have access to an Agent. Your agent can use external resources to help complete its task.
 You will work with your Agent, and your Agent will use its resources to complete each task you give it.
 
+Tools:
+google_search {{ "query": "..." }}
+wolfram {{ "query": "..." }}
+browse_url {{ "url": "..." }}
+    Only use browse_url on websites that you have found from other searches.
+file_append {{ "path": "...", "content": "..." }}
+
 Task:
-{task}"
+{task}
 
-List broad, overarching stages to accomplish your task.
-Stages should not be specific or complex.
-
-There should be three or four stages.
+Break this task down into a list of steps. In each step, list the tool(s) you will use.
 
 Respond in this exact JSON format:
 
 {{
-    "broad overarching stages": [ "Stage" ]
+    "steps": [
+        {{
+             "step": "step",
+             "tools": [ "tools" ]
+        }}
+    ]
 }}
 "#)));
 
-    let plan_info = try_parse_json::<PlanInfo>(&agent.llm, 2, Some(300))?;
+    let plan_info = try_parse_json::<PlanInfo>(&agent.llm, 2, Some(600))?;
     log_yaml(&plan_info.data)?;
 
     agent.llm.message_history.push(Message::Assistant(plan_info.raw));
@@ -93,12 +109,14 @@ Respond in this exact JSON format:
 
         let agent = &mut context.agents.planner;
 
+        println!("Back to the planner!");
+
         agent.llm.message_history.push(Message::User(format!(r#"
 Your results from your Agent are:
 {results}
 
-Now, self-reflect on what results you got, how it helps you with your task, and what to do next.
-Then, deduce what stage of your four-staged plan you're on.
+Now, criticize your current workflow and plan. Then, learn from it.
+Then, deduce what step you're on.
 
 Then, decide if you are done.
 If you are not done, give another instruction.
@@ -111,8 +129,9 @@ Respond in this exact JSON format:
 ```json
 {{
     {{
-        "reflection": "Constructive self-reflection",
-        "stage": "Precise stage name",
+        "criticism": "Constructive self-criticism",
+        "what I can learn from my criticism": "What my criticism taught me",
+        "step": "Precise step name (Tools to use)",
         "explanation of why or why not my task is complete": "Explanation",
         "instruction": "Instruction"
     }}

@@ -22,11 +22,21 @@ browse_url {{ "url": "..." }}
     Only use browse_url on websites that you have found from other searches.
 file_append {{ "path": "...", "content": "..." }}
 
+One Special Tool:
+
+done {{}}
+    Use this once your task is complete.
+
 Task:
 {task}
 
-Your goal is to complete your task by running actions.
+Adhere to those exact instructions as closely as possible.
+Use the exact tools mentioned.
+Finish as soon as possible, do not deviate from your task.
+
 You will decide whether or not you have completed your task through a detailed analysis of at least one sentence.
+
+If you have not completed it, create an overarching, broad plan to finish it.
 
 If you have not, begin having "thoughts".
 Your "thoughts", "reasoning", and "criticism" are ideas of HOW you will complete your task.
@@ -37,20 +47,20 @@ Only focus on your task. Do not try to do more then what you are asked.
 
 ```json
 {{
-    "what have I done so far": "progress",
+    "what have I done so far": "N/A" / "progress",
     "explanation of why or why not my task is complete": "explanation",
-    "if my task is not complete, how do I finish it soon": null / "...",
+    "if my task is not complete, what is my plan to finish it": "N/A" / "...",
     "thoughts about completing my task": "thought",
     "reasoning": "reasoning",
     "criticism": "constructive self-criticism",
     "action": {{ 
-        "tool": "...",
+        "tool": "normal tool name, or 'done' if done",
         "args": {{ ... }}
     }}
 }}
 ```
 
-"action" may only be `null` if the task is complete.
+Use the "done" tool if your task is complete.
 
 Respond in the above JSON format exactly.
 Ensure every field is filled in.
@@ -64,7 +74,7 @@ pub struct Thoughts {
     pub progress: String,
     #[serde(rename = "explanation of why or why not my task is complete")]
     pub explanation: String,
-    #[serde(rename = "if my task is not complete, how do I finish it soon")]
+    #[serde(rename = "if my task is not complete, what is my plan to finish it")]
     pub soon: Option<String>,
     #[serde(rename = "thoughts about completing my task")]
     pub thoughts: Option<String>,
@@ -117,9 +127,15 @@ pub fn run_react_action(
 
     match thoughts.action {
         Some(action) => {
-            Ok(ActionResults::Results(
-                use_tool(context, &|context| &mut context.agents.fast, action)?
-            ))
+            Ok(if action.tool == "done" {
+                ActionResults::TaskComplete(
+                    explain_results(context, &get_agent)?
+                )
+            } else {
+                ActionResults::Results(
+                    use_tool(context, &|context| &mut context.agents.fast, action)?
+                )
+            })
         }
         None => {
             Ok(ActionResults::TaskComplete(
@@ -159,14 +175,19 @@ r#"
 You have been given a new task:
 {task}
 
-Complete this task just as before.
+Adhere to those exact instructions as closely as possible.
+Use the exact tools mentioned.
+Finish as soon as possible, do not deviate from your task.
+
+Ensure that you use the knowledge from your previous results to help you.
+
 Respond in this precise JSON format:
 
 ```json
 {{
     "what have I done so far": "progress",
     "explanation of why or why not my task is complete": "explanation",
-    "if my task is not complete, how do I finish it soon": null / "...",
+    "if my task is not complete, what is my plan to finish it": null / "...",
     "thoughts about completing my task": "thought",
     "reasoning": "reasoning",
     "criticism": "constructive self-criticism",
@@ -187,7 +208,7 @@ Respond in this precise JSON format:
             &agent.llm.get_messages()
         )?;
 
-        if remaining_tokens < 1000 {
+        if remaining_tokens < 1500 {
             ask_for_findings(agent)?;
 
             let observations = get_observations(agent, task, 20, Weights {
@@ -203,7 +224,7 @@ Long Term Observations:
 
 Take advantage of your long-term observations as much as possible."));
 
-            agent.llm.crop_to_tokens_remaining(2200)?;
+            agent.llm.crop_to_tokens_remaining(2500)?;
         }
 
         drop(agent);
@@ -220,6 +241,7 @@ r#"Your tool use gave the following result:
 {results}
 
 Please decide on your next action to complete your initial task of '{task}'.
+Ensure you explain whether or not your task is complete.
 Only focus on your task, do not get tunnel vision."#
                 )));
             },

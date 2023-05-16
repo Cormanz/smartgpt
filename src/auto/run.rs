@@ -1,4 +1,4 @@
-use std::{sync::{Mutex, Arc}, error::Error};
+use std::{sync::{Mutex, Arc}, error::Error, collections::HashMap};
 
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
@@ -8,7 +8,7 @@ use crate::{ScriptValue, ProgramInfo, Command, CommandContext, Expression, GPTRu
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Action {
     pub tool: String,
-    pub args: ScriptValue
+    pub args: Option<ScriptValue>
 }
 
 pub async fn run_command(
@@ -44,7 +44,7 @@ pub fn run_action_sync(context: &mut CommandContext, action: Action) -> Result<S
                     action.tool.clone(), 
                     command.box_clone(), 
                     context, 
-                    action.args
+                    action.args.unwrap_or(HashMap::new().into())
                 ).await
             })?;
 
