@@ -30,4 +30,6 @@ services:
       QDRANT__SERVICE__GRPC_PORT: 6334
   redis:
     image: "redis/redis-stack-server:latest"
-    network_mode: host
+    ports:
+      - "6379:6379"
+    # network_mode: host

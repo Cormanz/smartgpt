@@ -116,6 +116,11 @@ impl MemorySystem for RedisMemorySystem {
 
 pub struct RedisProvider;
 
+#[derive(Serialize, Deserialize)]
+pub struct RedisMemoryConfig {
+    pub index: String
+}
+
 impl MemoryProvider for RedisProvider {
     fn is_enabled(&self) -> bool {
         true
@@ -125,16 +130,17 @@ impl MemoryProvider for RedisProvider {
         "redis".to_string()
     }
 
-    fn create(&self, _: Value) -> Result<Box<dyn MemorySystem> ,Box<dyn Error> > {
+    fn create(&self, config: serde_json::Value) -> Result<Box<dyn MemorySystem> ,Box<dyn Error> > {
         let client = Client::open("redis://127.0.0.1/")?;
 
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
 
-        let index_name = "smartgpt_agent_memory";
+        let qdrant_config: RedisMemoryConfig = serde_json::from_value(config)?;
+        let index_name = qdrant_config.index;
 
         rt.block_on(async {
             let mut con = client.get_tokio_connection().await?;
-            match create_index_if_not_exists(&mut con, index_name, "$.embedding", 1536).await {
+            match create_index_if_not_exists(&mut con, &index_name, "$.embedding", 1536).await {
                 Ok(()) => {Ok(())}
                 Err(err) => {
                     eprintln!("Failed to create vector index: {}", err);
@@ -164,7 +170,7 @@ async fn execute_redis_command<T: redis::FromRedisValue, S: Borrow<str>>(
 }
 
 async fn create_index_if_not_exists(con: &mut redis::aio::Connection, index_name: &str, field_path: &str, dimension: usize) -> redis::RedisResult<()> {
-    let collection_exists: bool = redis::cmd("FT.INFO")
+    let index_exists: bool = redis::cmd("FT.INFO")
         .arg(index_name)
         .query_async(con)
         .await
@@ -177,7 +183,7 @@ async fn create_index_if_not_exists(con: &mut redis::aio::Connection, index_name
             }
         })?;
 
-    if !collection_exists {
+    if !index_exists {
         let _ = execute_redis_command::<redis::Value, _>(
             con,
             "FT.CREATE",
