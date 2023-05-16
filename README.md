@@ -33,6 +33,10 @@ There are two main shortcomings, however.
 
 - **Memory Management**: Due to the extreme youth of this project, there is only one simple but limited memory system. However, this will change with time.
 
+## Supporting Development
+
+Currently, testing with SmartGPT is primarily being done with GPT3.5, and occasionally with GPT4, due to the costs of more-expensive models. As this project matures, we're aiming to experiment both with **multiple agents at once** and using **GPT4** much more to unleash maximum capabilities out of LLMs. This is expensive though, and as the core maintainer of SmartGPT, I'm still a high school student, and funding a project like this is difficult for me. If you're interest in helping push the boundaries of LLMs, [consider joining our Patreon.](https://www.patreon.com/SmartGPT)
+
 ## Disclaimer
 
 SmartGPT is an **incredibly experimental** application. The goal is to unlock maximum potential out of LLMs, and stability is sacrificed for this. Backwards compatibility is a fever dream here. However, SmartGPT is also housing some of the most innovative ideas and experiments in the AutoGPT space right now, and although most are unsuccessful, a few hit the dart-board and stick.
