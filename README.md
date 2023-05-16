@@ -2,8 +2,8 @@
 <div align = "center">
     <a href="LICENSE.md">
         <img alt="License" src="https://img.shields.io/github/license/Cormanz/smartgpt?style=flat-square" />
-        <img alt = "Stars" src="https://img.shields.io/github/stars/Cormanz/smartgpt?style=social">
-        <img src = "https://img.shields.io/badge/use-experimental-informational">
+        <img alt = "Stars" src="https://img.shields.io/github/stars/Cormanz/smartgpt?style=flat-square">
+        <img src = "https://img.shields.io/badge/use-experimental-informational?style=flat-square">
     </a>
 </div>
 
@@ -32,6 +32,10 @@ There are two main shortcomings, however.
 - **Ecosystem**: Due to its popularity, [AutoGPT](https://github.com/Torantulino/Auto-GPT) is a very polished and refined tool. It has many more commands and integrations with memory systems. To go with this, the codebase has been through large scrutiny, so it is generally less buggy and more tested than SmartGPT.
 
 - **Memory Management**: Due to the extreme youth of this project, there is only one simple but limited memory system. However, this will change with time.
+
+## Supporting Development
+
+Currently, testing with SmartGPT is primarily being done with GPT3.5, and occasionally with GPT4, due to the costs of more-expensive models. As this project matures, we're aiming to experiment both with **multiple agents at once** and using **GPT4** much more to unleash maximum capabilities out of LLMs. This is expensive though, and as the core maintainer of SmartGPT, I'm still a high school student, and funding a project like this is difficult for me. If you're interest in helping push the boundaries of LLMs, [consider joining our Patreon.](https://www.patreon.com/SmartGPT)
 
 ## Disclaimer
 
