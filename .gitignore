@@ -3,7 +3,7 @@
 
 # Project files
 files/*
-config.yml
+smartgpt.toml
 
 # LLM files
 ggml-vicuna*

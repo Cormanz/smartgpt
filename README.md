@@ -19,7 +19,7 @@ There are many existing solutions to allowing LLMs to perform more complex tasks
 
 - **Modularity**: With first class plugin support and the ability to compose Autos for whatever your project requires, SmartGPT is incredibly modular.
 
-- **Flexibility**: SmartGPT has one central `config.toml` file that is automatically generated. Here you can configure everything and anything.
+- **Flexibility**: SmartGPT has one central `smartgpt.toml` file that is automatically generated. Here you can configure everything and anything.
 
 - **Planning and Reasoning**: SmartGPT has an advanced hierarchical system of managers and employees to recursively break down your tasks.
 
@@ -45,7 +45,7 @@ SmartGPT is an **incredibly experimental** application. The goal is to unlock ma
 
 2. Clone the repository with `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
 
-3. Run it in release mode with `cargo run --release`. This will create a `config.toml` for you.
+3. Run it in release mode with `cargo run --release`. This will create a config for you.
 
 4. Adjust the config to your liking, and execute it once again.
 
