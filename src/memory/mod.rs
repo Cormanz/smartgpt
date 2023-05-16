@@ -1,9 +1,12 @@
 use std::{error::Error, fmt::Display, cmp::{min}, cmp::Ordering::Equal};
 use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 mod local;
+mod qdrant;
 pub use local::*;
+pub use qdrant::*;
 
 use crate::{LLM};
 

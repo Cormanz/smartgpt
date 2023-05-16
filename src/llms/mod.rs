@@ -121,7 +121,11 @@ impl LLM {
 
     pub fn crop_to_tokens_remaining(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
         while token_buffer > self.get_tokens_remaining(&self.get_messages())? {
-            self.message_history.remove(0);
+            if !self.message_history.is_empty() {
+                self.message_history.remove(0);
+            } else {
+                break;
+            }
         }
 
         Ok(())
