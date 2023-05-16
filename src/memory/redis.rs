@@ -14,6 +14,13 @@ use super::MemorySystem;
 
 use async_trait::async_trait;
 
+use std::borrow::Borrow;
+
+#[derive(Serialize, Deserialize)]
+pub struct EmbeddedMemory {
+    memory: RedisPayload,
+    embedding: Vec<f32>
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RedisPayload {
@@ -34,25 +41,20 @@ impl MemorySystem for RedisMemorySystem {
         let embedding = llm.model.get_base_embed(memory).await?;
         let mut con = self.client.get_tokio_connection().await?;
 
-        let memory_struct = RedisPayload {
-            content: memory.to_string(),
-            recency: 1.,
-            recall: 1.,
+        let embedded_memory = EmbeddedMemory {
+            memory: RedisPayload {
+                content: memory.to_string(),
+                recency: 1.,
+                recall: 1.,
+            },
+            embedding: embedding
         };
 
         let mut latest_point_id = self.latest_point_id.lock().await;
         *latest_point_id += 1;
         let point_id = latest_point_id.to_string();
 
-        let memory_json = serde_json::to_value(&memory_struct)?;
-        let embedding_json = serde_json::to_value(&embedding)?;
-
-        redis::cmd("JSON.SET")
-            .arg(&point_id)
-            .arg("$")
-            .arg(format!(r#"{{"memory": {}, "embedding": {}}}"#, memory_json, embedding_json))
-            .query_async(&mut con)
-            .await?;
+        set_json_record(&mut con, &point_id, &embedded_memory).await?;
 
         Ok(())
     }
@@ -66,16 +68,7 @@ impl MemorySystem for RedisMemorySystem {
             .flat_map(|&value| value.to_le_bytes().to_vec())
             .collect();
 
-        let result: redis::Value = redis::cmd("FT.SEARCH")
-            .arg(&self.index_name) // Replace with the actual index name
-            .arg("DIALECT")
-            .arg(2)
-            .arg(format!("($query)=>[KNN {} @v $B]", min_count))
-            .arg("PARAMS")
-            .arg("query")
-            .arg(&query_blob)
-            .query_async(&mut con)
-            .await?;
+        let result: redis::Value = search_vector_field(&mut con, &self.index_name, &query_blob, min_count).await?;
 
         let result_pairs: Vec<(String, f32)> = match result {
             redis::Value::Bulk(items) => {
@@ -101,16 +94,15 @@ impl MemorySystem for RedisMemorySystem {
                 .arg(&key)
                 .query_async(&mut con)
                 .await?;
-            let data: serde_json::Value = serde_json::from_value(serde_json::Value::String(json_data))?;
-            let memory_data: RedisPayload = serde_json::from_value(data["memory"].clone())?;
-            let memory_embedding: Vec<f32> = serde_json::from_value(data["embedding"].clone())?;
+
+            let data: EmbeddedMemory = serde_json::from_value(serde_json::Value::String(json_data))?;
 
             relevant_memories.push(RelevantMemory {
                 memory: Memory {
-                    content: memory_data.content,
-                    recall: memory_data.recall,
-                    recency: memory_data.recency,
-                    embedding: memory_embedding,
+                    content: data.memory.content,
+                    recall: data.memory.recall,
+                    recency: data.memory.recency,
+                    embedding: data.embedding,
                 },
                 relevance: similarity,
             });
@@ -159,6 +151,18 @@ impl MemoryProvider for RedisProvider {
     }
 }
 
+async fn execute_redis_command<T: redis::FromRedisValue, S: Borrow<str>>(
+    con: &mut redis::aio::Connection,
+    command: &str,
+    args: &[S],
+) -> redis::RedisResult<T> {
+    let mut cmd = redis::cmd(command);
+    for arg in args {
+        cmd.arg(arg.borrow());
+    }
+    cmd.query_async(con).await
+}
+
 async fn create_index_if_not_exists(con: &mut redis::aio::Connection, index_name: &str, field_path: &str, dimension: usize) -> redis::RedisResult<()> {
     let collection_exists: bool = redis::cmd("FT.INFO")
         .arg(index_name)
@@ -174,78 +178,83 @@ async fn create_index_if_not_exists(con: &mut redis::aio::Connection, index_name
         })?;
 
     if !collection_exists {
-        let _: () = redis::cmd("FT.CREATE")
-            .arg(index_name)
-            .arg("ON")
-            .arg("JSON")
-            .arg("SCHEMA")
-            .arg(field_path)
-            .arg("as")
-            .arg("vector")
-            .arg("VECTOR")
-            .arg("FLAT")
-            .arg(6)
-            .arg("TYPE")
-            .arg("FLOAT32")
-            .arg("DIM")
-            .arg(dimension)
-            .arg("DISTANCE_METRIC")
-            .arg("L2")
-            .query_async(con)
-            .await?;
+        let _ = execute_redis_command::<redis::Value, _>(
+            con,
+            "FT.CREATE",
+            &[
+                index_name,
+                "ON",
+                "JSON",
+                "SCHEMA",
+                field_path,
+                "as",
+                "vector",
+                "VECTOR",
+                "FLAT",
+                "6",
+                "TYPE",
+                "FLOAT32",
+                "DIM",
+                &dimension.to_string(),
+                "DISTANCE_METRIC",
+                "L2"
+            ],
+        ).await;
     }
 
     Ok(())
 }
 
-async fn run_knn_search(
-    client: &mut redis::aio::Connection,
-    query_vector: &[f32],
+async fn search_vector_field(
+    con: &mut redis::aio::Connection,
+    index_name: &str,
+    query_blob: &[u8],
     k: usize,
-    index_name: &str
-) -> redis::RedisResult<Vec<(String, f32)>> {
-    let query_blob: Vec<u8> = query_vector
-        .iter()
-        .flat_map(|&value| value.to_le_bytes().to_vec())
-        .collect();
+) -> redis::RedisResult<redis::Value> {
+    // check if k can be formatted as a string to prevent panic
+    let k_str = k.to_string();
+    if k_str.is_empty() {
+        return Err(redis::RedisError::from((redis::ErrorKind::TypeError, "Invalid k value")));
+    }
 
-    let result: redis::Value = redis::cmd("FT.SEARCH")
-        .arg(index_name.to_string()) // Replace with your actual index name
-        .arg("DIALECT")
-        .arg(2)
-        .arg("(@title:Matrix @year:[2020 2022])=>[KNN 10 @v $B]")
-        .arg("PARAMS")
-        .arg("@v")
-        .arg(&query_blob)
-        .arg("AS")
-        .arg("@dist")
-        .arg("LIMIT")
-        .arg(0)
-        .arg(k)
-        .arg("SORTBY")
-        .arg("@dist")
-        .query_async(client)
-        .await?;
+    let query_blob_str = base64::encode(query_blob);
 
-    let result_pairs: Vec<(String, f32)> = match result {
-        redis::Value::Bulk(items) => {
-            items
-                .chunks_exact(2)
-                .filter_map(|chunk| match (chunk.get(0), chunk.get(1)) {
-                    (Some(redis::Value::Data(key)), Some(redis::Value::Data(value))) => {
-                        let score: f32 = String::from_utf8_lossy(value)
-                            .parse()
-                            .unwrap_or_default();
-                        Some((String::from_utf8_lossy(key).into_owned(), score))
-                    }
-                    _ => None,
-                })
-                .collect()
-        }
-        _ => vec![],
-    };
+    execute_redis_command::<redis::Value, _>(
+        con,
+        "FT.SEARCH",
+        &[
+            index_name,
+            "DIALECT",
+            "2",
+            &format!("(@title:Matrix @year:[2020 2022])=>[KNN {} @v $B]", k_str),
+            "PARAMS",
+            "@v",
+            &query_blob_str,
+            "AS",
+            "@dist",
+            "LIMIT",
+            "0",
+            &k_str,
+            "SORTBY",
+            "@dist",
+        ],
+    ).await
+}
 
-    Ok(result_pairs)
+async fn set_json_record(
+    con: &mut redis::aio::Connection,
+    point_id: &str,
+    embedded_memory: &EmbeddedMemory,
+) -> redis::RedisResult<()> {
+    execute_redis_command::<(), &str>(
+        con,
+        "JSON.SET",
+        &[
+            point_id,
+            "$",
+            &serde_json::to_value(&embedded_memory)?.to_string(),
+        ],
+    ).await
 }
 
 pub fn create_memory_redis() -> Box<dyn MemoryProvider> {
