@@ -26,4 +26,5 @@ textwrap = "0.16"
 tiktoken-rs = { version = "0.4", features = ["async-openai"] }
 tokenizers = "0.13"
 tokio = { version= "1.27", features = ["macros", "io-util", "rt", "rt-multi-thread"] }
+toml = "0.7"
 tonic = "0.9"
