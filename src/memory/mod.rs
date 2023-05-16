@@ -8,7 +8,7 @@ mod qdrant;
 mod redis;
 pub use local::*;
 pub use qdrant::*;
-pub use ::redis::*;
+pub use self::redis::*;
 
 use crate::{LLM};
 
