@@ -1,17 +1,15 @@
-<h1 align = "center">SmartGPT</h1>
-<div align = "center">
-    <a href="LICENSE.md">
-        <img alt="License" src="https://img.shields.io/github/license/Cormanz/smartgpt?style=flat-square" />
-        <img alt = "Stars" src="https://img.shields.io/github/stars/Cormanz/smartgpt?style=flat-square">
-        <img src = "https://img.shields.io/badge/use-experimental-informational?style=flat-square">
-    </a>
-</div>
-
-<hr/>
+<h1 align="center">
+    SmartGPT
+    <p>
+        <a href="LICENSE.md"><img alt="License" src="https://img.shields.io/github/license/Cormanz/smartgpt?style=flat-square" /></a>
+        <img alt="Stars" src="https://img.shields.io/github/stars/Cormanz/smartgpt?style=flat-square" />
+        <img alt="Use "src="https://img.shields.io/badge/use-experimental-informational?style=flat-square" />
+    </p>
+</h1>
 
 SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 and GPT-4) with the ability to complete complex tasks without user input by breaking them down into smaller problems, and collecting information using the internet and other external sources.
 
-If you're interested in keeping up with the progress of SmartGPT, want to contribute to development, or have issues to discuss, [join the SmartGPT Discord](https://discord.gg/5uezFE2XES).
+If you're interested in keeping up with the progress of SmartGPT, want to contribute to development, or have issues to discuss, join the [SmartGPT Discord](https://discord.gg/5uezFE2XES).
 
 https://github.com/Cormanz/smartgpt/assets/32941017/53bdcf83-4b2e-4798-b3f2-1a233b43c0e1
 
@@ -21,11 +19,11 @@ There are many existing solutions to allowing LLMs to perform more complex tasks
 
 - **Modularity**: With first class plugin support and the ability to compose Autos for whatever your project requires, SmartGPT is incredibly modular.
 
-- **Flexibility**: SmartGPT has one `config.yml` file that is automatically generated where you can configure everything and anything.
+- **Flexibility**: SmartGPT has one central `config.toml` file that is automatically generated. Here you can configure everything and anything.
 
 - **Planning and Reasoning**: SmartGPT has an advanced hierarchical system of managers and employees to recursively break down your tasks.
 
-- **Configuration**: SmartGPT is incredibly easy to configure simply by using a simple `config.yml` file both for users, and for developers.
+- **Configuration**: SmartGPT is incredibly easy to configure simply by using a simple file both for both users and developers.
 
 There are two main shortcomings, however.
 
@@ -47,7 +45,7 @@ SmartGPT is an **incredibly experimental** application. The goal is to unlock ma
 
 2. Clone the repository with `git clone https://github.com/Cormanz/smartgpt.git && cd smartgpt`.
 
-3. Run it in release mode with `cargo run --release`. This will create a `config.yml` for you.
+3. Run it in release mode with `cargo run --release`. This will create a `config.toml` for you.
 
 4. Adjust the config to your liking, and execute it once again.
 
@@ -81,10 +79,3 @@ Agents all have **memory**. After completing a task, the agent will save a list 
 ## Plugin System
 
 Autos can use a set of **tools** such as `google_search`, `browse_url`, etc. You define these using plugins. Plugins define their own set of commands, and can have their own data.
-
-# License
-
-`smartgpt` is available under the
-[MIT license](https://opensource.org/licenses/MIT). See
-[LICENSE](https://github.com/Cormanz/smartgpt/blob/main/LICENSE.md) for the full
-license text.
