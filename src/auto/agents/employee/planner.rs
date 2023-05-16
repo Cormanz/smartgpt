@@ -85,7 +85,7 @@ Respond in this exact JSON format:
     drop(agent);
     context.agents.react.llm.clear_history();
 
-    let mut results = run_react_agent(context, &|ctx| &mut ctx.agents.react, &instruction_info.data.instruction)?;
+    let mut results = run_react_agent(context, &|ctx| &mut ctx.agents.react, &instruction_info.data.instruction, true)?;
 
     loop {
         println!("{results}");
@@ -102,7 +102,9 @@ Then, deduce what stage of your four-staged plan you're on.
 
 Then, decide if you are done.
 If you are not done, give another instruction.
-Feel free to have it refine its previous result!
+If you are done, set your instruction to `null`.
+
+Feel free to have your Agent refine its previous result!
 
 Respond in this exact JSON format:
 
@@ -130,7 +132,7 @@ Respond in this exact JSON format:
                 break;
             }
             Some(instruction) => {
-                results = run_react_agent(context, &|ctx| &mut ctx.agents.react, &instruction)?;
+                results = run_react_agent(context, &|ctx| &mut ctx.agents.react, &instruction, false)?;
             }
         }
     }

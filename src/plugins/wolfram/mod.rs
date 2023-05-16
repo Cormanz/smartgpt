@@ -68,7 +68,7 @@ pub async fn wolfram(ctx: &mut CommandContext, args: ScriptValue) -> Result<Scri
     let response = if response.trim().len() > 0 {
         response
     } else {
-        "Sorry, but Wolfram Alpha did not understand your query. Try just showing the equation.".to_string()
+        "Sorry, but Wolfram Alpha did not understand your query. Please try using another tool.".to_string()
     };
     
     Ok(response.into())
