@@ -8,7 +8,6 @@ use tokio::sync::Mutex;
 use crate::{LLM, Memory, MemoryProvider, RelevantMemory};
 
 use qdrant_client::prelude::*;
-use qdrant_client::qdrant::value::Kind;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::vectors_config::Config;
 use qdrant_client::qdrant::{CreateCollection, SearchPoints, VectorParams, VectorsConfig, PointId, Vectors, Vector, WithPayloadSelector, with_payload_selector, RecommendPoints, ScoredPoint};

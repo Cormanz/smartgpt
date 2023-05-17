@@ -3,8 +3,8 @@ use std::{sync::Arc};
 use std::error::Error;
 use redis::{Client};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tokio::runtime::Runtime;
+use redis::Value::*;
 
 use crate::{LLM, Memory, MemoryProvider, RelevantMemory};
 
@@ -71,11 +71,11 @@ impl MemorySystem for RedisMemorySystem {
         let result: redis::Value = search_vector_field(&mut con, &self.index_name, &query_blob, min_count).await?;
 
         let result_pairs: Vec<(String, f32)> = match result {
-            redis::Value::Bulk(items) => {
+            Bulk(items) => {
                 items
                     .chunks_exact(2)
                     .filter_map(|chunk| match (chunk.get(0), chunk.get(1)) {
-                        (Some(redis::Value::Data(key)), Some(redis::Value::Data(value))) => {
+                        (Some(Data(key)), Some(Data(value))) => {
                             let score: f32 = String::from_utf8_lossy(value)
                                 .parse()
                                 .unwrap_or_default();
