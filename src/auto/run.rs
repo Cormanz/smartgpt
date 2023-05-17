@@ -1,11 +1,13 @@
-use std::{error::Error};
+use std::error::Error;
 
-use crate::{ScriptValue, Command, CommandContext, Expression, GPTRunError};
+use crate::{Command, CommandContext, Expression, GPTRunError, ScriptValue};
 
 pub async fn run_command(
     out: &mut String,
-    name: String, command: Command, 
-    context: &mut CommandContext, args: Vec<ScriptValue>
+    name: String,
+    command: Command,
+    context: &mut CommandContext,
+    args: Vec<ScriptValue>,
 ) -> Result<ScriptValue, Box<dyn Error>> {
     let result = command.run.invoke(context, args.clone()).await?;
 

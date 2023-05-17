@@ -1,14 +1,14 @@
 mod chatgpt;
 mod local;
 
-pub use chatgpt::*;
-pub use local::*;
-use tokio::runtime::Runtime;
-
-use std::{error::Error, fmt::Display};
+use std::error::Error;
+use std::fmt::Display;
 
 use async_trait::async_trait;
+pub use chatgpt::*;
+pub use local::*;
 use serde_json::Value;
+use tokio::runtime::Runtime;
 
 #[derive(Debug, Clone)]
 pub struct ModelLoadError(pub String);
@@ -25,7 +25,7 @@ impl Error for ModelLoadError {}
 pub enum Message {
     User(String),
     Assistant(String),
-    System(String)
+    System(String),
 }
 
 impl Display for Message {
@@ -33,7 +33,7 @@ impl Display for Message {
         let header = match self {
             Self::Assistant(_) => "ASSISTANT",
             Self::System(_) => "SYSTEM",
-            Self::User(_) => "USER"
+            Self::User(_) => "USER",
         };
 
         write!(f, "-- {header} --\n")?;
@@ -45,21 +45,21 @@ impl Message {
     pub fn is_user(&self) -> bool {
         match self {
             Message::User(_) => true,
-            _ => false
+            _ => false,
         }
     }
-    
+
     pub fn is_assistant(&self) -> bool {
         match self {
             Message::Assistant(_) => true,
-            _ => false
+            _ => false,
         }
     }
-    
+
     pub fn is_system(&self) -> bool {
         match self {
             Message::System(_) => true,
-            _ => false
+            _ => false,
         }
     }
 
@@ -67,7 +67,7 @@ impl Message {
         match self {
             Message::User(content) => content,
             Message::Assistant(content) => content,
-            Message::System(content) => content
+            Message::System(content) => content,
         }
     }
 
@@ -75,28 +75,34 @@ impl Message {
         match self {
             Message::User(content) => *content = new_content.to_string(),
             Message::Assistant(content) => *content = new_content.to_string(),
-            Message::System(content) => *content = new_content.to_string()
+            Message::System(content) => *content = new_content.to_string(),
         }
     }
 }
 
 #[async_trait]
-pub trait LLMModel : Send + Sync {
-    async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>>;
+pub trait LLMModel: Send + Sync {
+    async fn get_response(
+        &self,
+        messages: &[Message],
+        max_tokens: Option<u16>,
+        temperature: Option<f32>,
+    ) -> Result<String, Box<dyn Error>>;
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
     fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
 
-    fn get_response_sync(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
+    fn get_response_sync(
+        &self,
+        messages: &[Message],
+        max_tokens: Option<u16>,
+        temperature: Option<f32>,
+    ) -> Result<String, Box<dyn Error>> {
         let rt = Runtime::new()?;
-        rt.block_on(async {
-            self.get_response(messages, max_tokens, temperature).await
-        })
+        rt.block_on(async { self.get_response(messages, max_tokens, temperature).await })
     }
     fn get_base_embed_sync(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         let rt = Runtime::new()?;
-        rt.block_on(async {
-            self.get_base_embed(text).await
-        })
+        rt.block_on(async { self.get_base_embed(text).await })
     }
 }
 
@@ -111,7 +117,7 @@ pub struct LLM {
     pub prompt: Vec<Message>,
     pub end_prompt: Vec<Message>,
     pub message_history: Vec<Message>,
-    pub model: Box<dyn LLMModel>
+    pub model: Box<dyn LLMModel>,
 }
 
 impl LLM {
@@ -138,7 +144,10 @@ impl LLM {
         messages
     }
 
-    pub fn get_messages_additional(&self, additional_history: impl IntoIterator<Item = Message>) -> Vec<Message> {
+    pub fn get_messages_additional(
+        &self,
+        additional_history: impl IntoIterator<Item = Message>,
+    ) -> Vec<Message> {
         let mut messages = self.prompt.clone();
         messages.extend(self.message_history.clone());
         messages.extend(additional_history);
@@ -149,13 +158,14 @@ impl LLM {
 
 pub fn format_prompt(messages: &[Message]) -> String {
     let mut out = String::new();
-    
+
     for message in messages {
-        out.push_str(&format!("{}: {}", 
+        out.push_str(&format!(
+            "{}: {}",
             match message {
                 Message::System(_) => "HUMAN",
                 Message::User(_) => "HUMAN",
-                Message::Assistant(_) => "ASSISTANT"
+                Message::Assistant(_) => "ASSISTANT",
             },
             message.content()
         ));

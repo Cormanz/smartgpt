@@ -1,9 +1,12 @@
-use std::{error::Error, fmt::Display, process};
+use std::error::Error;
+use std::fmt::Display;
+use std::{fs, process};
 
 use async_trait::async_trait;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl,  EmptyCycle, ScriptValue, CommandArgument};
-use std::fs;
+use crate::{
+    Command, CommandArgument, CommandContext, CommandImpl, EmptyCycle, Plugin, ScriptValue,
+};
 
 #[derive(Debug, Clone)]
 pub struct ShutdownNoOutputError;
@@ -16,8 +19,15 @@ impl Display for ShutdownNoOutputError {
 
 impl Error for ShutdownNoOutputError {}
 
-pub async fn shutdown(_ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let output: String = args.get(0).ok_or(ShutdownNoOutputError)?.clone().try_into()?;
+pub async fn shutdown(
+    _ctx: &mut CommandContext,
+    args: Vec<ScriptValue>,
+) -> Result<ScriptValue, Box<dyn Error>> {
+    let output: String = args
+        .get(0)
+        .ok_or(ShutdownNoOutputError)?
+        .clone()
+        .try_into()?;
 
     fs::write(format!("files/out"), output)?;
 
@@ -28,7 +38,11 @@ pub struct Shutodwn;
 
 #[async_trait]
 impl CommandImpl for Shutodwn {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(
+        &self,
+        ctx: &mut CommandContext,
+        args: Vec<ScriptValue>,
+    ) -> Result<ScriptValue, Box<dyn Error>> {
         shutdown(ctx, args).await
     }
 
@@ -42,16 +56,16 @@ pub fn create_shutdown() -> Plugin {
         name: "Shutdown".to_string(),
         dependencies: vec![],
         cycle: Box::new(EmptyCycle),
-        commands: vec![
-            Command {
-                name: "shutdown".to_string(),
-                purpose: "Shutdown the program with the output.".to_string(),
-                args: vec![
-                    CommandArgument::new("output", "The output that the program ends with", "String")
-                ],
-                return_type: "None".to_string(),
-                run: Box::new(Shutodwn)
-            }
-        ]
+        commands: vec![Command {
+            name: "shutdown".to_string(),
+            purpose: "Shutdown the program with the output.".to_string(),
+            args: vec![CommandArgument::new(
+                "output",
+                "The output that the program ends with",
+                "String",
+            )],
+            return_type: "None".to_string(),
+            run: Box::new(Shutodwn),
+        }],
     }
 }

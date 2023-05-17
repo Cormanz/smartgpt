@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResponse {
-    //pub kind: String,
-    //pub url: Url,
-    //pub queries: Queries,
-    //pub context: Context,
-    //pub search_information: SearchInformation,
+    // pub kind: String,
+    // pub url: Url,
+    // pub queries: Queries,
+    // pub context: Context,
+    // pub search_information: SearchInformation,
     pub items: Vec<Item>,
 }
 
@@ -72,17 +72,17 @@ pub struct SearchInformation {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Item {
-    //pub kind: String,
+    // pub kind: String,
     pub title: String,
-    //pub html_title: String,
+    // pub html_title: String,
     pub link: String,
-    //pub display_link: String,
+    // pub display_link: String,
     pub snippet: String,
-    //pub html_snippet: String,
-    //pub cache_id: Option<String>,
-    //pub formatted_url: String,
-    //pub html_formatted_url: String,
-    //pub pagemap: Pagemap,
+    // pub html_snippet: String,
+    // pub cache_id: Option<String>,
+    // pub formatted_url: String,
+    // pub html_formatted_url: String,
+    // pub pagemap: Pagemap,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

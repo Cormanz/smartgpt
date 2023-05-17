@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use serde::{de::{Visitor, SeqAccess, MapAccess}, Deserializer, Deserialize, Serialize, Serializer, ser::{SerializeMap, SerializeSeq}};
+use serde::de::{MapAccess, SeqAccess, Visitor};
+use serde::ser::{SerializeMap, SerializeSeq};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::ScriptValue;
 
@@ -28,7 +30,7 @@ impl Serialize for ScriptValue {
                 }
                 map.end()
             },
-            ScriptValue::None => serializer.serialize_none()
+            ScriptValue::None => serializer.serialize_none(),
         }
     }
 }

@@ -1,34 +1,36 @@
-use std::{error::Error, fmt::Display, process, fs, io};
+use std::error::Error;
+use std::fmt::Display;
+use std::{fs, io, process};
 
 use colored::Colorize;
 
+mod auto;
+mod chunk;
+mod commands;
+mod config;
+mod llms;
+mod memory;
 mod plugin;
 mod plugins;
-mod commands;
-mod chunk;
-mod llms;
-mod config;
 mod runner;
-mod memory;
-mod auto;
 
+pub use chunk::*;
+pub use commands::*;
+pub use config::*;
+pub use llms::*;
+pub use memory::*;
 pub use plugin::*;
 pub use plugins::*;
-pub use commands::*;
-pub use chunk::*;
-pub use llms::*;
-pub use config::*;
 pub use runner::*;
-pub use memory::*;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::auto::{run_task_auto, run_assistant_auto};
+use crate::auto::{run_assistant_auto, run_task_auto};
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
-    #[serde(rename = "new end goal")] new_end_goal: String
+    #[serde(rename = "new end goal")]
+    new_end_goal: String,
 }
 
 fn debug_yaml(results: &str) -> Result<(), Box<dyn Error>> {
@@ -37,7 +39,13 @@ fn debug_yaml(results: &str) -> Result<(), Box<dyn Error>> {
     yaml = yaml.trim().to_string();
 
     if yaml.len() > 1500 {
-        yaml = yaml.chars().take(1500).map(|el| el.to_string()).collect::<Vec<_>>().join("") + "... (chopped off at 1,500 characters)";
+        yaml = yaml
+            .chars()
+            .take(1500)
+            .map(|el| el.to_string())
+            .collect::<Vec<_>>()
+            .join("")
+            + "... (chopped off at 1,500 characters)";
     }
 
     println!("{yaml}");
@@ -68,7 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             fs::write("config.yml", DEFAULT_CONFIG)?;
 
             fs::read_to_string("config.yml")?
-        }
+        },
     };
 
     let mut program = load_config(&config)?;
@@ -83,15 +91,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         for dependency in &plugin.dependencies {
             let dependency_exists = program.plugins.iter().any(|dep| &dep.name == dependency);
             if !dependency_exists {
-                println!("{}: Cannot run {} without its needed dependency of {}.", "Error".red(), plugin.name, dependency);
+                println!(
+                    "{}: Cannot run {} without its needed dependency of {}.",
+                    "Error".red(),
+                    plugin.name,
+                    dependency
+                );
                 exit_dependency_error = true;
             }
         }
 
         let commands = if plugin.commands.len() == 0 {
-            vec![ "<no commands>".white() ]
+            vec!["<no commands>".white()]
         } else {
-            plugin.commands.iter()
+            plugin
+                .commands
+                .iter()
                 .map(|el| {
                     let command_name = el.name.to_string();
                     if program.disabled_commands.contains(&command_name) {
@@ -99,7 +114,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     } else {
                         el.name.to_string().green()
                     }
-                }).collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>()
         };
 
         if !exit_dependency_error {
@@ -133,7 +149,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             let stdin = io::stdin();
             loop {
                 println!("{}", "> User".yellow());
-                
+
                 let mut input = String::new();
                 stdin.read_line(&mut input).unwrap();
 
@@ -151,7 +167,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         },
         AutoType::Runner { task } => {
             run_task_auto(&mut program, &task)?;
-        }
+        },
     }
 
     Ok(())
