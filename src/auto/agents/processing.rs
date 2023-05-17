@@ -13,5 +13,10 @@ pub fn find_text_between_braces(input: &str) -> Option<String> {
         return None; // Closing brace comes before opening brace or no text in between
     }
 
-    Some(format!("{}{}{}", "{", &input[start_index + 1..end_index], "}"))
+    Some(format!(
+        "{}{}{}",
+        "{",
+        &input[start_index + 1..end_index],
+        "}"
+    ))
 }

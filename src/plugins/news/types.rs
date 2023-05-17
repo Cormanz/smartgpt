@@ -1,9 +1,9 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct News {
-    pub articles: Vec<Article>
+    pub articles: Vec<Article>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

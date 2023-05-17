@@ -1,4 +1,5 @@
-use select::{document::Document, predicate::{Name}};
+use select::document::Document;
+use select::predicate::Name;
 
 pub fn extract_text_from_html(html: &str) -> String {
     let mut text = String::new();
@@ -10,8 +11,5 @@ pub fn extract_text_from_html(html: &str) -> String {
     }
     // prints "This is some text."
 
-    text
-        .trim()
-        .replace(|c: char| !c.is_ascii(), "")
-        .to_string()
+    text.trim().replace(|c: char| !c.is_ascii(), "").to_string()
 }

@@ -2,32 +2,37 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 use std::vec;
-use serde::{Serialize, Deserialize};
-use tokio::sync::Mutex;
 
-use crate::{LLM, Memory, MemoryProvider, RelevantMemory};
-
+use async_trait::async_trait;
 use qdrant_client::prelude::*;
 use qdrant_client::qdrant::value::Kind;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::vectors_config::Config;
-use qdrant_client::qdrant::{CreateCollection, SearchPoints, VectorParams, VectorsConfig, PointId, Vectors, Vector, WithPayloadSelector, with_payload_selector, RecommendPoints, ScoredPoint};
+use qdrant_client::qdrant::{
+    with_payload_selector, CreateCollection, PointId, RecommendPoints, ScoredPoint, SearchPoints,
+    Vector, VectorParams, Vectors, VectorsConfig, WithPayloadSelector,
+};
+use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
+use tokio::sync::Mutex;
 
 use super::MemorySystem;
-
-use async_trait::async_trait;
+use crate::{Memory, MemoryProvider, RelevantMemory, LLM};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QdrantPayload {
     content: String,
     recall: f32,
-    recency: f32
+    recency: f32,
 }
 
 impl QdrantPayload {
     pub fn new(content: String, recall: f32, recency: f32) -> Self {
-        Self { content, recall, recency }
+        Self {
+            content,
+            recall,
+            recency,
+        }
     }
 
     pub fn to_memory_map(&self) -> Result<HashMap<String, Value>, serde_json::Error> {
@@ -42,7 +47,7 @@ impl QdrantPayload {
 pub struct QdrantMemorySystem {
     client: QdrantClient,
     latest_point_id: Arc<Mutex<Option<u64>>>,
-    collection_name: String
+    collection_name: String,
 }
 
 #[async_trait]
@@ -60,7 +65,7 @@ impl MemorySystem for QdrantMemorySystem {
         let payload = QdrantPayload::new(
             memory_struct.content.clone(),
             memory_struct.recency,
-            memory_struct.recall
+            memory_struct.recall,
         );
 
         let mut latest_point_id = self.latest_point_id.lock().await;
@@ -73,7 +78,7 @@ impl MemorySystem for QdrantMemorySystem {
         let point_id = PointId {
             point_id_options: Some(point_id::PointIdOptions::Num(point_id_val)),
         };
-        
+
         let vectors = Vectors {
             vectors_options: Some(VectorsOptions::Vector(Vector {
                 data: embedding.clone(),
@@ -81,16 +86,16 @@ impl MemorySystem for QdrantMemorySystem {
         };
 
         self.client
-        .upsert_points(
-            self.collection_name.to_string(),
-            vec![PointStruct {
-                id: Some(point_id),
-                payload: payload.to_memory_map()?,
-                vectors: Some(vectors)
-            }],
-            None,
-        )
-        .await?;
+            .upsert_points(
+                self.collection_name.to_string(),
+                vec![PointStruct {
+                    id: Some(point_id),
+                    payload: payload.to_memory_map()?,
+                    vectors: Some(vectors),
+                }],
+                None,
+            )
+            .await?;
 
         Ok(())
     }
@@ -127,7 +132,7 @@ impl MemorySystem for QdrantMemorySystem {
                 negative: vec![],
                 filter: None,
                 using: None,
-                lookup_from: None
+                lookup_from: None,
             };
 
             let recommend_response = self.client.recommend(&recommend_request).await?;
@@ -146,7 +151,7 @@ impl MemorySystem for QdrantMemorySystem {
                 offset: None,
                 vector_name: None,
                 with_vectors: None,
-                read_consistency: None
+                read_consistency: None,
             };
 
             let search_response = self.client.search_points(&search_request).await?;
@@ -162,7 +167,6 @@ impl MemorySystem for QdrantMemorySystem {
             Ok(relevant_memories) => Ok(relevant_memories),
             Err(e) => Err(e),
         }
-
     }
 }
 
@@ -170,7 +174,7 @@ pub struct QdrantProvider;
 
 #[derive(Serialize, Deserialize)]
 pub struct QdrantMemoryConfig {
-    pub collection: String
+    pub collection: String,
 }
 
 impl MemoryProvider for QdrantProvider {
@@ -184,21 +188,17 @@ impl MemoryProvider for QdrantProvider {
 
     fn create(&self, config: serde_json::Value) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
-        let client = rt.block_on(async {
-            init_qdrant_client().await
-        })?;
+        let client = rt.block_on(async { init_qdrant_client().await })?;
 
         let qdrant_config: QdrantMemoryConfig = serde_json::from_value(config)?;
         let collection_name = qdrant_config.collection;
 
-        rt.block_on(async {
-            create_collection_if_not_exists(&client, &collection_name).await
-        })?;
+        rt.block_on(async { create_collection_if_not_exists(&client, &collection_name).await })?;
 
-        Ok(Box::new(QdrantMemorySystem { 
+        Ok(Box::new(QdrantMemorySystem {
             client,
             latest_point_id: Arc::new(Mutex::new(Some(0))),
-            collection_name: collection_name.to_string()
+            collection_name: collection_name.to_string(),
         }))
     }
 }
@@ -210,7 +210,7 @@ fn convert_to_relevant_memory(point: &ScoredPoint) -> Result<RelevantMemory, Box
         Ok(p) => p,
         Err(e) => {
             return Err(Box::new(e));
-        }
+        },
     };
 
     let point_embedding = match &point.vectors {
@@ -225,19 +225,16 @@ fn convert_to_relevant_memory(point: &ScoredPoint) -> Result<RelevantMemory, Box
         content: payload.content,
         recall: payload.recall,
         recency: payload.recency,
-        embedding: point_embedding.clone()
+        embedding: point_embedding.clone(),
     };
     let relevance = point.score;
 
-    Ok(RelevantMemory {
-        memory,
-        relevance,
-    })
+    Ok(RelevantMemory { memory, relevance })
 }
 
 async fn init_qdrant_client() -> Result<QdrantClient, Box<dyn Error>> {
-    let qdrant_host = std::env::var("QDRANT_HOST")
-        .unwrap_or_else(|_| String::from("http://localhost:6334"));
+    let qdrant_host =
+        std::env::var("QDRANT_HOST").unwrap_or_else(|_| String::from("http://localhost:6334"));
 
     let config = QdrantClientConfig::from_url(&qdrant_host);
 
@@ -246,24 +243,33 @@ async fn init_qdrant_client() -> Result<QdrantClient, Box<dyn Error>> {
     Ok(client)
 }
 
-async fn create_collection_if_not_exists(client: &QdrantClient, collection_name: &str) -> Result<(), Box<dyn Error>> {
+async fn create_collection_if_not_exists(
+    client: &QdrantClient,
+    collection_name: &str,
+) -> Result<(), Box<dyn Error>> {
     let collection_exists = client.has_collection(collection_name.to_string()).await?;
 
     if !collection_exists {
-        let collection_creation_result = client.create_collection(
-            &create_initial_collection(collection_name.to_string())
-        ).await;
+        let collection_creation_result = client
+            .create_collection(&create_initial_collection(collection_name.to_string()))
+            .await;
         match collection_creation_result {
             Ok(_) => {},
             Err(e) => {
                 eprintln!("Failed to create collection: {}", e);
-                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, format!("{}", e))));
-            }
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("{}", e),
+                )));
+            },
         };
 
         let collection_exists = client.has_collection(collection_name.to_string()).await?;
         if !collection_exists {
-            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to create collection")));
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to create collection",
+            )));
         }
     }
 
@@ -279,8 +285,7 @@ fn create_initial_collection(name: String) -> CreateCollection {
         config: Some(Config::Params(VectorParams {
             size: 1536,
             distance: 3,
-            ..Default::default()
-            // ... populate VectorParams fields here
+            ..Default::default() // ... populate VectorParams fields here
         })),
         ..Default::default()
     });

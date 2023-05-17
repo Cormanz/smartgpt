@@ -3,12 +3,11 @@ use std::error::Error;
 use async_trait::async_trait;
 use serde_json::Value;
 
-use crate::{LLM, Memory, MemoryProvider, RelevantMemory, compare_embeddings};
-
 use super::MemorySystem;
+use crate::{compare_embeddings, Memory, MemoryProvider, RelevantMemory, LLM};
 
 pub struct LocalMemorySystem {
-    pub memory: Vec<Memory>
+    pub memory: Vec<Memory>,
 }
 
 #[async_trait]
@@ -20,19 +19,26 @@ impl MemorySystem for LocalMemorySystem {
             content: memory.to_string(),
             recency: 1.,
             recall: 1.,
-            embedding: embedding.clone()
+            embedding: embedding.clone(),
         });
 
         Ok(())
     }
 
-    async fn get_memory_pool(&mut self, llm: &LLM, memory: &str, _min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
+    async fn get_memory_pool(
+        &mut self,
+        llm: &LLM,
+        memory: &str,
+        _min_count: usize,
+    ) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
         let embedding = llm.model.get_base_embed(memory).await?;
-    
-        let results: Vec<RelevantMemory> = self.memory.iter()
+
+        let results: Vec<RelevantMemory> = self
+            .memory
+            .iter()
             .map(|memory| RelevantMemory {
                 memory: memory.clone(),
-                relevance: compare_embeddings(&embedding, &memory.embedding)
+                relevance: compare_embeddings(&embedding, &memory.embedding),
             })
             .collect();
 
@@ -51,10 +57,8 @@ impl MemoryProvider for LocalProvider {
         "local".to_string()
     }
 
-    fn create(&self, _: Value) -> Result<Box<dyn MemorySystem> ,Box<dyn Error> > {
-        Ok(Box::new(LocalMemorySystem {
-            memory: vec![]
-        }))
+    fn create(&self, _: Value) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
+        Ok(Box::new(LocalMemorySystem { memory: vec![] }))
     }
 }
 

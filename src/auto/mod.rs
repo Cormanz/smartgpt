@@ -1,25 +1,25 @@
-use std::{fmt::Display, error::Error};
+use std::error::Error;
+use std::fmt::Display;
 
-use serde::{ Serialize, de::DeserializeOwned};
-use json5;
-
+use agents::employee::run_employee;
+use agents::manager::run_manager;
 use colored::Colorize;
+use json5;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-use crate::{LLM, ProgramInfo, Message };
-
-use agents::{employee::run_employee, manager::run_manager};
-
-use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task, agents::processing::find_text_between_braces};
+use self::agents::processing::find_text_between_braces;
+use self::classify::is_task;
+use self::responses::{ask_for_assistant_response, ask_for_responses};
+use crate::{Message, ProgramInfo, LLM};
 
 mod agents;
-mod run;
-mod responses;
 mod classify;
+mod responses;
+mod run;
 
 pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Box<dyn Error>> {
-    let ProgramInfo { 
-        context, ..
-    } = program;
+    let ProgramInfo { context, .. } = program;
     let context = context.lock().unwrap();
 
     let has_manager = context.agents.managers.len() >= 1;
@@ -33,71 +33,82 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     }
 }
 
-pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
-    let ProgramInfo { 
-        context, ..
-    } = program;
+pub fn run_assistant_auto(
+    program: &mut ProgramInfo,
+    messages: &[Message],
+    request: &str,
+    token_limit: Option<u16>,
+) -> Result<String, Box<dyn Error>> {
+    let ProgramInfo { context, .. } = program;
 
     let token_limit_final: u16 = token_limit.unwrap_or(400u16);
 
     let context = context.lock().unwrap();
 
     let mut new_messages = messages.to_vec();
-    new_messages.push(Message::User(format!(
-r#"Summarize the conversation."#)));
+    new_messages.push(Message::User(format!(r#"Summarize the conversation."#)));
 
     let conversation_context = match messages.len() {
         0 => "No conversation context.".to_string(),
-        _ => context.agents.fast.llm.model.get_response_sync(
-            &new_messages, Some(300), None
-        )?
+        _ => context
+            .agents
+            .fast
+            .llm
+            .model
+            .get_response_sync(&new_messages, Some(300), None)?,
     };
 
     drop(context);
     if is_task(program, request)? {
         println!("{}", "Running task...".green());
 
-        let ProgramInfo { 
-            context, ..
-        } = program;
+        let ProgramInfo { context, .. } = program;
         let context = context.lock().unwrap();
 
         let has_manager: bool = context.agents.managers.len() >= 1;
 
         let mut task = request.trim().to_string();
         task = format!(
-"Given this relevant conversation context: {conversation_context}
+            "Given this relevant conversation context: {conversation_context}
 
-Generate a response to this request: {task}");
-        
+Generate a response to this request: {task}"
+        );
+
         drop(context);
-    
+
         if has_manager {
-            run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request, token_limit))?
+            run_manager(program, 0, &task.clone(), |llm| {
+                ask_for_assistant_response(llm, &conversation_context, &request, token_limit)
+            })?
         } else {
-            run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request, token_limit))?
+            run_employee(program, &task.clone(), |llm| {
+                ask_for_assistant_response(llm, &conversation_context, &request, token_limit)
+            })?
         }
     } else {
-        let ProgramInfo { 
-            context, ..
-        } = program;
+        let ProgramInfo { context, .. } = program;
         let mut context = context.lock().unwrap();
 
         context.agents.fast.llm.prompt.clear();
         context.agents.fast.llm.message_history.clear();
-        
+
         context.agents.fast.llm.prompt.push(Message::System(format!(
-r#"Respond in this conversation context:
+            r#"Respond in this conversation context:
 
 {conversation_context}"#
         )));
 
-        context.agents.fast.llm.message_history.push(Message::User(request.to_string()));
+        context
+            .agents
+            .fast
+            .llm
+            .message_history
+            .push(Message::User(request.to_string()));
 
         context.agents.fast.llm.model.get_response_sync(
             &context.agents.fast.llm.get_messages(),
             Some(token_limit_final),
-            None
+            None,
         )
     }
 }
@@ -115,16 +126,28 @@ impl Error for CannotParseError {}
 
 pub struct ParsedResponse<T> {
     data: T,
-    raw: String
+    raw: String,
 }
 
-pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
-    try_parse_base(llm, tries, max_tokens, "yml", |str| serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
+pub fn try_parse_yaml<T: DeserializeOwned>(
+    llm: &LLM,
+    tries: usize,
+    max_tokens: Option<u16>,
+) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+    try_parse_base(llm, tries, max_tokens, "yml", |str| {
+        serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>)
+    })
 }
 
-pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+pub fn try_parse_json<T: DeserializeOwned + Serialize>(
+    llm: &LLM,
+    tries: usize,
+    max_tokens: Option<u16>,
+) -> Result<ParsedResponse<T>, Box<dyn Error>> {
     for i in 0..tries {
-        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
+        let response = llm
+            .model
+            .get_response_sync(&llm.get_messages(), max_tokens, None)?;
         let processed_response = find_text_between_braces(&response).unwrap_or("None".to_string());
 
         // We use JSON5 to allow for more lenient parsing for models like GPT3.5.
@@ -135,47 +158,58 @@ pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize,
 
                 return Ok(ParsedResponse {
                     data,
-                    raw: format!("```json\n{pretty_response}\n```")  
-                })
+                    raw: format!("```json\n{pretty_response}\n```"),
+                });
             },
             Err(err) => {
                 println!("{}", format!("Try {} failed.", i + 1).red());
                 println!("{response}");
                 println!("{err}");
-            }
+            },
         }
     }
-    
+
     Err(Box::new(CannotParseError))
 }
 
-pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, lang: &str, parse: impl Fn(&str) -> Result<T, Box<dyn Error>>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+pub fn try_parse_base<T: DeserializeOwned>(
+    llm: &LLM,
+    tries: usize,
+    max_tokens: Option<u16>,
+    lang: &str,
+    parse: impl Fn(&str) -> Result<T, Box<dyn Error>>,
+) -> Result<ParsedResponse<T>, Box<dyn Error>> {
     for i in 0..tries {
-        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
+        let response = llm
+            .model
+            .get_response_sync(&llm.get_messages(), max_tokens, None)?;
         let processed_response = response.trim();
-        let processed_response = processed_response.strip_prefix("```")
+        let processed_response = processed_response
+            .strip_prefix("```")
             .unwrap_or(&processed_response)
             .to_string();
-        let processed_response = processed_response.strip_prefix(&format!("{lang}"))
+        let processed_response = processed_response
+            .strip_prefix(&format!("{lang}"))
             .unwrap_or(&response)
             .to_string();
-        let processed_response = processed_response.strip_suffix("```")
+        let processed_response = processed_response
+            .strip_suffix("```")
             .unwrap_or(&processed_response)
             .to_string();
         match parse(&processed_response) {
             Ok(data) => {
                 return Ok(ParsedResponse {
                     data,
-                    raw: response    
-                })
+                    raw: response,
+                });
             },
             Err(err) => {
                 println!("{}", format!("Try {} failed.", i + 1).red());
                 println!("{response}");
                 println!("{err}");
-            }
+            },
         }
     }
-    
+
     Err(Box::new(CannotParseError))
 }

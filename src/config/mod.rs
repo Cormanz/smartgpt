@@ -1,10 +1,19 @@
-use std::{collections::HashMap, error::Error, fmt::Display, process, sync::{Mutex, Arc}};
+use std::collections::HashMap;
+use std::error::Error;
+use std::fmt::Display;
+use std::process;
+use std::sync::{Arc, Mutex};
 
 use colored::Colorize;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem};
+use crate::{
+    create_browse, create_chatgpt, create_filesystem, create_google, create_memory_local,
+    create_memory_qdrant, create_model_chatgpt, create_model_llama, create_news, create_none,
+    create_shutdown, create_wikipedia, create_wolfram, AgentInfo, Agents, CommandContext, LLMModel,
+    LLMProvider, MemoryProvider, MemorySystem, Plugin, LLM,
+};
 
 mod default;
 pub use default::*;
@@ -35,7 +44,7 @@ impl<'a> Error for NoMemorySystemError {}
 #[serde(rename_all = "camelCase")]
 pub struct AgentConfig {
     pub llm: HashMap<String, Value>,
-    pub memory: HashMap<String, Value>
+    pub memory: HashMap<String, Value>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -54,7 +63,8 @@ pub struct Config {
     pub personality: String,
     pub agents: AgentLLMs,
     pub plugins: HashMap<String, Value>,
-    #[serde(rename = "disabled commands")] pub disabled_commands: Vec<String>
+    #[serde(rename = "disabled commands")]
+    pub disabled_commands: Vec<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -69,11 +79,12 @@ pub struct Llm {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AutoType {
-    #[serde(rename = "runner")] Runner {
-        task: String
-    },
-    #[serde(rename = "assistant")] Assistant {
-        #[serde(rename = "assistant token limit")] token_limit: Option<u16>
+    #[serde(rename = "runner")]
+    Runner { task: String },
+    #[serde(rename = "assistant")]
+    Assistant {
+        #[serde(rename = "assistant token limit")]
+        token_limit: Option<u16>,
     },
 }
 
@@ -82,7 +93,7 @@ pub struct ProgramInfo {
     pub auto_type: AutoType,
     pub plugins: Vec<Plugin>,
     pub context: Arc<Mutex<CommandContext>>,
-    pub disabled_commands: Vec<String>
+    pub disabled_commands: Vec<String>,
 }
 
 pub fn list_plugins() -> Vec<Plugin> {
@@ -95,28 +106,25 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_chatgpt(),
         create_news(),
         create_wikipedia(),
-        create_none()
+        create_none(),
     ]
 }
 
 pub fn create_llm_providers() -> Vec<Box<dyn LLMProvider>> {
-    vec![
-        create_model_chatgpt(),
-        create_model_llama()
-    ]
+    vec![create_model_chatgpt(), create_model_llama()]
 }
 
 pub fn create_memory_providers() -> Vec<Box<dyn MemoryProvider>> {
-    vec![
-        create_memory_local(),
-        create_memory_qdrant()
-    ]
+    vec![create_memory_local(), create_memory_qdrant()]
 }
 
-pub fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
+pub fn create_llm_model(
+    agent: HashMap<String, Value>,
+) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_llm_providers();
-    let llm_provider = providers.iter()
+    let llm_provider = providers
+        .iter()
         .filter(|el| el.is_enabled())
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoLLMError)?;
@@ -124,10 +132,13 @@ pub fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMMode
     Ok(llm_provider.create(model_config.clone())?)
 }
 
-pub fn create_memory_model(agent: HashMap<String, Value>) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
+pub fn create_memory_model(
+    agent: HashMap<String, Value>,
+) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_memory_providers();
-    let memory_provider = providers.iter()
+    let memory_provider = providers
+        .iter()
         .filter(|el| el.is_enabled())
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoMemorySystemError)?;
@@ -141,10 +152,10 @@ pub fn create_agent(agent: AgentConfig) -> Result<AgentInfo, Box<dyn Error>> {
             prompt: vec![],
             message_history: vec![],
             end_prompt: vec![],
-            model: create_llm_model(agent.llm)?
+            model: create_llm_model(agent.llm)?,
         },
         observations: create_memory_model(agent.memory.clone())?,
-        reflections: create_memory_model(agent.memory)?
+        reflections: create_memory_model(agent.memory)?,
     })
 }
 
@@ -157,17 +168,24 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         variables: HashMap::new(),
         plugin_data: crate::PluginStore(HashMap::new()),
         agents: Agents {
-            managers: config.agents.managers.iter().map(|el| create_agent(el.clone())).collect::<Result<_, _>>()?,
+            managers: config
+                .agents
+                .managers
+                .iter()
+                .map(|el| create_agent(el.clone()))
+                .collect::<Result<_, _>>()?,
             employee: create_agent(config.agents.employee)?,
-            fast: create_agent(config.agents.fast)?
-        }
+            fast: create_agent(config.agents.fast)?,
+        },
     };
 
     let mut used_plugins: Vec<Plugin> = vec![];
     let plugins = list_plugins();
     let mut exit = false;
     for (name, _) in &config.plugins {
-        let plugin = plugins.iter().find(|el| el.name.to_ascii_lowercase() == name.to_ascii_lowercase());
+        let plugin = plugins
+            .iter()
+            .find(|el| el.name.to_ascii_lowercase() == name.to_ascii_lowercase());
         if let None = plugin {
             println!("{}: No plugin named \"{}\".", "Error".red(), name);
             exit = true;
@@ -176,7 +194,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     if exit {
         process::exit(1);
     }
-    
+
     for plugin in plugins {
         if let Some(plugin_info) = config.plugins.get(&plugin.name.to_lowercase()) {
             let data = plugin.cycle.create_data(plugin_info.clone());
@@ -193,6 +211,6 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         auto_type: config.auto_type.clone(),
         plugins: used_plugins,
         context: Arc::new(Mutex::new(context)),
-        disabled_commands: config.disabled_commands
+        disabled_commands: config.disabled_commands,
     })
 }

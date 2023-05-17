@@ -1,12 +1,17 @@
-use std::{error::Error, fmt::Display};
+use std::error::Error;
+use std::fmt::Display;
 
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ProgramInfo, generate_commands, Message, ScriptValue, auto::{try_parse_json, ParsedResponse, run::run_command, agents::findings::{ask_for_findings}}, AgentInfo, generate_commands_short};
-
 use super::findings::get_observations;
+use crate::auto::agents::findings::ask_for_findings;
+use crate::auto::run::run_command;
+use crate::auto::{try_parse_json, ParsedResponse};
+use crate::{
+    generate_commands, generate_commands_short, AgentInfo, Message, ProgramInfo, ScriptValue,
+};
 
 #[derive(Debug, Clone)]
 pub struct EmployeeError(pub String);
@@ -22,7 +27,7 @@ impl Error for EmployeeError {}
 #[derive(Serialize, Deserialize)]
 pub struct EmployeeAction {
     pub command: String,
-    pub args: Option<Vec<ScriptValue>>
+    pub args: Option<Vec<ScriptValue>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -35,13 +40,20 @@ pub struct EmployeeThought {
     reasoning: String,
     criticism: String,
     plan: String,
-    action: EmployeeAction
+    action: EmployeeAction,
 }
 
-pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut AgentInfo) -> T) -> Result<T, Box<dyn Error>> {
-    let ProgramInfo { 
-        context, plugins, personality,
-        disabled_commands, .. 
+pub fn run_employee<T>(
+    program: &mut ProgramInfo,
+    task: &str,
+    end: impl Fn(&mut AgentInfo) -> T,
+) -> Result<T, Box<dyn Error>> {
+    let ProgramInfo {
+        context,
+        plugins,
+        personality,
+        disabled_commands,
+        ..
     } = program;
     let mut context = context.lock().unwrap();
 
@@ -51,8 +63,13 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
     context.agents.employee.llm.prompt.clear();
     context.agents.employee.llm.message_history.clear();
 
-    context.agents.employee.llm.prompt.push(Message::System(format!(
-r#"
+    context
+        .agents
+        .employee
+        .llm
+        .prompt
+        .push(Message::System(format!(
+            r#"
 Personality: {personality}
 
 Remember that you are a large language model. Play to your strengths.
@@ -61,34 +78,56 @@ You will be given one task.
 Try to work that task out, step by step, one command at a time.
 Complete this in as minimal tasks as possible.
 "#
-    )));
+        )));
 
-    let observations = get_observations(&mut context.agents.employee, task)?
-        .unwrap_or("None found.".to_string());
-    
-    context.agents.employee.llm.prompt.push(Message::User(format!(
-"You have access to these resources as commands:
+    let observations =
+        get_observations(&mut context.agents.employee, task)?.unwrap_or("None found.".to_string());
+
+    context
+        .agents
+        .employee
+        .llm
+        .prompt
+        .push(Message::User(format!(
+            "You have access to these resources as commands:
 {}
     finish() -> None
         A special command. Use this command when you are done with your assignment.
         
 You may only use these commands.
 These are the only commands available. Do not use any other commands.",
-        cmds
-    )));
+            cmds
+        )));
 
-    context.agents.employee.llm.prompt.push(Message::User(format!(
-"Here are your long-term memories:
+    context
+        .agents
+        .employee
+        .llm
+        .prompt
+        .push(Message::User(format!(
+            "Here are your long-term memories:
 
 {observations}"
-    )));
+        )));
 
-    context.agents.employee.llm.prompt.push(Message::User(format!(r#"
+    context
+        .agents
+        .employee
+        .llm
+        .prompt
+        .push(Message::User(format!(
+            r#"
 Your task is: {task}
 "#,
-    )));
+        )));
 
-    context.agents.employee.llm.prompt.push(Message::User(format!(r#"
+    context
+        .agents
+        .employee
+        .llm
+        .prompt
+        .push(Message::User(format!(
+            r#"
 Reply in this format:
 
 ```json
@@ -114,7 +153,8 @@ Try to break down your problems in terms of what commands can be used.
 Reply in that exact JSON format exactly.
 Make sure every field is filled in detail.
 Keep every field in that exact order.
-"#)));
+"#
+        )));
 
     context.agents.employee.llm.message_history.push(Message::User(format!(
         r#"Please run your next command. If you are done, keep your 'command name' field as 'finish'"#
@@ -124,8 +164,12 @@ Keep every field in that exact order.
     let employee = "Employee".blue();
 
     loop {
-        let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(1000))?;
-        let ParsedResponse { data: thoughts, raw } = thoughts;
+        let thoughts =
+            try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(1000))?;
+        let ParsedResponse {
+            data: thoughts,
+            raw,
+        } = thoughts;
 
         println!();
         println!("{dashes} {employee} {dashes}");
@@ -140,7 +184,8 @@ Keep every field in that exact order.
             break;
         }
 
-        let command = plugins.iter()
+        let command = plugins
+            .iter()
             .flat_map(|el| &el.commands)
             .find(|el| el.name == command_name);
 
@@ -150,32 +195,45 @@ Keep every field in that exact order.
                 let rt = Runtime::new().unwrap();
                 rt.block_on(async {
                     run_command(
-                        &mut out, 
-                        command_name.clone(), 
-                        command.box_clone(), 
-                        &mut context, 
-                        args
-                    ).await
+                        &mut out,
+                        command_name.clone(),
+                        command.box_clone(),
+                        &mut context,
+                        args,
+                    )
+                    .await
                 })?;
-        
             },
             None => {
                 let error_str = format!(
-"No such command named '{command_name}.' 
-These are your commands: {cmds_short}");
+                    "No such command named '{command_name}.' 
+These are your commands: {cmds_short}"
+                );
                 out.push_str(&error_str)
-            }
+            },
         }
 
-        context.agents.employee.llm.message_history.push(Message::Assistant(raw));
-        context.agents.employee.llm.message_history.push(Message::User(out));
+        context
+            .agents
+            .employee
+            .llm
+            .message_history
+            .push(Message::Assistant(raw));
+        context
+            .agents
+            .employee
+            .llm
+            .message_history
+            .push(Message::User(out));
         context.agents.employee.llm.message_history.push(Message::User(format!(
             r#"Decide whether or not you are done. If done, use the 'finish' command. Otherwise, proceed onto your next command. Ensure your response is the exact JSON format, no plaintext."#
         )));
 
-        let remaining_tokens = context.agents.employee.llm.get_tokens_remaining(
-            &context.agents.employee.llm.get_messages()
-        )?;
+        let remaining_tokens = context
+            .agents
+            .employee
+            .llm
+            .get_tokens_remaining(&context.agents.employee.llm.get_messages())?;
 
         if remaining_tokens < 1450 {
             ask_for_findings(&mut context.agents.employee)?;
@@ -184,7 +242,7 @@ These are your commands: {cmds_short}");
             let observations = get_observations(&mut context.agents.employee, task)?
                 .unwrap_or("None found.".to_string());
             context.agents.employee.llm.prompt[2].set_content(&format!(
-"Here are your long-term memories:
+                "Here are your long-term memories:
 
 {observations}"
             ));

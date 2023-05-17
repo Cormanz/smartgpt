@@ -1,18 +1,26 @@
-use std::{error::Error, fmt::Display};
+use std::error::Error;
+use std::fmt::Display;
+
 use async_trait::async_trait;
 use regex::Regex;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument};
+use crate::{
+    invoke, BrowseRequest, Command, CommandArgument, CommandContext, CommandImpl, Plugin,
+    PluginCycle, PluginData, PluginDataNoInvoke, ScriptValue,
+};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;
 
 impl Display for WolframNoQueryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "one of the 'wolfram' commands did not receive enough info.")
+        write!(
+            f,
+            "{}",
+            "one of the 'wolfram' commands did not receive enough info."
+        )
     }
 }
 
@@ -41,24 +49,29 @@ pub async fn ask_wolfram(ctx: &mut CommandContext, query: &str) -> Result<String
         ("appid", app_id),
         ("input", query),
         ("podstate", "Result__Step-by-step solution"),
-        ("format", "plaintext")
+        ("format", "plaintext"),
     ];
-    
+
     let browse_info = ctx.plugin_data.get_data("Browse")?;
     let xml = invoke::<String>(browse_info, "browse", BrowseRequest {
         url: "http://api.wolframalpha.com/v2/query".to_string(),
-        params: params.iter()
+        params: params
+            .iter()
             .map(|el| (el.0.to_string(), el.1.to_string()))
-            .collect::<Vec<_>>()
-    }).await?; 
+            .collect::<Vec<_>>(),
+    })
+    .await?;
 
     Ok(extract_text_from_wolfram(&xml))
 }
 
-pub async fn wolfram(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn wolfram(
+    ctx: &mut CommandContext,
+    args: Vec<ScriptValue>,
+) -> Result<ScriptValue, Box<dyn Error>> {
     let query: String = args.get(0).ok_or(WolframNoQueryError)?.clone().try_into()?;
     let response = ask_wolfram(ctx, &query).await?;
-    
+
     Ok(response.into())
 }
 
@@ -66,7 +79,11 @@ pub struct WolframImpl;
 
 #[async_trait]
 impl CommandImpl for WolframImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(
+        &self,
+        ctx: &mut CommandContext,
+        args: Vec<ScriptValue>,
+    ) -> Result<ScriptValue, Box<dyn Error>> {
         wolfram(ctx, args).await
     }
 
@@ -77,19 +94,19 @@ impl CommandImpl for WolframImpl {
 
 #[derive(Serialize, Deserialize)]
 pub struct WolframData {
-    #[serde(rename = "app id")] pub app_id: String
+    #[serde(rename = "app id")]
+    pub app_id: String,
 }
 
 #[async_trait]
 impl PluginData for WolframData {
     async fn apply(&mut self, name: &str, _value: Value) -> Result<Value, Box<dyn Error>> {
         match name {
-            "get app id" => {
-                Ok(self.app_id.clone().into())
-            }
-            _ => {
-                Err(Box::new(PluginDataNoInvoke("Wolfram".to_string(), name.to_string())))
-            }
+            "get app id" => Ok(self.app_id.clone().into()),
+            _ => Err(Box::new(PluginDataNoInvoke(
+                "Wolfram".to_string(),
+                name.to_string(),
+            ))),
         }
     }
 }
@@ -98,7 +115,11 @@ pub struct WolframCycle;
 
 #[async_trait]
 impl PluginCycle for WolframCycle {
-    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(
+        &self,
+        _context: &mut CommandContext,
+        _previous_prompt: Option<&str>,
+    ) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
 
@@ -111,18 +132,18 @@ impl PluginCycle for WolframCycle {
 pub fn create_wolfram() -> Plugin {
     Plugin {
         name: "Wolfram".to_string(),
-        dependencies: vec![ "Browse".to_string() ],
+        dependencies: vec!["Browse".to_string()],
         cycle: Box::new(WolframCycle),
-        commands: vec![
-            Command {
-                name: "wolfram".to_string(),
-                purpose: "Ask WolframAlpha to answer a query.".to_string(),
-                args: vec![
-                    CommandArgument::new("query", "The query to ask Wolfram Alpha", "String")
-                ],
-                return_type: "String".to_string(),
-                run: Box::new(WolframImpl)
-            }
-        ]
+        commands: vec![Command {
+            name: "wolfram".to_string(),
+            purpose: "Ask WolframAlpha to answer a query.".to_string(),
+            args: vec![CommandArgument::new(
+                "query",
+                "The query to ask Wolfram Alpha",
+                "String",
+            )],
+            return_type: "String".to_string(),
+            run: Box::new(WolframImpl),
+        }],
     }
 }

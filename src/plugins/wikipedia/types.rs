@@ -5,14 +5,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct WikipediaOutput {
     pub title: String,
-    pub content: String
+    pub content: String,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WikipediaResponse {
-    //pub batchcomplete: String,
-    //pub warnings: Warnings,
+    // pub batchcomplete: String,
+    // pub warnings: Warnings,
     pub query: Query,
 }
 
@@ -46,5 +46,5 @@ pub struct Normalized {
 #[serde(rename_all = "camelCase")]
 pub struct Page {
     pub title: String,
-    pub extract: Option<String>
+    pub extract: Option<String>,
 }
