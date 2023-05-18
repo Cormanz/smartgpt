@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 
 use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, run::Action}};
 
-use super::log_yaml;
+use super::{log_yaml, use_tool};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MethodicalThoughts {
@@ -76,14 +76,19 @@ Respond in this JSON format:
     let plan = plan.data;
     log_yaml(&plan)?;
 
+    drop(agent);
 
+    for (ind, step) in plan.steps.iter().enumerate() {
+        let agent = get_agent(context);
+        
+        println!();
 
-    for step in plan.steps {
         let step_text = serde_yaml::to_string(&step)?;
+        println!("{}", step_text);
 
-        agent.llm.prompt.push(Message::User(format!(r#"
+        agent.llm.message_history.push(Message::User(format!(r#"
 You have created a plan.
-Now you will carry out the first step: 
+Now you will carry out the next step: 
 {step_text}
 
 Respond in this JSON format:
@@ -96,7 +101,23 @@ Respond in this JSON format:
     }}
 }}
 ```
-"#)))
+"#)));
+
+        let thoughts = try_parse_json::<MethodicalThoughts>(&agent.llm, 2, Some(600))?;
+        agent.llm.message_history.push(Message::Assistant(thoughts.raw));
+        let thoughts = thoughts.data;
+
+        log_yaml(&thoughts)?;
+
+        drop(agent);
+
+        let out = use_tool(context, &|context| &mut context.agents.fast, thoughts.action)?;
+            
+        println!();
+        println!("{out}");
+
+        let agent = get_agent(context);
+        agent.llm.message_history.push(Message::User(out));
     }
 
     Ok("No".to_string())

@@ -82,56 +82,58 @@ fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
 
 #[derive(Serialize, Deserialize)]
 pub struct BrowseArgs {
-    pub url: String
+    pub urls: Vec<String>
 }
 
-pub async fn browse_url(ctx: &mut CommandContext, args: ScriptValue) -> Result<String
-, Box<dyn Error>> {
+pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<String, Box<dyn Error>> {
     let browse_info = ctx.plugin_data.get_data("Browse")?;
+
+    let mut out: Vec<String> = vec![];
 
     let params: [(&str, &str); 0] = [];
     let args: BrowseArgs = args.parse()?;
+        for url in args.urls {
+        let content = extractor::scrape(&url)?.text;
 
-    let content = extractor::scrape(&args.url)?.text;
+        let mut summarized_content = String::new();
+        let chunks = chunk_text(&content, 11000);
 
-    let mut summarized_content = String::new();
-    let chunks = chunk_text(&content, 11000);
+        let chunk_count = chunks.len();
+        let summary_prompt = match chunk_count {
+            0..=2 => "Create a paragraph summary of the text below.",
+            _ => "Create a two-sentence summary of the text below."
+        }.to_string();
 
-    let chunk_count = chunks.len();
-    let summary_prompt = match chunk_count {
-        0..=2 => "Create a paragraph summary.",
-        _ => "Create a two-sentence summary."
-    }.to_string();
+        for (ind, chunk) in chunks.iter().enumerate() {
+            println!("<{url}> {} {} / {}", "Summarizing Chunk".green(), ind + 1, chunks.len());
 
-    for (ind, chunk) in chunks.iter().enumerate() {
-        println!("{} {} / {}", "Summarizing Chunk".green(), ind + 1, chunks.len());
+            ctx.agents.fast.llm.message_history.clear();
 
-        ctx.agents.fast.llm.message_history.clear();
+            ctx.agents.fast.llm.message_history.push(Message::System(summary_prompt.clone()));
 
-        ctx.agents.fast.llm.message_history.push(Message::System(summary_prompt.clone()));
+            ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
 
-        ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
+            let response = ctx.agents.fast.llm.model.get_response(
+                &ctx.agents.fast.llm.get_messages(),
+                None,
+                None
+            ).await?;
 
-        ctx.agents.fast.llm.message_history.push(Message::User(summary_prompt.clone()));
+            summarized_content.push_str(&response);
+        }
 
-        let response = ctx.agents.fast.llm.model.get_response(
-            &ctx.agents.fast.llm.get_messages(),
-            None,
-            None
-        ).await?;
-
-        summarized_content.push_str(&response);
+        out.push(format!("# {url}\n\n{summarized_content}"));
     }
 
-    Ok(summarized_content)
+    Ok(out.join("\n\n"))
 }
 
-pub struct BrowseURL;
+pub struct BrowseURLs;
 
 #[async_trait]
-impl CommandImpl for BrowseURL {
+impl CommandImpl for BrowseURLs {
     async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
-        Ok(CommandResult::Text(browse_url(ctx, args).await?))
+        Ok(CommandResult::Text(browse_urls(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -168,13 +170,13 @@ pub fn create_browse() -> Plugin {
         cycle: Box::new(BrowseCycle),
         commands: vec![
             Command {
-                name: "browse_url".to_string(),
+                name: "browse_urls".to_string(),
                 purpose: "Browse the paragraph-only content from an exact URL.".to_string(),
                 args: vec![
-                    CommandArgument::new("url", "The URL to browse.", "String")
+                    CommandArgument::new("urls", "The URL to browse.", "String[]")
                 ],
                 return_type: "String".to_string(),
-                run: Box::new(BrowseURL)
+                run: Box::new(BrowseURLs)
             }
         ]
     }
