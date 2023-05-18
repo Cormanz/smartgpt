@@ -11,7 +11,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument, Message};
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument, Message, CommandResult};
 
 pub struct BrowseData {
     pub client: Client
@@ -85,7 +85,8 @@ pub struct BrowseArgs {
     pub url: String
 }
 
-pub async fn browse_url(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn browse_url(ctx: &mut CommandContext, args: ScriptValue) -> Result<String
+, Box<dyn Error>> {
     let browse_info = ctx.plugin_data.get_data("Browse")?;
 
     let params: [(&str, &str); 0] = [];
@@ -122,15 +123,15 @@ pub async fn browse_url(ctx: &mut CommandContext, args: ScriptValue) -> Result<S
         summarized_content.push_str(&response);
     }
 
-    Ok(ScriptValue::String(summarized_content))
+    Ok(summarized_content)
 }
 
 pub struct BrowseURL;
 
 #[async_trait]
 impl CommandImpl for BrowseURL {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        browse_url(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::Text(browse_url(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {

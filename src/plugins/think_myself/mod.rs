@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Display};
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue, CommandResult};
 use std::fs;
 
 #[derive(Serialize, Deserialize)]
@@ -19,8 +19,8 @@ pub struct NoneImpl;
 
 #[async_trait]
 impl CommandImpl for NoneImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        think_myself(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(think_myself(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {

@@ -6,7 +6,7 @@ use select::{document::Document, predicate::Name};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument};
+use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument, CommandResult};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;
@@ -78,8 +78,8 @@ pub struct WolframImpl;
 
 #[async_trait]
 impl CommandImpl for WolframImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        wolfram(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(wolfram(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {

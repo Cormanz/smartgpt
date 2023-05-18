@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chunks, PluginData, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chunks, PluginData, ScriptValue, CommandArgument, CommandResult};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -75,8 +75,8 @@ pub struct FileWriteImpl;
 
 #[async_trait]
 impl CommandImpl for FileWriteImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        file_write(ctx, args, false).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(file_write(ctx, args, false).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -88,8 +88,8 @@ pub struct FileAppendImpl;
 
 #[async_trait]
 impl CommandImpl for FileAppendImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        file_write(ctx, args, true).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(file_write(ctx, args, true).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -102,8 +102,8 @@ pub struct FileListImpl;
 
 #[async_trait]
 impl CommandImpl for FileListImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        file_list(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(file_list(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -115,8 +115,8 @@ pub struct FileReadImpl;
 
 #[async_trait]
 impl CommandImpl for FileReadImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        file_read(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(file_read(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {

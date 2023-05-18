@@ -8,7 +8,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 pub use types::*;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument, CommandResult};
 
 #[derive(Debug, Clone)]
 pub struct GoogleNoQueryError;
@@ -26,7 +26,7 @@ pub struct GoogleArgs {
     pub query: String
 }
 
-pub async fn google(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn google(ctx: &mut CommandContext, args: ScriptValue) -> Result<String, Box<dyn Error>> {
     let args: GoogleArgs = args.parse()?;
 
     let wolfram_info = ctx.plugin_data.get_data("Google")?;
@@ -52,37 +52,25 @@ pub async fn google(ctx: &mut CommandContext, args: ScriptValue) -> Result<Scrip
             .collect::<Vec<_>>()
     }).await?;
 
-    // The conversion to JSON and from JSON is to get rid of unnecessary properties.
-    let json_result: Result<SearchResponse, serde_json::Error> = serde_json::from_str(&body);
-    let json = match json_result {
-        Ok(json) => {
-            json
-        }
-        Err(err) => {
-            println!("{:?}", err);
-            println!("{}", body);
-            return Ok(ScriptValue::Dict(HashMap::from_iter([
-                (
-                    "error".to_string(), 
-                    format!(
-                        "Unable to parse your Google request for \"{}\" Try modifying your query or waiting a bit.", 
-                        args.query
-                    ).into()
-                )
-            ])));
-        }
-    };
-    let text: String = serde_json::to_string(&json)?;
+    let json: SearchResponse = serde_json::from_str(&body)?;
 
-    Ok(serde_json::from_str(&text)?)
+    let text = json.items.iter()
+        .flat_map(|item| vec![
+            format!("# [{}]({})", item.title, item.link),
+            item.snippet.clone()
+        ])
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    Ok(text)
 }
 
 pub struct GoogleImpl;
 
 #[async_trait]
 impl CommandImpl for GoogleImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-        google(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::Text(google(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {

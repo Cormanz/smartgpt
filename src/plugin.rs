@@ -101,9 +101,14 @@ pub async fn invoke<T : DeserializeOwned>(
     Ok(out)
 }
 
+pub enum CommandResult {
+    ScriptValue(ScriptValue),
+    Text(String)
+}
+
 #[async_trait]
 pub trait CommandImpl : Send + Sync {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>>;
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>>;
 
     fn box_clone(&self) -> Box<dyn CommandImpl>;
 }
