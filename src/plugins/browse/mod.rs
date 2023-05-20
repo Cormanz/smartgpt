@@ -113,7 +113,7 @@ pub async fn browse_url(
     // )
     // .await?;
 
-    let content = headless::get_content_headless(&url).await.unwrap();
+    let content = headless::get_content_headless(&url).await?;
 
     // let content = extract_text_from_html(&body);
 
