@@ -20,20 +20,20 @@ impl<'a> Error for FilesNoArgError<'a> {}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileWriteArgs {
-    pub path: String,
-    pub content: String
+    pub name: String,
+    pub lines: Vec<String>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileReadArgs {
-    pub path: String
+    pub name: String
 }
 
 pub async fn file_write(ctx: &mut CommandContext, args: ScriptValue, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
     let command_name = if append { "file_append" } else { "file_write" };
     let args: FileWriteArgs = args.parse()?;
 
-    let path = args.path.strip_prefix("./").unwrap_or(&args.path).to_string();
+    let path = args.name.strip_prefix("./").unwrap_or(&args.name).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 
     if !Path::new("./files/").exists() {
@@ -45,7 +45,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: ScriptValue, append: boo
         .append(append)
         .create(true)
         .open(format!("./files/{path}"))?;
-    writeln!(file, "{}", args.content)?;
+    writeln!(file, "{}", args.lines.join("\n"))?;
 
     Ok(ScriptValue::None)
 }
@@ -62,7 +62,7 @@ pub async fn file_list(ctx: &mut CommandContext, args: ScriptValue) -> Result<Sc
 }
 
 pub async fn file_read(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-    let FileReadArgs { path } = args.parse()?;
+    let FileReadArgs { name: path } = args.parse()?;
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 

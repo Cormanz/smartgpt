@@ -162,7 +162,7 @@ pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens:
             Ok(data) => {
                 return Ok(ParsedResponse {
                     data,
-                    raw: response    
+                    raw: format!("```{lang}\n{processed_response}\n```")  
                 })
             },
             Err(err) => {

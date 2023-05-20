@@ -8,11 +8,13 @@ use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRun
 
 use super::findings::get_observations;
 
+mod brain;
 mod actor;
 mod react;
 mod refine;
 mod methodical;
 
+pub use brain::*;
 pub use actor::*;
 pub use react::*;
 pub use refine::*;
@@ -26,7 +28,7 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, end: impl Fn(&mut 
 
     let task = &refine_info.task;*/
 
-    let response = run_method_agent(&mut context, &|ctx| &mut ctx.agents.react, task, true)?;
+    let response = run_brain_agent(&mut context, &|ctx| &mut ctx.agents.react, task)?;
     println!("{response}");
 
     panic!("T");

@@ -25,7 +25,7 @@ pub async fn run_command(
     }
         .map_err(|_| GPTRunError("Could not parse ScriptValue as JSON.".to_string()))?;
 
-    let text = format!("Tool use {name} {:?} returned:\n{}", args, json);
+    let text = format!("Tool use {name} returned:\n{}", json);
     out.push_str(&text);
 
     Ok(result)
