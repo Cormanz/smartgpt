@@ -36,14 +36,16 @@ impl LLMModel for PALM2 {
     }
     
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
-        let embedding_response = self.client.embed_text().await?;
-        let embeddings = self.client.embeddings().create(CreateEmbeddingRequest {
-            model: self.embedding_model.clone(),
-            user: None,
-            input: EmbeddingInput::String(text.to_string())
-        }).await?;
+        let embedding_response = self.client.embed_text(&self.embedding_model, text).await?;
+        // let embeddings = self.client.embed_text(text).await?;
+        
+        // .create(CreateEmbeddingRequest {
+        //     model: self.embedding_model.clone(),
+        //     user: None,
+        //     input: EmbeddingInput::String(text.to_string())
+        // }).await?;
     
-        Ok(embeddings.data[0].embedding.clone())
+        Ok(vec![embedding_response])
     }
 
     fn get_tokens_remaining(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
@@ -82,7 +84,7 @@ impl LLMProvider for PALM2Provider {
         
         let config: PALM2Config = serde_json::from_value(value)?;
 
-        let client = ApiClient::new();
+        let client = ApiClient::new(config.api_base.unwrap_or("https://generativelanguage.googleapis.com".to_owned()));
 
         let models = rt.block_on(async {
             client.list_models().await

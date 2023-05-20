@@ -74,10 +74,10 @@ pub struct ApiClient {
 }
 
 impl ApiClient {
-    pub fn new() -> Self {
+    pub fn new(base_url: String) -> Self {
         Self {
             client: Client::new(),
-            base_url: "https://generativelanguage.googleapis.com".to_string()
+            base_url
         }
     }
 

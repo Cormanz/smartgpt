@@ -1,8 +1,10 @@
 mod chatgpt;
+mod palm2;
 mod local;
 
 pub use chatgpt::*;
 pub use local::*;
+pub use palm2::*;
 use tokio::runtime::Runtime;
 
 use std::{error::Error, fmt::Display};
