@@ -68,6 +68,16 @@ pub struct GCPModel {
     pub top_k: i32,
 }
 
+#[derive(Deserialize, Debug)]
+struct Embedding {
+    value: Vec<f32>,
+}
+
+#[derive(Deserialize, Debug)]
+struct EmbeddingResponse {
+    embedding: Embedding,
+}
+
 pub struct ApiClient {
     client: Client,
     base_url: String
@@ -88,11 +98,11 @@ impl ApiClient {
         Ok(token_count)
     }
 
-    pub async fn embed_text(&self, model: &str, message: &str) -> Result<String, Box<dyn Error>> {
+    pub async fn embed_text(&self, model: &str, message: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         let url = format!("{}/v1beta2/{}:embedText", self.base_url, model);
         let response = self.client.post(&url).body(message.to_string()).send().await?;
-        let embedding: String = response.json().await?;
-        Ok(embedding)
+        let embedding: EmbeddingResponse = response.json().await?;
+        Ok(embedding.embedding.value)
     }
 
     pub async fn generate_message(&self, model: &str, prompt: MessagePrompt) -> Result<String, Box<dyn Error>> {

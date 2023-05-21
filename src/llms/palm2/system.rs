@@ -37,25 +37,17 @@ impl LLMModel for PALM2 {
     
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
         let embedding_response = self.client.embed_text(&self.embedding_model, text).await?;
-        // let embeddings = self.client.embed_text(text).await?;
-        
-        // .create(CreateEmbeddingRequest {
-        //     model: self.embedding_model.clone(),
-        //     user: None,
-        //     input: EmbeddingInput::String(text.to_string())
-        // }).await?;
     
-        Ok(vec![embedding_response])
+        Ok(embedding_response)
     }
 
     fn get_tokens_remaining(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
-        let messages: Vec<ChatCompletionRequestMessage> = messages
-            .iter()
-            .map(|el| el.clone().into())
-            .collect::<Vec<_>>();
+        let all_messages: String = messages.iter().map(|el| el.content()).collect::<Vec<&str>>().join(" ");
 
-        let tokens = get_chat_completion_max_tokens(&self.model, &messages)?;
-        Ok(tokens)
+        let runtime = tokio::runtime::Runtime::new()?;
+        let total_tokens = runtime.block_on(self.client.count_message_tokens(&self.model, &all_messages))?;
+
+        Ok(total_tokens as usize)
     }
 }
 
