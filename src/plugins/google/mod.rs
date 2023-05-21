@@ -41,7 +41,7 @@ pub async fn google(ctx: &mut CommandContext, args: ScriptValue) -> Result<Strin
         ("key", api_key),
         ("cx", cse_id),
         ("q", &args.query),
-        ("num", "7")
+        ("num", "4")
     ];
     
     let browse_info = ctx.plugin_data.get_data("Browse")?;

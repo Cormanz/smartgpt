@@ -100,8 +100,8 @@ pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<
 
         let chunk_count = chunks.len();
         let summary_prompt = match chunk_count {
-            0..=2 => "Create a paragraph summary of the text below.",
-            _ => "Create a two-sentence summary of the text below."
+            0..=2 => "Create a three-sentence summary of the text below.",
+            _ => "Create a one-sentence summary of the text below."
         }.to_string();
 
         for (ind, chunk) in chunks.iter().enumerate() {
@@ -120,7 +120,10 @@ pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<
             ).await?;
 
             summarized_content.push_str(&response);
+            summarized_content.push(' ');
         }
+
+        summarized_content = summarized_content.trim().to_string();
 
         out.push(format!("# {url}\n\n{summarized_content}"));
     }

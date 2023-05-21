@@ -41,5 +41,5 @@ Respond in this exact JSON format:
 "#
     )));
 
-    Ok(try_parse_json(&agent.llm, 2, Some(400))?.data)
+    Ok(try_parse_json(&agent.llm, 2, Some(400), None)?.data)
 }

@@ -45,7 +45,7 @@ Respond in this format:
         "Request to Classify: {task}"
     )));
 
-    let classification = try_parse_json::<Classification>(&context.agents.fast.llm, 2, Some(250))?;
+    let classification = try_parse_json::<Classification>(&context.agents.fast.llm, 2, Some(250), None)?;
         
     Ok(classification.data.classification == "task")
 }

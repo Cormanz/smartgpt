@@ -114,13 +114,13 @@ pub struct ParsedResponse<T> {
     raw: String
 }
 
-pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
-    try_parse_base(llm, tries, max_tokens, "yml", |str| serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
+pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, temperature: Option<f32>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+    try_parse_base(llm, tries, max_tokens, temperature, "yml", |str| serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
 }
 
-pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize, max_tokens: Option<u16>, temperature: Option<f32>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
     for i in 0..tries {
-        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
+        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, temperature)?;
         let processed_response = find_text_between_braces(&response).unwrap_or("None".to_string());
 
         // We use JSON5 to allow for more lenient parsing for models like GPT3.5.
@@ -145,9 +145,9 @@ pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize,
     Err(Box::new(CannotParseError))
 }
 
-pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, lang: &str, parse: impl Fn(&str) -> Result<T, Box<dyn Error>>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, temperature: Option<f32>, lang: &str, parse: impl Fn(&str) -> Result<T, Box<dyn Error>>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
     for i in 0..tries {
-        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
+        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, temperature)?;
         let processed_response = response.trim();
         let processed_response = processed_response.strip_prefix("```")
             .unwrap_or(&processed_response)
@@ -158,6 +158,7 @@ pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens:
         let processed_response = processed_response.strip_suffix("```")
             .unwrap_or(&processed_response)
             .to_string();
+        let processed_response = processed_response.trim().to_string();
         match parse(&processed_response) {
             Ok(data) => {
                 return Ok(ParsedResponse {

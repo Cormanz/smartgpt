@@ -48,7 +48,7 @@ Make sure you include where you got the information from in your response, in pa
 pub fn ask_for_assistant_response(agent: &mut AgentInfo, context: &str, request: &str) -> Result<String, Box<dyn Error>> {
     agent.llm.message_history.push(Message::User(create_assistant_prompt(context, request)));
 
-    let response = try_parse_json::<Response>(&agent.llm, 2, Some(200))?.data.response;
+    let response = try_parse_json::<Response>(&agent.llm, 2, Some(200), None)?.data.response;
 
     agent.llm.message_history.pop();
 
