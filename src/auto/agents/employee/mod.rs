@@ -8,13 +8,13 @@ use crate::{ProgramInfo, generate_commands, Message, Agents, ScriptValue, GPTRun
 
 use super::findings::get_observations;
 
-mod brain;
+mod adept;
 mod actor;
 mod react;
 mod refine;
 mod methodical;
 
-pub use brain::*;
+pub use adept::*;
 pub use actor::*;
 pub use react::*;
 pub use refine::*;
