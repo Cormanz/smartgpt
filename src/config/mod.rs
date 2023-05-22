@@ -4,7 +4,7 @@ use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis};
+use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_shutdown, create_wolfram, create_chatgpt, create_news, create_wikipedia, create_none, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, create_model_palm2};
 
 mod default;
 pub use default::*;
@@ -102,7 +102,8 @@ pub fn list_plugins() -> Vec<Plugin> {
 pub fn create_llm_providers() -> Vec<Box<dyn LLMProvider>> {
     vec![
         create_model_chatgpt(),
-        create_model_llama()
+        create_model_llama(),
+        create_model_palm2()
     ]
 }
 
