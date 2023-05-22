@@ -22,7 +22,7 @@ pub struct CitationMetadata {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct PALMMessage {
-    pub author: String,
+    pub author: Option<String>,
     pub content: String,
     pub citation_metadata: Option<CitationMetadata>,
 }
@@ -34,7 +34,7 @@ impl From<Message> for PALMMessage {
         };
 
         PALMMessage {
-            author: String::from("SmartGPT"),
+            author: None,
             content,
             citation_metadata: None,
         }

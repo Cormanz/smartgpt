@@ -1,5 +1,4 @@
-use reqwest::{Client, RequestBuilder, Response};
-use serde::{Deserialize, Serialize};
+use reqwest::{Client};
 use std::error::Error;
 
 use crate::{CountTokensRequest, TokenCountResponse, EmbedTextRequest, EmbeddingResponse, Embedding, MessagePrompt, GenerateMessageResponse, GenerateTextRequest, GenerateTextResponse, GCPModel, ListModelResponse};
@@ -19,12 +18,12 @@ impl ApiClient {
         }
     }
 
-    pub async fn count_message_tokens(&self, model: &str, message: CountTokensRequest) -> Result<i32, Box<dyn Error>> {
+    pub async fn count_message_tokens(&self, model: &str, message: CountTokensRequest) -> Result<TokenCountResponse, Box<dyn Error>> {
         let url = format!("{}/v1beta2/models/{}:countMessageTokens?key={}", self.base_url, model, self.api_key);
         let response = self.client.post(&url).json(&message).send().await?;
 
         let token_count: TokenCountResponse = response.json().await?;
-        Ok(token_count.token_count.unwrap_or(0))
+        Ok(token_count)
     }
 
     pub async fn embed_text(&self, model: &str, message: EmbedTextRequest) -> Result<Vec<f32>, Box<dyn Error>> {

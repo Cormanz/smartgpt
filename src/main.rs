@@ -31,6 +31,7 @@ pub struct NewEndGoal {
     #[serde(rename = "new end goal")] new_end_goal: String
 }
 
+#[allow(dead_code)]
 fn debug_yaml(results: &str) -> Result<(), Box<dyn Error>> {
     let json: Value = serde_json::from_str(&results)?;
     let mut yaml: String = serde_yaml::to_string(&json)?;

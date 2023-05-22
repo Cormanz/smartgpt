@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, thread::sleep, time::Duration};
 
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
@@ -20,7 +20,7 @@ impl LLMModel for PALM2 {
             .iter()
             .map(|el| el.content())
             .collect::<Vec<&str>>()
-            .join(" ");
+            .join("\n");
 
         let text_request = GenerateTextRequest {
             prompt: TextPrompt {
@@ -59,7 +59,7 @@ impl LLMModel for PALM2 {
 
     fn get_tokens_remaining(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
         let all_messages: Vec<PALMMessage> = messages.iter().map(|el| PALMMessage {
-            author: "".to_string(),
+            author: None,
             content: el.content().to_string(),
             citation_metadata: None
         }
@@ -75,7 +75,7 @@ impl LLMModel for PALM2 {
         let token_count = runtime.block_on(self.client.count_message_tokens(&self.model, count_tokens_request))?;
         let max_tokens = gcp_model.input_token_limit;
 
-        let tokens_remaining = max_tokens.checked_sub(token_count as i32)
+        let tokens_remaining = max_tokens.checked_sub(token_count.token_count.unwrap_or(0) as i32)
             .ok_or_else(|| "Token count exceeded the maximum limit.")?;
 
         Ok(tokens_remaining as usize)
@@ -109,23 +109,21 @@ impl LLMProvider for PALM2Provider {
 
         let client = ApiClient::new(config.api_base.unwrap_or("https://generativelanguage.googleapis.com".to_owned()), config.api_key);
 
+        let all_messages: Vec<PALMMessage> = vec![PALMMessage {
+            author: None,
+            content: "count my tokens please palm".to_string(),
+            citation_metadata: None
+        }];
+
         // Easy way to immediately test api call on startup
         let models_response = rt.block_on(async {
-            client.generate_text("text-bison-001", GenerateTextRequest { 
-                prompt: TextPrompt {
-                    text: "hello PALM how's life".to_string()
-                },
-                safety_settings: vec![],
-                stop_sequences: vec![],
-                temperature: 1.0 as f64,
-                candidate_count: 1,
-                max_output_tokens: 1000 as i32,
-                top_p: 0.95,
-                top_k: 40,
+            client.count_message_tokens("text-bison-001", CountTokensRequest {
+                prompt: MessagePrompt { context: "".to_string(), examples: vec![], messages: all_messages }
             }).await
         })?;
         
-        eprintln!("model: {:?}", models_response);
+        println!("model: {:?}", models_response);
+        sleep(Duration::new(10, 0));
 
         Ok(Box::new(PALM2 {
             model: config.model.unwrap_or("text-bison-001".to_string()),
