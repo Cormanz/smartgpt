@@ -9,6 +9,7 @@ pub struct BrainThoughts {
     pub thoughts: String,
     pub reasoning: String,
     pub action: Option<String>,
+    #[serde(rename = "final response")]
     pub done: Option<String>
 }
 
@@ -30,12 +31,14 @@ Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 You will give an instruction to an agent powered by a large language model, with access to external tools.
 Keep your instruction very simple.
 
+Only have a single thought, do not have multiple.
+
 Respond in this exact YML format:
 ```yml
 thoughts: thoughts
 reasoning: reasoning
 action: simple instruction in one natural sentence
-done: null
+final response: null
 ```
 "#).trim().to_string()));
 
@@ -60,8 +63,8 @@ Respond in this exact YML format:
 thoughts: thoughts
 reasoning: reasoning
 # Then, either put `action` if you'd like to run another action, or put `done` if you want to respond to the user.
-action: simple instruction in one natural sentence or null
-done: final response for user or null
+action: simple instruction in one natural sentence or `null`
+final response: final response for user or `null`
 ```
         "#).trim().to_string()));
 
