@@ -28,14 +28,14 @@ Each action will help you complete the task.
 Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
 You will give an instruction to an agent powered by a large language model, with access to external tools.
-Keep your instructions very simple.
+Keep your instruction very simple.
 
 Respond in this exact YML format:
 ```yml
 thoughts: thoughts
 reasoning: reasoning
 action: simple instruction in one natural sentence
-done: null # `null` because you are still working
+done: null
 ```
 "#).trim().to_string()));
 
@@ -59,8 +59,9 @@ Respond in this exact YML format:
 ```yml
 thoughts: thoughts
 reasoning: reasoning
-action: simple instruction in one natural sentence # if you are done with your task, put `null`
-done: final response for user # if you are still working on your task, put `null`
+# Then, either put `action` if you'd like to run another action, or put `done` if you want to respond to the user.
+action: simple instruction in one natural sentence or null
+done: final response for user or null
 ```
         "#).trim().to_string()));
 

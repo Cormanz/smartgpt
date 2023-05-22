@@ -48,6 +48,33 @@ pub struct Memories {
     pub observations: Vec<String>
 }
 
+pub fn add_memories(agent: &mut AgentInfo) -> Result<(), Box<dyn Error>> {
+    agent.llm.message_history.push(Message::User(format!(r#"
+Please list all important actions you took out.
+Please also list all observations of information you have collected.
+
+Respond in this YML format:
+```yml
+actions:
+- A
+- B
+
+observations:
+- A
+- B
+```
+    "#).trim().to_string()));
+
+    let memories = try_parse_yaml::<Memories>(&agent.llm, 2, Some(1000), Some(0.5))?.data;
+    log_yaml(&memories);
+
+    for memory in memories.actions.iter().chain(memories.observations.iter()) {
+        agent.observations.store_memory_sync(&agent.llm, memory)?;
+    }
+
+    Ok(())
+}
+
 pub fn run_method_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
@@ -62,7 +89,7 @@ Tools:
 google_search {{ "query": "query" }} - Gives you a list of URLs from a query.
 browse_urls {{ "urls": [ "url 1", "url 2" ] }} - Read the text content from a URL.
 file_write {{ "name": "file name", "lines": [ "line 1", "line 2 ] }} - Write content to a file.
-final_response {{ "response": "response to user" }}
+final_response {{ "response": "response to user" }} - Provide a detailed response back to the user, with all information.
 
 You have been given these tools.
 "#).trim().to_string()));
@@ -84,7 +111,7 @@ You have been given these tools.
             .join("\n")
     };
 
-    agent.llm.message_history.push(Message::User(format!(r#"
+    agent.llm.prompt.push(Message::User(format!(r#"
 Here is your new task:
 {task}
 
@@ -166,28 +193,7 @@ action:
             agent.llm.message_history.pop();
             agent.llm.message_history.pop();
 
-            agent.llm.message_history.push(Message::User(format!(r#"
-Please list all important actions you took out.
-Please also list all observations of information you have collected.
-
-Respond in this YML format:
-```yml
-actions:
-- A
-- B
-
-observations:
-- A
-- B
-```
-            "#).trim().to_string()));
-
-            let memories = try_parse_yaml::<Memories>(&agent.llm, 2, Some(1000), Some(0.5))?.data;
-            log_yaml(&memories);
-
-            for memory in memories.actions.iter().chain(memories.observations.iter()) {
-                agent.observations.store_memory_sync(&agent.llm, memory)?;
-            }
+            add_memories(agent)?;
 
             return Ok(final_response.response);
         }
@@ -197,9 +203,14 @@ observations:
         println!();
         match out {
             Ok(out) => {
+                let agent = get_agent(context);
+                if agent.llm.get_tokens_remaining(&agent.llm.get_messages())? < 1000 {
+                    add_memories(agent)?;
+                    agent.llm.crop_to_tokens_remaining(2200);
+                }
+
                 println!("{out}");
 
-                let agent = get_agent(context);
                 agent.llm.message_history.push(Message::User(out));
 
                 completed_steps.push(step.clone());
