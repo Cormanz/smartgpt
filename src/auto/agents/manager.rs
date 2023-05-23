@@ -1,6 +1,15 @@
 use std::error::Error;
 
-use crate::{ProgramInfo, Message, auto::{try_parse_json, ParsedResponse, agents::{findings::{ask_for_findings, to_points}, employee::run_employee}}, AgentInfo};
+use crate::{
+    auto::{
+        agents::{
+            employee::run_employee,
+            findings::{ask_for_findings, to_points},
+        },
+        try_parse_json, ParsedResponse,
+    },
+    AgentInfo, Message, ProgramInfo,
+};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 
@@ -8,10 +17,10 @@ use super::findings::get_observations;
 
 #[derive(Serialize, Deserialize)]
 pub enum ManagerAction {
-    #[serde(rename = "delegate one of the tasks")] Delegate {
-        task: String
-    },
-    #[serde(rename = "finish")] Finish {}
+    #[serde(rename = "delegate one of the tasks")]
+    Delegate { task: String },
+    #[serde(rename = "finish")]
+    Finish {},
 }
 
 #[derive(Serialize, Deserialize)]
@@ -22,12 +31,19 @@ pub struct ManagerThought {
     #[serde(rename = "do I need to revise my plan")]
     revise: bool,
     plan: Vec<String>,
-    action: ManagerAction
+    action: ManagerAction,
 }
 
-pub fn run_manager<T>(program: &mut ProgramInfo, layer: usize, task: &str, end: impl Fn(&mut AgentInfo) -> T) -> Result<T, Box<dyn Error>> {
-    let ProgramInfo { 
-        context, personality, ..
+pub fn run_manager<T>(
+    program: &mut ProgramInfo,
+    layer: usize,
+    task: &str,
+    end: impl Fn(&mut AgentInfo) -> T,
+) -> Result<T, Box<dyn Error>> {
+    let ProgramInfo {
+        context,
+        personality,
+        ..
     } = program;
     let mut context = context.lock().unwrap();
     let personality = personality.clone();
@@ -40,8 +56,17 @@ r#"
 Personality: {personality}
 
 You will be given one task.
-Your goal is to split that task up into smaller tasks.
-Your goal is to delegate those subtasks, one at a time.
+Your goal is to understand the task, split it into smaller tasks when necessary.
+When parsing user instructions, please prioritize the command the user instructed you to use to do the job, when splitting the tasks into subtasks please consider your current capabilities pool: 
+- Browse (commands: browse_url)
+- Google (commands: google_search)
+- File System (commands: file_write, file_append, file_list, file_read)
+- Wolfram (commands: wolfram)
+- ChatGPT (commands: ask_chatgpt, reset_chatgpt)
+- NewsAPI (commands: news_search)
+- Wikipedia (commands: wikipedia_search, wikipedia_browse)
+
+Your goal is to map the subtasks to your capabilities, delegate those subtasks, one at a time.
 Do it as fast as possible.
 "#
     )));
@@ -49,19 +74,29 @@ Do it as fast as possible.
     let observations = get_observations(&mut context.agents.managers[layer], task)?
         .unwrap_or("None found.".to_string());
 
-    context.agents.managers[layer].llm.prompt.push(Message::User(format!(
-"Here are your long-term memories:
+    context.agents.managers[layer]
+        .llm
+        .prompt
+        .push(Message::User(format!(
+            "Here are your long-term memories:
 
 {observations}"
-    )));
+        )));
 
-    context.agents.managers[layer].llm.prompt.push(Message::User(format!(
-        r#"
+    context.agents.managers[layer]
+        .llm
+        .prompt
+        .push(Message::User(format!(
+            r#"
 Your task is {task}.
         "#
-            )));
+        )));
 
-    context.agents.managers[layer].llm.prompt.push(Message::User(format!(r#"
+    context.agents.managers[layer]
+        .llm
+        .prompt
+        .push(Message::User(format!(
+            r#"
 Reply in this format:
 
 ```json
@@ -85,16 +120,20 @@ Reply in this format:
 }}
 ```
 
-Ensure your delegated task is explained in detail.
+Ensure your delegated task is explained in detail but not overly verbose.
 
 Reply in that exact JSON format exactly.
 Make sure every field is filled in detail.
 Keep every field in that exact order.
-"#)));
+"#
+        )));
 
-    context.agents.managers[layer].llm.message_history.push(Message::User(format!(
-        r#"Plan out your subtasks. Then, delegate one task."#
-    )));
+    context.agents.managers[layer]
+        .llm
+        .message_history
+        .push(Message::User(format!(
+            r#"Plan out your subtasks. Then, delegate one task."#
+        )));
 
     drop(context);
 
@@ -102,13 +141,15 @@ Keep every field in that exact order.
     let manager = "Manager".blue();
 
     loop {
-        let ProgramInfo { 
-            context, ..
-        } = program;
+        let ProgramInfo { context, .. } = program;
         let context = context.lock().unwrap();
 
-        let thoughts = try_parse_json::<ManagerThought>(&context.agents.managers[layer].llm, 2, Some(400))?;
-        let ParsedResponse { data: thoughts, raw } = thoughts;
+        let thoughts =
+            try_parse_json::<ManagerThought>(&context.agents.managers[layer].llm, 2, Some(400))?;
+        let ParsedResponse {
+            data: thoughts,
+            raw,
+        } = thoughts;
 
         println!("{dashes} {manager} {dashes}");
         println!();
@@ -127,24 +168,28 @@ Keep every field in that exact order.
                 }?;
 
                 results
-            },
+            }
             ManagerAction::Finish {} => {
                 break;
             }
         };
 
-        let ProgramInfo { 
-            context, ..
-        } = program;
+        let ProgramInfo { context, .. } = program;
         let mut context = context.lock().unwrap();
 
         let findings_str = to_points(&results.findings);
         let changes_str = to_points(&results.changes);
-        
-        context.agents.managers[layer].llm.message_history.push(Message::Assistant(raw));
-        
-        context.agents.managers[layer].llm.message_history.push(Message::User(format!(
-r#"Your task was completed.
+
+        context.agents.managers[layer]
+            .llm
+            .message_history
+            .push(Message::Assistant(raw));
+
+        context.agents.managers[layer]
+            .llm
+            .message_history
+            .push(Message::User(format!(
+                r#"Your task was completed.
 
 Findings:
 {findings_str}
@@ -152,35 +197,38 @@ Findings:
 Changes carried out:
 {changes_str}
 "#
-        )));
+            )));
 
-        context.agents.managers[layer].llm.message_history.push(Message::User(format!(
-            r#"Potentially refine your plan. Then, delegate one task (or finish.)"#
-        )));
+        context.agents.managers[layer]
+            .llm
+            .message_history
+            .push(Message::User(format!(
+                r#"Potentially refine your plan. Then, delegate one task (or finish.)"#
+            )));
 
-        let remaining_tokens = context.agents.managers[layer].llm.get_tokens_remaining(
-            &context.agents.managers[layer].llm.get_messages()
-        )?;
+        let remaining_tokens = context.agents.managers[layer]
+            .llm
+            .get_tokens_remaining(&context.agents.managers[layer].llm.get_messages())?;
 
         if remaining_tokens < 1450 {
             ask_for_findings(&mut context.agents.managers[layer])?;
-            context.agents.managers[layer].llm.crop_to_tokens_remaining(2600)?;
+            context.agents.managers[layer]
+                .llm
+                .crop_to_tokens_remaining(2600)?;
 
             let observations = get_observations(&mut context.agents.managers[layer], task)?
                 .unwrap_or("None found.".to_string());
             context.agents.managers[layer].llm.prompt[1].set_content(&format!(
-"Here are your long-term memories:
+                "Here are your long-term memories:
 
 {observations}"
             ));
         }
-        
+
         drop(context);
     }
-    
-    let ProgramInfo { 
-        context, ..
-    } = program;
+
+    let ProgramInfo { context, .. } = program;
     let mut context = context.lock().unwrap();
 
     return Ok(end(&mut context.agents.managers[layer]));

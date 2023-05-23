@@ -44,7 +44,7 @@ pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], reque
 
     let mut new_messages = messages.to_vec();
     new_messages.push(Message::User(format!(
-r#"Summarize the conversation."#)));
+r#"Summarize the conversation. Focus on the user's intension and what has been achieved so far."#)));
 
     let conversation_context = match messages.len() {
         0 => "No conversation context.".to_string(),
