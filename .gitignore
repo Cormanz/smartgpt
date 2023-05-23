@@ -10,3 +10,4 @@ ggml-vicuna*
 
 # interal checking files for browse plugin headless mod
 src/plugins/browse/run_parse.rs
+dir.sh

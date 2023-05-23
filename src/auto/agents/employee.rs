@@ -124,7 +124,7 @@ Keep every field in that exact order.
     let employee = "Employee".blue();
 
     loop {
-        let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(1000))?;
+        let thoughts = try_parse_json::<EmployeeThought>(&context.agents.employee.llm, 2, Some(400))?;
         let ParsedResponse { data: thoughts, raw } = thoughts;
 
         println!();
