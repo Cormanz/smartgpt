@@ -1,16 +1,55 @@
-use std::error::Error;
+use std::{error::Error, ops::Deref};
 
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_yaml, agents::employee::{log_yaml, run_method_agent}}};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_yaml, agents::employee::{log_yaml, run_method_agent}}, ScriptValue, SelfThoughts};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BrainThoughts {
     pub thoughts: String,
     pub reasoning: String,
-    pub action: Option<String>,
-    #[serde(rename = "final response")]
-    pub done: Option<String>
+    pub decision: Decision
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BrainstormArgs {
+    pub lines: Vec<String>   
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ActionArgs {
+    pub instruction: String
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct FinalResponseArgs {
+    pub response: String
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Decision {
+    #[serde(rename = "type")] pub decision_type: String,
+    pub args: ScriptValue
+}
+
+pub fn get_response(
+    context: &mut CommandContext, 
+    get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
+    thoughts: &BrainThoughts
+) -> Result<String, Box<dyn Error>> {
+    match thoughts.decision.decision_type.deref() {
+        "action" => {
+            let ActionArgs { instruction } = thoughts.decision.args.parse()?;
+            run_method_agent(context, get_agent, &instruction, None)
+        },
+        "brainstorm" => {
+            Ok(format!("Successfully brainstormed."))
+        }
+        _ => {
+            panic!("Unknown Decision Type");
+        }
+    }
 }
 
 pub fn run_brain_agent(
@@ -28,17 +67,21 @@ Each action will help you complete the task.
 
 Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
-You will give an instruction to an agent powered by a large language model, with access to external tools.
-Keep your instruction very simple.
+You make a decision. Here are the types of decisions alongside their `args` schema:
 
-Only have a single thought, do not have multiple.
+action {{ "instruction": "Natural language instruction" }} - Delegate a task to the Agent. Keep it simple. 
+brainstorm {{ "lines": [] }} - Brainstorm an idea, or generate a response based on the information given yourself.
+final_response {{ "response": "response" }} - Give a response to the user.
+
+You may only have one thought.
 
 Respond in this exact YML format:
 ```yml
 thoughts: thoughts
 reasoning: reasoning
-action: simple instruction in one natural sentence
-final response: null
+decision:
+    type: decision type
+    args: {{ ... }}
 ```
 "#).trim().to_string()));
 
@@ -49,22 +92,23 @@ final response: null
     log_yaml(&thoughts)?;
 
     drop(agent);
-    let mut response = run_method_agent(context, &|ctx| &mut ctx.agents.react, &thoughts.action.unwrap())?;
-
+    let mut response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts)?;
+    
     loop {
         let agent = get_agent(context);
         agent.llm.message_history.push(Message::User(format!(r#"
-Your agent gave back this response:
+Your previous request gave back the response:
 {response}
 
-Please give another instruction, or give the final response to the user.
-Respond in this exact YML format:
+You may now make another decision, either `action`, `brainstorm`, or `final_response`.
+Try to use `thoughts` to think about what your previous response gave you, your long-term ideas, and where to go next.
+
 ```yml
 thoughts: thoughts
 reasoning: reasoning
-# Then, either put `action` if you'd like to run another action, or put `done` if you want to respond to the user.
-action: simple instruction in one natural sentence or `null`
-final response: final response for user or `null`
+decision:
+    type: decision type
+    args: {{ ... }}
 ```
         "#).trim().to_string()));
 
@@ -74,11 +118,7 @@ final response: final response for user or `null`
 
         log_yaml(&thoughts)?;
 
-        if let Some(done) = thoughts.done {
-            return Ok(done);
-        }
-
-        response = run_method_agent(context, &|ctx| &mut ctx.agents.react, &thoughts.action.unwrap())?; 
+        response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts)?;
     }
 
     panic!("E");

@@ -78,7 +78,8 @@ observations:
 pub fn run_method_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
-    task: &str
+    task: &str,
+    data: Option<String>
 ) -> Result<String, Box<dyn Error>> {
     let agent = get_agent(context);
 
@@ -111,9 +112,14 @@ You have been given these tools.
             .join("\n")
     };
 
+    let data = data.unwrap_or(format!("No information."));
+
     agent.llm.prompt.push(Message::User(format!(r#"
 Here is your new task:
 {task}
+
+Here is the information for your task:
+{data}
 
 Here is a list of your memories:
 {observations}
@@ -218,36 +224,7 @@ action:
             Err(err) => {
                 println!("{err}");
 
-                let completed_steps = serde_yaml::to_string(&MethodicalPlan { steps: completed_steps.clone() })?;
-
-                let resp = format!(r#"
-Tool use {} failed:
-{err}
-
-All of your previous steps, however were successful. Do not plan those out.
-
-Think about what went wrong.
-Then, replan all of the steps other than the ones completed.
-
-Respond in this YML format:
-```yml
-thoughts: what went wrong
-solution: what I will fix in my plan
-revised remaining steps:
-- idea: idea
-  action:
-    tool: precise tool name
-    purpose: purpose
-```
-"#, thoughts.action.tool).trim().to_string();
-
-                let agent = get_agent(context);
-                agent.llm.message_history.push(Message::User(resp));
-
-                let plan = try_parse_yaml::<RevisedMethodicalPlan>(&agent.llm, 2, Some(600), None)?.data;
-                log_yaml(&plan);
-
-                step_deque = plan.steps.into();
+                panic!("Error.");
             }
         }
     }

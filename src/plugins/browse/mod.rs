@@ -93,39 +93,46 @@ pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<
     let params: [(&str, &str); 0] = [];
     let args: BrowseArgs = args.parse()?;
         for url in args.urls {
-        let content = extractor::scrape(&url)?.text;
+        match extractor::scrape(&url) {
+            Ok(resp) => {
+                let content = resp.content;
 
-        let mut summarized_content = String::new();
-        let chunks = chunk_text(&content, 11000);
-
-        let chunk_count = chunks.len();
-        let summary_prompt = match chunk_count {
-            0..=2 => "Create a three-sentence summary of the text below.",
-            _ => "Create a one-sentence summary of the text below."
-        }.to_string();
-
-        for (ind, chunk) in chunks.iter().enumerate() {
-            println!("<{url}> {} {} / {}", "Summarizing Chunk".green(), ind + 1, chunks.len());
-
-            ctx.agents.fast.llm.message_history.clear();
-
-            ctx.agents.fast.llm.message_history.push(Message::System(summary_prompt.clone()));
-
-            ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
-
-            let response = ctx.agents.fast.llm.model.get_response(
-                &ctx.agents.fast.llm.get_messages(),
-                None,
-                None
-            ).await?;
-
-            summarized_content.push_str(&response);
-            summarized_content.push(' ');
-        }
-
-        summarized_content = summarized_content.trim().to_string();
-
-        out.push(format!("# {url}\n\n{summarized_content}"));
+                let mut summarized_content = String::new();
+                let chunks = chunk_text(&content, 11000);
+        
+                let chunk_count = chunks.len();
+                let summary_prompt = match chunk_count {
+                    0..=2 => "Create a three-sentence summary of the text below.",
+                    _ => "Create a one-sentence summary of the text below."
+                }.to_string();
+        
+                for (ind, chunk) in chunks.iter().enumerate() {
+                    println!("<{url}> {} {} / {}", "Summarizing Chunk".green(), ind + 1, chunks.len());
+        
+                    ctx.agents.fast.llm.message_history.clear();
+        
+                    ctx.agents.fast.llm.message_history.push(Message::System(summary_prompt.clone()));
+        
+                    ctx.agents.fast.llm.message_history.push(Message::User(chunk.to_string()));
+        
+                    let response = ctx.agents.fast.llm.model.get_response(
+                        &ctx.agents.fast.llm.get_messages(),
+                        None,
+                        None
+                    ).await?;
+        
+                    summarized_content.push_str(&response);
+                    summarized_content.push(' ');
+                }
+        
+                summarized_content = summarized_content.trim().to_string();
+        
+                out.push(format!("# {url}\n\n{summarized_content}"));
+            },
+            Err(err) => {
+                out.push(format!("# {url}\n\n[ERROR] {err}"));
+            }
+        };
     }
 
     Ok(out.join("\n\n"))
