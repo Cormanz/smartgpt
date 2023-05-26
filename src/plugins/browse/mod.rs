@@ -11,7 +11,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, apply_chunks, PluginData, PluginDataNoInvoke, PluginCycle, invoke, ScriptValue, CommandArgument, Message, CommandResult};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument, Message, CommandResult};
 
 pub struct BrowseData {
     pub client: Client
@@ -86,11 +86,11 @@ pub struct BrowseArgs {
 }
 
 pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<String, Box<dyn Error>> {
-    let browse_info = ctx.plugin_data.get_data("Browse")?;
+    let _browse_info = ctx.plugin_data.get_data("Browse")?;
 
     let mut out: Vec<String> = vec![];
 
-    let params: [(&str, &str); 0] = [];
+    let _params: [(&str, &str); 0] = [];
     let args: BrowseArgs = args.parse()?;
         for url in args.urls {
         match extractor::scrape(&url) {

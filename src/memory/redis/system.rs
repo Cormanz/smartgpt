@@ -109,7 +109,7 @@ impl MemorySystem for RedisMemorySystem {
         Ok(relevant_memories.into_iter().take(min_count).collect())
     }
 
-    async fn decay_recency(&mut self, decay_factor: f32) -> Result<(), Box<dyn Error>> {
+    async fn decay_recency(&mut self, _decay_factor: f32) -> Result<(), Box<dyn Error>> {
         // TODO
 
         Ok(())

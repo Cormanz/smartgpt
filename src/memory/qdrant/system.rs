@@ -160,7 +160,7 @@ impl MemorySystem for QdrantMemorySystem {
         }
     }
 
-    async fn decay_recency(&mut self, decay_factor: f32) -> Result<(), Box<dyn Error>> {
+    async fn decay_recency(&mut self, _decay_factor: f32) -> Result<(), Box<dyn Error>> {
         // TODO
 
         Ok(())

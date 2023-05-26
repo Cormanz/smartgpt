@@ -1,10 +1,10 @@
-use std::{collections::HashMap, error::Error, fmt::Display};
+use std::{error::Error};
 
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue, CommandResult, CommandArgument};
-use std::fs;
+use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, ScriptValue, CommandResult, CommandArgument};
+
 
 #[derive(Serialize, Deserialize)]
 pub struct SelfThoughts {

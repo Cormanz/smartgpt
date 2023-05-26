@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("{}:", "Plugins".blue());
     let mut exit_dependency_error = false;
 
-    let mut context = program.context.lock().unwrap();
+    let context = program.context.lock().unwrap();
 
     for plugin in &context.plugins {
         for dependency in &plugin.dependencies {

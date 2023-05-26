@@ -1,9 +1,9 @@
-use std::{error::Error, collections::{VecDeque, HashSet}};
+use std::{error::Error, collections::{HashSet}};
 
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, run::Action, try_parse_yaml, agents::employee::create_tool_list}, Weights, Command};
+use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_yaml, agents::employee::create_tool_list}, Weights, Command};
 
 use super::{log_yaml, use_tool};
 
@@ -165,7 +165,7 @@ steps:
 
     drop(agent);
 
-    for (ind, step) in plan.steps.iter().enumerate() {
+    for (_ind, step) in plan.steps.iter().enumerate() {
         let agent = get_agent(context);
         let tokens = agent.llm.get_tokens_remaining(&agent.llm.get_messages())?;
         if tokens < 1400 {

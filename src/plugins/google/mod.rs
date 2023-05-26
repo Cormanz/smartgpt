@@ -1,4 +1,4 @@
-use std::{error::Error, collections::HashMap, fmt::Display};
+use std::{error::Error, fmt::Display};
 use async_trait::async_trait;
 
 mod types;
@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 pub use types::*;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument, CommandResult};
+use crate::{Plugin, Command, CommandContext, CommandImpl, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument, CommandResult};
 
 #[derive(Debug, Clone)]
 pub struct GoogleNoQueryError;

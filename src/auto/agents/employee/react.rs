@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use colored::Colorize;
-use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::findings::{get_observations, ask_for_findings}}, Weights};
+use serde::{Serialize};
+
+use crate::{CommandContext, AgentInfo, Message, auto::{run::Action}};
 
 use super::use_tool;
 
@@ -37,7 +37,7 @@ Keep your response at four paragraphs or less."
 pub fn run_react_action(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
-    task: &str,
+    _task: &str,
     action: Option<Action>
 ) -> Result<ActionResults, Box<dyn Error>> {
     match action {

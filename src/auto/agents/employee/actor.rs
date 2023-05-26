@@ -1,9 +1,9 @@
 use std::error::Error;
 
-use colored::Colorize;
-use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{AgentInfo, CommandContext, auto::run::{run_command, run_action_sync, Action}, Message};
+
+
+use crate::{AgentInfo, CommandContext, auto::run::{run_action_sync, Action}};
 
 pub fn use_tool(
     context: &mut CommandContext, 

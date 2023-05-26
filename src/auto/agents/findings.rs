@@ -57,7 +57,7 @@ pub fn to_points(points: &[String]) -> String {
         .join("\n")
 }
 
-pub fn get_observations(agent: &mut AgentInfo, task: &str, count: usize, weights: Weights) -> Result<Option<String>, Box<dyn Error>> {
+pub fn get_observations(agent: &mut AgentInfo, task: &str, _count: usize, weights: Weights) -> Result<Option<String>, Box<dyn Error>> {
     let observations = agent.observations.get_memories_sync(
         &agent.llm,
         task,
@@ -76,7 +76,7 @@ pub fn get_observations(agent: &mut AgentInfo, task: &str, count: usize, weights
     Ok(observations)
 }
 
-pub fn get_reflections(agent: &mut AgentInfo, task: &str, count: usize, weights: Weights) -> Result<Option<String>, Box<dyn Error>> {
+pub fn get_reflections(agent: &mut AgentInfo, task: &str, _count: usize, weights: Weights) -> Result<Option<String>, Box<dyn Error>> {
     let reflections = agent.reflections.get_memories_sync(
         &agent.llm,
         task,

@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, apply_chunks, PluginData, ScriptValue, CommandArgument, CommandResult};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, PluginData, ScriptValue, CommandArgument, CommandResult};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -29,8 +29,8 @@ pub struct FileReadArgs {
     pub name: String
 }
 
-pub async fn file_write(ctx: &mut CommandContext, args: ScriptValue, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
-    let command_name = if append { "file_append" } else { "file_write" };
+pub async fn file_write(_ctx: &mut CommandContext, args: ScriptValue, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
+    let _command_name = if append { "file_append" } else { "file_write" };
     let args: FileWriteArgs = args.parse()?;
 
     let path = args.name.strip_prefix("./").unwrap_or(&args.name).to_string();
@@ -50,7 +50,7 @@ pub async fn file_write(ctx: &mut CommandContext, args: ScriptValue, append: boo
     Ok(ScriptValue::None)
 }
 
-pub async fn file_list(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_list(_ctx: &mut CommandContext, _args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     let files = fs::read_dir("./files/")?;
     let files = files
         .map(|el| el.map(|el| el.path().display().to_string()))
@@ -61,7 +61,7 @@ pub async fn file_list(ctx: &mut CommandContext, args: ScriptValue) -> Result<Sc
     Ok(ScriptValue::List(files.iter().map(|el| el.clone().into()).collect()))
 }
 
-pub async fn file_read(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_read(_ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
     let FileReadArgs { name: path } = args.parse()?;
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();

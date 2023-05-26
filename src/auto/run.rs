@@ -1,9 +1,9 @@
-use std::{sync::{Mutex, Arc}, error::Error, collections::HashMap};
+use std::{error::Error, collections::HashMap};
 
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ScriptValue, ProgramInfo, Command, CommandContext, Expression, GPTRunError, CommandResult};
+use crate::{ScriptValue, Command, CommandContext, Expression, GPTRunError, CommandResult};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Action {
@@ -17,7 +17,7 @@ pub async fn run_command(
     context: &mut CommandContext, args: ScriptValue
 ) -> Result<CommandResult, Box<dyn Error>> {
     let result = command.run.invoke(context, args.clone()).await?;
-    let args: Expression = args.clone().into();
+    let _args: Expression = args.clone().into();
 
     let json = match &result {
         CommandResult::Text(string) => Ok(string.clone()),

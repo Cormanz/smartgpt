@@ -1,8 +1,8 @@
-use std::{error::Error, ops::Deref, collections::HashMap};
+use std::{error::Error, ops::Deref};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_yaml, agents::{employee::{log_yaml, run_method_agent}, context::request_context}}, ScriptValue, SelfThoughts};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_yaml, agents::{employee::{log_yaml, run_method_agent}}}, ScriptValue};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BrainThoughts {

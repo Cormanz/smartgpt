@@ -5,7 +5,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument, CommandResult};
+use crate::{CommandContext, CommandImpl, Plugin, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument, CommandResult};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;

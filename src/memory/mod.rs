@@ -129,7 +129,7 @@ pub trait MemorySystem : Send + Sync {
         &mut self,
         decay_factor: f32
     ) -> Result<(), Box<dyn Error>> {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.decay_recency(decay_factor))
     }
 }

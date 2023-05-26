@@ -64,7 +64,7 @@ impl LLMModel for LocalLLM {
         Ok(vec![])
     }
 
-    fn get_token_count(&self, text: &[Message]) -> Result<usize, Box<dyn Error>> {
+    fn get_token_count(&self, _text: &[Message]) -> Result<usize, Box<dyn Error>> {
         Ok(0)
     }
 

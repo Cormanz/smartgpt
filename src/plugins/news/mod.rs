@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, EmptyCycle, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument, CommandResult};
+use crate::{CommandContext, CommandImpl, Plugin, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument, CommandResult};
 
 pub use types::*;
 

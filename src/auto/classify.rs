@@ -17,7 +17,7 @@ pub struct Classification {
 
 pub fn is_task(program: &mut ProgramInfo, task: &str) -> Result<bool, Box<dyn Error>> {
     let ProgramInfo { 
-        context, personality, ..
+        context,  ..
     } = program;
     let mut context = context.lock().unwrap();
     
