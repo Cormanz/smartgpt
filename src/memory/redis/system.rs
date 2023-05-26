@@ -108,6 +108,12 @@ impl MemorySystem for RedisMemorySystem {
         relevant_memories.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap_or(Ordering::Equal));
         Ok(relevant_memories.into_iter().take(min_count).collect())
     }
+
+    async fn decay_recency(&mut self, decay_factor: f32) -> Result<(), Box<dyn Error>> {
+        // TODO
+
+        Ok(())
+    }
 }
 
 pub struct RedisProvider;

@@ -13,7 +13,7 @@ pub async fn init_qdrant_client() -> Result<QdrantClient, Box<dyn Error>> {
 
     let config = QdrantClientConfig::from_url(&qdrant_host);
 
-    let client = QdrantClient::new(Some(config)).await?;
+    let client = QdrantClient::new(Some(config))?;
 
     Ok(client)
 }

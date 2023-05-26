@@ -158,7 +158,12 @@ impl MemorySystem for QdrantMemorySystem {
             Ok(relevant_memories) => Ok(relevant_memories),
             Err(e) => Err(e),
         }
+    }
 
+    async fn decay_recency(&mut self, decay_factor: f32) -> Result<(), Box<dyn Error>> {
+        // TODO
+
+        Ok(())
     }
 }
 
