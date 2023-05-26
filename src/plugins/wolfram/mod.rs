@@ -130,9 +130,8 @@ pub fn create_wolfram() -> Plugin {
                 name: "wolfram".to_string(),
                 purpose: "Ask WolframAlpha to answer a query.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", "The query to ask Wolfram Alpha", "String")
+                    CommandArgument::new("query", r#""query""#)
                 ],
-                return_type: "String".to_string(),
                 run: Box::new(WolframImpl)
             }
         ]

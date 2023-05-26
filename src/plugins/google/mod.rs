@@ -123,11 +123,10 @@ pub fn create_google() -> Plugin {
         commands: vec![
             Command {
                 name: "google_search".to_string(),
-                purpose: "Google Search".to_string(),
+                purpose: "Gives you a list of URLs from a query.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", "The request to search. Create a short, direct query with keywords.", "String")
+                    CommandArgument::new("query", r#""query""#)
                 ],
-                return_type: "{ items: { title: String, link: String, snippet: String }[] }".to_string(),
                 run: Box::new(GoogleImpl)
             }
         ]

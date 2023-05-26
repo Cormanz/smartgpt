@@ -3,7 +3,7 @@ use std::{error::Error, collections::{VecDeque, HashSet}};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, run::Action, try_parse_yaml}, Weights};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, run::Action, try_parse_yaml, agents::employee::create_tool_list}, Weights, Command};
 
 use super::{log_yaml, use_tool};
 
@@ -82,18 +82,21 @@ pub fn run_method_agent(
     task: &str,
     data: Option<String>
 ) -> Result<String, Box<dyn Error>> {
+    let commands: Vec<&Command> = context.plugins.iter()
+        .flat_map(|plugin| &plugin.commands)
+        .collect();
+    
+    let tools = create_tool_list(&commands);
+    
     let cloned_assets = context.assets.clone();
     let assets_before: HashSet<&String> = cloned_assets.keys().collect();
 
     let agent = get_agent(context);
 
     agent.llm.clear_history();
-    
+
     agent.llm.prompt.push(Message::System(format!(r#"
-Tools:
-google_search {{ "query": "query" }} - Gives you a list of URLs from a query.
-browse_urls {{ "urls": [ "url 1", "url 2" ] }} - Read the text content from a URL.
-save_asset {{ "asset": "asset_name", "description": "brief description of asset", "lines": [ "line 1", "line 2" ] }}
+{tools}
 
 You have been given these tools.
 "#).trim().to_string()));

@@ -181,11 +181,10 @@ pub fn create_browse() -> Plugin {
         commands: vec![
             Command {
                 name: "browse_urls".to_string(),
-                purpose: "Browse the paragraph-only content from an exact URL.".to_string(),
+                purpose: "Read the text content from a URL.".to_string(),
                 args: vec![
-                    CommandArgument::new("urls", "The URL to browse.", "String[]")
+                    CommandArgument::new("urls", r#"[ "url 1", "url 2" ]"#)
                 ],
-                return_type: "String".to_string(),
                 run: Box::new(BrowseURLs)
             }
         ]

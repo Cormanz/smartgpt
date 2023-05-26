@@ -158,36 +158,32 @@ pub fn create_filesystem() -> Plugin {
                 name: "file_write".to_string(),
                 purpose: "Override a file with content. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![
-                    CommandArgument::new("path", "The path of the file that is being written to.", "String"),
-                    CommandArgument::new("...contents", "The content to be added to the file. You can use as many arguments for content as you like.", "String")
+                    CommandArgument::new("path", "path"),
+                    CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
-                return_type: "None".to_string(),
                 run: Box::new(FileWriteImpl)
             },
             Command {
                 name: "file_append".to_string(),
                 purpose: "Add content to an existing file. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![
-                    CommandArgument::new("path", "The path of the file that is being written to.", "String"),
-                    CommandArgument::new("...contents", "The content to be added to the file. You can use as many arguments for content as you like.", "String")
+                    CommandArgument::new("path", r#""path""#),
+                    CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
-                return_type: "None".to_string(),
                 run: Box::new(FileAppendImpl)
             },
             Command {
                 name: "file_list".to_string(),
                 purpose: "List all of your files.".to_string(),
                 args: vec![],
-                return_type: "String[]".to_string(),
                 run: Box::new(FileListImpl)
             },
             Command {
                 name: "file_read".to_string(),
                 purpose: "Read a file.".to_string(),
                 args: vec![
-                    CommandArgument::new("path", "The path of the file that is read.", "String")
+                    CommandArgument::new("path", r#""path""#)
                 ],
-                return_type: "String".to_string(),
                 run: Box::new(FileReadImpl)
             }
         ]

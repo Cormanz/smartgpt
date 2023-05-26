@@ -20,18 +20,15 @@ agents:
             local: {}
     managers: []
 plugins:
+    assets: {}
     browse: {}
     google:
         cse id: PUT YOUR CSE ID HERE
         api key: PUT YOUR KEY HERE
-    file system: {}
     wolfram:
         app id: PUT YOUR APP ID HERE
-    chatgpt:
-        api key: PUT YOUR KEY HERE
     newsapi:
         api key: PUT YOUR KEY HERE
-    wikipedia: {}
-    none: {}
+    #file system: {}
 disabled commands: []
 "#;

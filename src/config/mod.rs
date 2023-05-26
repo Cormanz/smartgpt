@@ -9,7 +9,7 @@ use crate::{
     CommandContext, EndGoals, LLM, ChatGPT, Plugin, 
     create_browse, create_google, create_filesystem, create_wolfram,
     //create_chatgpt, create_news, create_wikipedia, 
-    LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem, PluginStore, create_assets
+    LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem, PluginStore, create_assets, create_news
 };
 
 mod default;
@@ -95,10 +95,7 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_filesystem(),
         create_wolfram(),
         create_assets(),
-        /*
-        create_chatgpt(),
-        create_news(),
-        create_wikipedia(),*/
+        create_news()
     ]
 }
 

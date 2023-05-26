@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, fmt::Display};
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue, CommandResult};
+use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, EmptyCycle, ScriptValue, CommandResult, CommandArgument};
 use std::fs;
 
 #[derive(Serialize, Deserialize)]
@@ -46,8 +46,10 @@ pub fn create_assets() -> Plugin {
             Command {
                 name: "save_asset".to_string(),
                 purpose: "Save an asset.".to_string(),
-                args: vec![],
-                return_type: "None".to_string(),
+                args: vec![
+                    CommandArgument::new("asset", r#""asset_name""#),
+                    CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
+                ],
                 run: Box::new(NoneImpl)
             }
         ]
