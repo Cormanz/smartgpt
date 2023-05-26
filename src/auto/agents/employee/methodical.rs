@@ -1,4 +1,4 @@
-use std::{error::Error, collections::VecDeque};
+use std::{error::Error, collections::{VecDeque, HashSet}};
 
 use serde::{Serialize, Deserialize};
 
@@ -81,6 +81,9 @@ pub fn run_method_agent(
     task: &str,
     data: Option<String>
 ) -> Result<String, Box<dyn Error>> {
+    let cloned_assets = context.assets.clone();
+    let assets_before: HashSet<&String> = cloned_assets.keys().collect();
+
     let agent = get_agent(context);
 
     agent.llm.clear_history();
@@ -89,8 +92,7 @@ pub fn run_method_agent(
 Tools:
 google_search {{ "query": "query" }} - Gives you a list of URLs from a query.
 browse_urls {{ "urls": [ "url 1", "url 2" ] }} - Read the text content from a URL.
-file_write {{ "name": "file name", "lines": [ "line 1", "line 2 ] }} - Write content to a file.
-final_response {{ "response": "response to user" }} - Provide a detailed response back to the user, with all information.
+save_asset {{ "asset": "asset_name", "description": "brief description of asset", "lines": [ "line 1", "line 2" ] }}
 
 You have been given these tools.
 "#).trim().to_string()));
@@ -112,13 +114,13 @@ You have been given these tools.
             .join("\n")
     };
 
-    let data = data.unwrap_or(format!("No information."));
+    let data = data.unwrap_or(format!("No assets."));
 
     agent.llm.prompt.push(Message::User(format!(r#"
 Here is your new task:
 {task}
 
-Here is the information for your task:
+Here is a list of assets for your task:
 {data}
 
 Here is a list of your memories:
@@ -133,6 +135,9 @@ You will explain the exact purpose of using that specific tool.
 Do not specify arguments.
 Do not "repeat steps".
 
+Ensure you have as few steps as possible. Do not overcomplicate it.
+Save all important output into assets.
+
 Respond in this YML format:
 ```yml
 steps:
@@ -143,25 +148,21 @@ steps:
 ```
 "#).trim().to_string()));
 
-    let plan = try_parse_yaml::<MethodicalPlan>(&agent.llm, 2, Some(600), None)?;
+    let plan = try_parse_yaml::<MethodicalPlan>(&agent.llm, 2, Some(600), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(plan.raw));
     let plan = plan.data;
     log_yaml(&plan)?;
 
     drop(agent);
 
-    let mut step_deque: VecDeque<MethodicalStep> = plan.steps.into();
-    let mut completed_steps: Vec<MethodicalStep> = vec![];
-
-    loop {
-        let step = match step_deque.pop_front() {
-            Some(step) => step,
-            None => { break; }
-        };
-
-        let ind = completed_steps.len();
-
+    for (ind, step) in plan.steps.iter().enumerate() {
         let agent = get_agent(context);
+        let tokens = agent.llm.get_tokens_remaining(&agent.llm.get_messages())?;
+        println!("{tokens}");
+        if tokens < 1400 {
+            add_memories(agent)?;
+            agent.llm.crop_to_tokens_remaining(2600)?;
+        }
         
         println!();
 
@@ -174,6 +175,9 @@ Now you will carry out the next step:
 
 You must carry out this step with one entire action.
 Include ALL information.
+
+Assets:
+No assets.
 
 Respond in this YML format:
 ```yml
@@ -192,34 +196,15 @@ action:
 
         drop(agent);
 
-        if thoughts.action.tool == "final_response" {
-            let agent = get_agent(context);
-            let final_response: FinalResponse = thoughts.action.args.unwrap().parse()?;
-
-            agent.llm.message_history.pop();
-            agent.llm.message_history.pop();
-
-            add_memories(agent)?;
-
-            return Ok(final_response.response);
-        }
-
         let out = use_tool(context, &|context| &mut context.agents.fast, thoughts.action.clone());
             
         println!();
         match out {
             Ok(out) => {
                 let agent = get_agent(context);
-                if agent.llm.get_tokens_remaining(&agent.llm.get_messages())? < 1000 {
-                    add_memories(agent)?;
-                    agent.llm.crop_to_tokens_remaining(2200);
-                }
 
                 println!("{out}");
-
                 agent.llm.message_history.push(Message::User(out));
-
-                completed_steps.push(step.clone());
             },
             Err(err) => {
                 println!("{err}");
@@ -229,5 +214,29 @@ action:
         }
     }
     
-    panic!("No final response");
+    let agent = get_agent(context);
+    add_memories(agent)?;
+    
+    let cloned_assets = context.assets.clone();
+    let assets_after: HashSet<&String> = cloned_assets.keys().collect();
+
+    println!("{assets_before:?}, {assets_after:?}");
+
+    let changed_assets = assets_after.difference(&assets_before)
+        .map(|asset| asset.to_string())
+        .collect::<Vec<_>>();
+
+    let asset_str = if changed_assets.len() == 0 {
+        format!("No assets changed.")
+    } else {
+        changed_assets .iter()
+            .map(|el| format!("## Asset `{el}`\n{}", context.assets[el]))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+
+    let resp = format!("Assets:\n\n{}", asset_str);
+    
+
+    return Ok(resp);
 }

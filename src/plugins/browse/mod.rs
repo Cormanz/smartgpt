@@ -98,7 +98,7 @@ pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<
                 let content = resp.content;
 
                 let mut summarized_content = String::new();
-                let chunks = chunk_text(&content, 11000);
+                let chunks = chunk_text(&content, 8500);
         
                 let chunk_count = chunks.len();
                 let summary_prompt = match chunk_count {

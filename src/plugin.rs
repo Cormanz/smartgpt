@@ -69,7 +69,8 @@ pub struct CommandContext {
     pub plugins: Vec<Plugin>,
     pub variables: HashMap<String, ScriptValue>,
     pub command_out: Vec<String>,
-    pub disabled_commands: Vec<String>
+    pub disabled_commands: Vec<String>,
+    pub assets: HashMap<String, String>
 }
 
 

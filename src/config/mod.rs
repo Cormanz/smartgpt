@@ -10,7 +10,7 @@ use crate::{
     create_browse, create_google, create_filesystem, create_wolfram,
     //create_chatgpt, create_news, create_wikipedia, 
     create_none, 
-    LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem, PluginStore
+    LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem, PluginStore, create_assets
 };
 
 mod default;
@@ -95,6 +95,7 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_google(),
         create_filesystem(),
         create_wolfram(),
+        create_assets(),
         /*
         create_chatgpt(),
         create_news(),
@@ -171,6 +172,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         auto_type: config.auto_type.clone(),
         command_out: vec![],
         variables: HashMap::new(),
+        assets: HashMap::new(),
         plugin_data: PluginStore(HashMap::new()),
         plugins: vec![],
         disabled_commands: config.disabled_commands,
