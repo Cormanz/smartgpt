@@ -2,7 +2,7 @@ use std::error::Error;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{LLM, Message, AgentInfo};
+use crate::{Message, AgentInfo};
 
 use super::try_parse_json;
 
@@ -45,10 +45,10 @@ Provide a response as an assistant to the initial request in the above format.
 Make sure you include where you got the information from in your response, in parantheses."#)
 }
 
-pub fn ask_for_assistant_response(agent: &mut AgentInfo, context: &str, request: &str) -> Result<String, Box<dyn Error>> {
+pub fn ask_for_assistant_response(agent: &mut AgentInfo, context: &str, request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
     agent.llm.message_history.push(Message::User(create_assistant_prompt(context, request)));
 
-    let response = try_parse_json::<Response>(&agent.llm, 2, Some(200), None)?.data.response;
+    let response = try_parse_json::<Response>(&agent.llm, 2, token_limit, None)?.data.response;
 
     agent.llm.message_history.pop();
 

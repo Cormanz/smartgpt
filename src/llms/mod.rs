@@ -93,13 +93,13 @@ pub trait LLMModel : Send + Sync {
     }
 
     fn get_response_sync(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
-        let mut rt = Runtime::new()?;
+        let rt = Runtime::new()?;
         rt.block_on(async {
             self.get_response(messages, max_tokens, temperature).await
         })
     }
     fn get_base_embed_sync(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>> {
-        let mut rt = Runtime::new()?;
+        let rt = Runtime::new()?;
         rt.block_on(async {
             self.get_base_embed(text).await
         })
@@ -127,7 +127,11 @@ impl LLM {
 
     pub fn crop_to_tokens_remaining(&mut self, token_buffer: usize) -> Result<(), Box<dyn Error>> {
         while token_buffer > self.get_tokens_remaining(&self.get_messages())? {
-            self.message_history.remove(0);
+            if !self.message_history.is_empty() {
+                self.message_history.remove(0);
+            } else {
+                break;
+            }
         }
 
         Ok(())

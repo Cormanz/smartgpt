@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error, fmt::Display, fs::OpenOptions, path::Path};
+use std::{error::Error, fmt::Display, fs::OpenOptions, path::Path};
 
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
@@ -128,7 +128,7 @@ pub struct FileCycle;
 
 #[async_trait]
 impl PluginCycle for FileCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         let files = fs::read_dir("files")?;
         let files = files
             .map(|el| el.map(|el| el.path().display().to_string()))
@@ -143,7 +143,7 @@ impl PluginCycle for FileCycle {
         }))
     }
 
-    fn create_data(&self, value: Value) -> Option<Box<dyn PluginData>> {
+    fn create_data(&self, _value: Value) -> Option<Box<dyn PluginData>> {
         None
     }
 }

@@ -1,10 +1,6 @@
-use std::{error::Error, time::Duration, fmt::Display, mem::take, collections::HashMap, process, fs, io};
+use std::{error::Error, fmt::Display, process, fs, io};
 
 use colored::Colorize;
-use reqwest::{self, Client, header::{USER_AGENT, HeaderMap}};
-use async_openai::{
-    Client as OpenAIClient, types::{CreateCompletionRequestArgs, CreateChatCompletionRequest, ChatCompletionRequestMessage, Role, CreateCompletionResponse, CreateChatCompletionResponse}, error::OpenAIError,
-};
 
 mod plugin;
 mod plugins;
@@ -26,7 +22,6 @@ pub use runner::*;
 pub use memory::*;
 
 use serde::{Deserialize, Serialize};
-use tokio::time::sleep;
 use serde_json::Value;
 
 use crate::auto::{run_task_auto, run_assistant_auto};
@@ -131,7 +126,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     drop(context);
 
     match program.auto_type.clone() {
-        AutoType::Assistant => {
+        AutoType::Assistant { token_limit } => {
             let mut messages: Vec<Message> = vec![];
             let stdin = io::stdin();
             loop {
@@ -142,7 +137,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 println!();
 
-                let response = run_assistant_auto(&mut program, &messages, &input)?;
+                let response = run_assistant_auto(&mut program, &messages, &input, token_limit)?;
 
                 messages.push(Message::User(input));
                 messages.push(Message::Assistant(response.clone()));

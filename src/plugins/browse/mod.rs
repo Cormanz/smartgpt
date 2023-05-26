@@ -1,4 +1,4 @@
-use std::{error::Error, fmt::Display, collections::HashMap, fs};
+use std::{error::Error, fmt::Display};
 use async_trait::async_trait;
 use colored::Colorize;
 use readability::extractor;
@@ -155,7 +155,7 @@ pub struct BrowseCycle;
 
 #[async_trait]
 impl PluginCycle for BrowseCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
 

@@ -1,9 +1,14 @@
-use std::{error::Error, fmt::Display, cmp::{Reverse, min}, cmp::Ordering::Equal};
+use std::{error::Error, fmt::Display, cmp::{min}, cmp::Ordering::Equal};
 use async_trait::async_trait;
+use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
 mod local;
+mod qdrant;
+mod redis;
 pub use local::*;
+pub use qdrant::*;
+pub use self::redis::*;
 
 use crate::{LLM};
 
@@ -18,7 +23,7 @@ impl Display for MemorySystemLoadError {
 
 impl Error for MemorySystemLoadError {}
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Memory {
     pub content: String,
     pub recall: f32,
@@ -94,7 +99,7 @@ pub trait MemorySystem : Send + Sync {
     ) -> Result<(), Box<dyn Error>>;
 
     fn store_memory_sync(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>> {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.store_memory(llm, memory))
     }
     
@@ -104,7 +109,7 @@ pub trait MemorySystem : Send + Sync {
         memory: &str,
         min_count: usize,
     ) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.get_memory_pool(llm, memory, min_count))
     }
     
@@ -116,7 +121,7 @@ pub trait MemorySystem : Send + Sync {
         weights: Weights,
         count: usize,
     ) -> Result<Vec<Memory>, Box<dyn Error>> {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.get_memories(llm, memory, min_count, weights, count))
     }
 

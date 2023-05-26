@@ -1,6 +1,5 @@
-use std::{error::Error, backtrace::Backtrace, collections::HashMap, fmt::Display};
+use std::{error::Error, collections::HashMap, fmt::Display};
 use async_trait::async_trait;
-use reqwest::Client;
 
 mod types;
 
@@ -105,7 +104,7 @@ pub struct GoogleCycle;
 
 #[async_trait]
 impl PluginCycle for GoogleCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
     

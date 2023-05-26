@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use serde::{de::{Visitor, SeqAccess, MapAccess, DeserializeSeed}, Deserializer, Deserialize, Serialize, Serializer, ser::{SerializeMap, SerializeSeq}};
-use serde_json::Value;
+use serde::{de::{Visitor, SeqAccess, MapAccess}, Deserializer, Deserialize, Serialize, Serializer, ser::{SerializeMap, SerializeSeq}};
 
 use crate::ScriptValue;
 

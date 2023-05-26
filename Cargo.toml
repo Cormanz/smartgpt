@@ -24,3 +24,8 @@ textwrap = "0.16.0"
 json5 = "0.4.1"
 llm = "0.1.1"
 readability = "0.2.0"
+redis = { version = "0.23.0", features = ["tokio-comp", "json"] }
+qdrant-client = "1.1.2"
+anyhow = "1.0.71"
+tonic = "0.9.2"
+base64 = "0.21.0"

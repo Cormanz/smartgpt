@@ -1,11 +1,8 @@
-use std::{collections::HashMap, error::Error, fmt::Display, future::Future, pin::Pin, any::Any};
+use std::{collections::HashMap, error::Error, fmt::Display, any::Any};
 
-use async_openai::{Client as OpenAIClient, types::ChatCompletionRequestMessage};
 use async_trait::async_trait;
-use reqwest::Client;
-use serde::{Serialize, de::DeserializeOwned, __private::de};
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
-use tokenizers::Tokenizer;
 
 #[derive(Debug, Clone)]
 pub struct PluginDataNoInvoke(pub String, pub String);
@@ -124,7 +121,7 @@ pub struct EmptyCycle;
 
 #[async_trait]
 impl PluginCycle for EmptyCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
 

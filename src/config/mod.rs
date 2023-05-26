@@ -3,14 +3,8 @@ use std::{collections::HashMap, error::Error, fmt::Display, process, sync::{Mute
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
-use async_openai::Client as OpenAIClient;
 
-use crate::{
-    CommandContext, EndGoals, LLM, ChatGPT, Plugin, 
-    create_browse, create_google, create_filesystem, create_wolfram,
-    //create_chatgpt, create_news, create_wikipedia, 
-    LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, MemorySystem, PluginStore, create_assets, create_news
-};
+use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, create_assets, PluginStore};
 
 mod default;
 pub use default::*;
@@ -79,7 +73,9 @@ pub enum AutoType {
     #[serde(rename = "runner")] Runner {
         task: String
     },
-    #[serde(rename = "assistant")] Assistant
+    #[serde(rename = "assistant")] Assistant {
+        #[serde(rename = "assistant token limit")] token_limit: Option<u16>
+    },
 }
 
 pub struct ProgramInfo {
@@ -108,7 +104,9 @@ pub fn create_llm_providers() -> Vec<Box<dyn LLMProvider>> {
 
 pub fn create_memory_providers() -> Vec<Box<dyn MemoryProvider>> {
     vec![
-        create_memory_local()
+        create_memory_local(),
+        create_memory_qdrant(),
+        create_memory_redis()
     ]
 }
 

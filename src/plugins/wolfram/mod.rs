@@ -1,8 +1,7 @@
-use std::{error::Error, fmt::Display, collections::HashMap};
+use std::{error::Error, fmt::Display};
 use async_trait::async_trait;
 use regex::Regex;
 
-use select::{document::Document, predicate::Name};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -94,7 +93,7 @@ pub struct WolframData {
 
 #[async_trait]
 impl PluginData for WolframData {
-    async fn apply(&mut self, name: &str, value: Value) -> Result<Value, Box<dyn Error>> {
+    async fn apply(&mut self, name: &str, _value: Value) -> Result<Value, Box<dyn Error>> {
         match name {
             "get app id" => {
                 Ok(self.app_id.clone().into())
@@ -110,7 +109,7 @@ pub struct WolframCycle;
 
 #[async_trait]
 impl PluginCycle for WolframCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
 

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::{LLM, Message, auto::try_parse_json, AgentInfo, Weights};
+use crate::{Message, auto::try_parse_json, AgentInfo, Weights};
 
 use serde::{Deserialize, Serialize};
 

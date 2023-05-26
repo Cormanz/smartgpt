@@ -1,6 +1,7 @@
 pub const DEFAULT_CONFIG: &str = r#"
 personality: A superintelligent AI.
 type: !assistant
+    assistant token limit: 400
 agents:
     employee:
         llm:

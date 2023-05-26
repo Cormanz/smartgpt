@@ -1,11 +1,8 @@
 use std::{collections::HashMap, fmt::Display, error::Error};
-use async_recursion::async_recursion;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
-use crate::{Statement, Expression, Primitive, CommandContext, Plugin};
-
-use super::Body;
+use crate::{Expression, Primitive};
 
 #[derive(Debug)]
 pub struct GPTRunError(pub String);

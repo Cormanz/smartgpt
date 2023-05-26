@@ -1,12 +1,11 @@
 use std::{fmt::Display, error::Error};
 
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_yaml::Value;
+use serde::{ Serialize, de::DeserializeOwned};
 use json5;
 
 use colored::Colorize;
 
-use crate::{LLM, ProgramInfo, Message, format_prompt};
+use crate::{LLM, ProgramInfo, Message };
 
 use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task, agents::{processing::find_text_between_braces, employee::run_employee}};
 
@@ -32,11 +31,14 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     }
 }
 
-pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str) -> Result<String, Box<dyn Error>> {
+pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
     let ProgramInfo { 
         context, ..
     } = program;
-    let mut context = context.lock().unwrap();
+
+    let token_limit_final: u16 = token_limit.unwrap_or(400u16);
+
+    let context = context.lock().unwrap();
 
     let mut new_messages = messages.to_vec();
     new_messages.push(Message::User(format!(
@@ -56,7 +58,7 @@ r#"Summarize the conversation."#)));
         let ProgramInfo { 
             context, ..
         } = program;
-        let mut context = context.lock().unwrap();
+        let context = context.lock().unwrap();
 
         let has_manager: bool = context.agents.managers.len() >= 1;
 
@@ -92,7 +94,7 @@ r#"Respond in this conversation context:
 
         context.agents.fast.llm.model.get_response_sync(
             &context.agents.fast.llm.get_messages(),
-            Some(200),
+            Some(token_limit_final),
             None
         )
     }

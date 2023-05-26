@@ -1,10 +1,8 @@
 mod types;
 
-use std::{error::Error, fmt::Display, collections::HashMap};
+use std::{error::Error, fmt::Display};
 use async_trait::async_trait;
-use regex::Regex;
 
-use select::{document::Document, predicate::Name};
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
@@ -90,7 +88,7 @@ pub struct NewsData {
 
 #[async_trait]
 impl PluginData for NewsData {
-    async fn apply(&mut self, name: &str, value: Value) -> Result<Value, Box<dyn Error>> {
+    async fn apply(&mut self, name: &str, _value: Value) -> Result<Value, Box<dyn Error>> {
         match name {
             "get api key" => {
                 Ok(self.api_key.clone().into())
@@ -106,7 +104,7 @@ pub struct NewsCycle;
 
 #[async_trait]
 impl PluginCycle for NewsCycle {
-    async fn create_context(&self, context: &mut CommandContext, previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
         Ok(None)
     }
 
