@@ -64,7 +64,7 @@ r#"Summarize the conversation."#)));
         task = format!(
 "Given this relevant conversation context: {conversation_context}
 
-Generate a response to this request: {task}");
+{task}");
         
         drop(context);
     

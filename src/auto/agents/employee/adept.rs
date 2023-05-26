@@ -42,7 +42,8 @@ pub struct AssetInfo {
 pub fn get_response(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
-    thoughts: &BrainThoughts
+    thoughts: &BrainThoughts,
+    personality: &str
 ) -> Result<String, Box<dyn Error>> {
     match thoughts.decision.decision_type.deref() {
         "spawn_agent" => {
@@ -59,7 +60,7 @@ pub fn get_response(
                 );
             }
 
-            let out = run_method_agent(context, get_agent, &instruction, data)?;
+            let out = run_method_agent(context, get_agent, &instruction, data, personality)?;
             println!("\n{out}\n");
             Ok(out)
         },
@@ -75,15 +76,18 @@ pub fn get_response(
 pub fn run_brain_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
-    task: &str
+    task: &str,
+    personality: &str
 ) -> Result<String, Box<dyn Error>> {
     let agent = get_agent(context);
+    
+    agent.llm.prompt.push(Message::System(format!("Personality:\n{personality}")));
 
     agent.llm.prompt.push(Message::User(format!(r#"
-Here is your task:
+Here is the request given by the user:
 {task}
 
-Your goal is to complete the task by spawning agents.
+Your goal is to appropiately respond to the request.
 Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
 You make a decision. Here are the types of decisions alongside their `args` schema:
@@ -117,7 +121,7 @@ decision:
     log_yaml(&thoughts)?;
 
     drop(agent);
-    let mut response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts)?;
+    let mut response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts, personality)?;
     
     loop {
         let cloned_assets = context.assets.clone();
@@ -161,7 +165,7 @@ decision:
 
         log_yaml(&thoughts)?;
 
-        response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts)?;
+        response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts, &personality)?;
     }
 
     panic!("E");

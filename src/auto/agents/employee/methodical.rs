@@ -80,7 +80,8 @@ pub fn run_method_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
-    data: Option<String>
+    data: Option<String>,
+    personality: &str
 ) -> Result<String, Box<dyn Error>> {
     let commands: Vec<&Command> = context.plugins.iter()
         .flat_map(|plugin| &plugin.commands)
@@ -96,6 +97,9 @@ pub fn run_method_agent(
     agent.llm.clear_history();
 
     agent.llm.prompt.push(Message::System(format!(r#"
+Personality: 
+{personality}
+
 {tools}
 
 You have been given these tools.
