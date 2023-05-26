@@ -84,10 +84,10 @@ pub fn run_brain_agent(
     agent.llm.prompt.push(Message::System(format!("Personality:\n{personality}")));
 
     agent.llm.prompt.push(Message::User(format!(r#"
-Here is the request given by the user:
+Here is the task given by the user:
 {task}
 
-Your goal is to appropiately respond to the request.
+Your goal is to appropiately complete the task by spawning agents.
 Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
 You make a decision. Here are the types of decisions alongside their `args` schema:

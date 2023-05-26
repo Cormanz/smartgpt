@@ -26,9 +26,9 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     drop(context);
 
     if has_manager {
-        run_employee(program, task.clone(), ask_for_responses)?
+        run_employee(program, task.clone(), &program.personality.clone(), ask_for_responses)?
     } else {
-        run_employee(program, task.clone(), ask_for_responses)?
+        run_employee(program, task.clone(), &program.personality.clone(), ask_for_responses)?
     }
 }
 
@@ -69,9 +69,9 @@ r#"Summarize the conversation."#)));
         drop(context);
     
         if has_manager {
-            run_employee(program, &task.clone(), ask_for_responses)?
+            run_employee(program, &task.clone(), &program.personality.clone(), ask_for_responses)?
         } else {
-            run_employee(program, &task.clone(), ask_for_responses)?
+            run_employee(program, &task.clone(), &program.personality.clone(), ask_for_responses)?
         }
     } else {
         let ProgramInfo { 

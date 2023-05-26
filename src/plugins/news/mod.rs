@@ -47,7 +47,6 @@ pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<String, B
             .collect::<Vec<_>>()
     }).await?;
 
-    println!("{json}");
     let json: News = serde_json::from_str(&json)?;
 
     let text = json.articles.iter()
