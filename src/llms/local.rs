@@ -64,8 +64,12 @@ impl LLMModel for LocalLLM {
         Ok(vec![])
     }
 
-    fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>> {
-        Ok(20000)
+    fn get_token_count(&self, text: &[Message]) -> Result<usize, Box<dyn Error>> {
+        Ok(0)
+    }
+
+    fn get_token_limit(&self) -> usize {
+        2048
     }
 }
 

@@ -1,5 +1,5 @@
 use std::{error::Error, ops::Deref, collections::HashMap};
-
+use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
 use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_yaml, agents::{employee::{log_yaml, run_method_agent}, context::request_context}}, ScriptValue, SelfThoughts};
@@ -108,6 +108,8 @@ decision:
 ```
 "#).trim().to_string()));
 
+    println!("{}\n", "Dynamic Agent".blue().bold());
+
     let thoughts = try_parse_yaml::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(thoughts.raw));
     let thoughts = thoughts.data;  
@@ -150,6 +152,8 @@ decision:
     args: {{ ... }}
 ```
         "#).trim().to_string()));
+
+        println!("{}\n", "Dynamic Agent".blue().bold());
 
         let thoughts = try_parse_yaml::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));

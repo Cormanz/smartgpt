@@ -1,5 +1,6 @@
 use std::{error::Error, collections::{VecDeque, HashSet}};
 
+use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
 use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, run::Action, try_parse_yaml}, Weights};
@@ -116,6 +117,8 @@ You have been given these tools.
 
     let data = data.unwrap_or(format!("No assets."));
 
+    println!("{} {}\n", "Static Agent".yellow().bold(), "| Plan".white());
+
     agent.llm.prompt.push(Message::User(format!(r#"
 Here is your new task:
 {task}
@@ -158,16 +161,19 @@ steps:
     for (ind, step) in plan.steps.iter().enumerate() {
         let agent = get_agent(context);
         let tokens = agent.llm.get_tokens_remaining(&agent.llm.get_messages())?;
-        println!("{tokens}");
         if tokens < 1400 {
             add_memories(agent)?;
             agent.llm.crop_to_tokens_remaining(2600)?;
         }
         
         println!();
+        println!("{} {}\n", "Static Agent".yellow().bold(), "| Selecting Step".white());
 
         let step_text = serde_yaml::to_string(&step)?;
         println!("{}", step_text);
+        
+        println!();
+        println!("{} {}\n", "Static Agent".yellow().bold(), "| Running Step".white());
 
         agent.llm.message_history.push(Message::User(format!(r#"
 Now you will carry out the next step: 
