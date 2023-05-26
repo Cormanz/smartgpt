@@ -67,7 +67,7 @@ observations:
     "#).trim().to_string()));
 
     let memories = try_parse_yaml::<Memories>(&agent.llm, 2, Some(1000), Some(0.5))?.data;
-    log_yaml(&memories);
+    log_yaml(&memories)?;
 
     for memory in memories.actions.iter().chain(memories.observations.iter()) {
         agent.observations.store_memory_sync(&agent.llm, memory)?;

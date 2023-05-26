@@ -1,24 +1,14 @@
 use std::{error::Error};
-
-
-
-
-
 use crate::{ProgramInfo, AgentInfo};
-
-
+use serde::Serialize;
 
 mod adept;
 mod actor;
-mod react;
-mod refine;
 mod methodical;
 mod tools;
 
 pub use adept::*;
 pub use actor::*;
-pub use react::*;
-pub use refine::*;
 pub use methodical::*;
 pub use tools::*;
 
@@ -34,4 +24,10 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, personality: &str,
     println!("{response}");
 
     panic!("T");
+}
+
+pub fn log_yaml<T: Serialize>(data: &T) -> Result<(), Box<dyn Error>> {
+    println!("{}", serde_yaml::to_string(&data)?);
+
+    Ok(())
 }

@@ -22,27 +22,12 @@ pub use runner::*;
 pub use memory::*;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::auto::{run_task_auto, run_assistant_auto};
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
     #[serde(rename = "new end goal")] new_end_goal: String
-}
-
-fn debug_yaml(results: &str) -> Result<(), Box<dyn Error>> {
-    let json: Value = serde_json::from_str(&results)?;
-    let mut yaml: String = serde_yaml::to_string(&json)?;
-    yaml = yaml.trim().to_string();
-
-    if yaml.len() > 1500 {
-        yaml = yaml.chars().take(1500).map(|el| el.to_string()).collect::<Vec<_>>().join("") + "... (chopped off at 1,500 characters)";
-    }
-
-    println!("{yaml}");
-
-    Ok(())
 }
 
 #[derive(Debug, Clone)]

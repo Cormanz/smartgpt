@@ -167,6 +167,4 @@ decision:
 
         response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts, &personality)?;
     }
-
-    panic!("E");
 }
