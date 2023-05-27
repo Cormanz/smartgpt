@@ -45,6 +45,7 @@ plugins:
         app id: PUT YOUR APP ID HERE
     newsapi:
         api key: PUT YOUR KEY HERE
+    brainstorm: {}
     #file system: {}
 disabled commands: []
 "#;
