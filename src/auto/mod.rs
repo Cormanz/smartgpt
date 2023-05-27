@@ -22,7 +22,7 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
 
     drop(context);
 
-    run_employee(program, task.clone(), &program.personality.clone(), ask_for_responses)?
+    Ok(run_employee(program, task.clone(), &program.personality.clone())?)
 }
 
 pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
@@ -62,7 +62,7 @@ r#"Summarize the conversation."#)));
         
         drop(context);
     
-        run_employee(program, &task.clone(), &program.personality.clone(), ask_for_responses)?
+        Ok(run_employee(program, &task.clone(), &program.personality.clone())?)
     } else {
         let ProgramInfo { 
             context, ..

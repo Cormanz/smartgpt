@@ -1,8 +1,19 @@
-use std::{error::Error, ops::Deref};
+use std::{error::Error, ops::Deref, fmt::Display};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
 use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{employee::{log_yaml, run_method_agent}}}, ScriptValue};
+
+#[derive(Debug, Clone)]
+pub struct NoDecisionTypeError(pub String);
+
+impl Display for NoDecisionTypeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}' is not a valid decision type", self.0)
+    }
+}
+
+impl Error for NoDecisionTypeError {}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BrainThoughts {
@@ -68,8 +79,13 @@ pub fn get_response(
         "brainstorm" => {
             Ok(format!("Successfully brainstormed."))
         }
-        _ => {
-            panic!("Unknown Decision Type");
+        "final_response" => {
+            let FinalResponseArgs { response } = thoughts.decision.args.parse()?;
+
+            Ok(response)
+        },
+        decision_type => {
+            return Err(Box::new(NoDecisionTypeError(decision_type.to_string()))) 
         }
     }
 }
@@ -132,6 +148,10 @@ Respond in this exact JSON format exactly, with every field in order:
         &thoughts, 
         &personality
     )?;
+
+    if thoughts.decision.decision_type == "final_response" {
+        return Ok(response);
+    }
     
     loop {
         let cloned_assets = context.assets.clone();
@@ -185,5 +205,9 @@ You may only provide these assets when spawning agents.
             &thoughts, 
             &personality
         )?;
+
+        if thoughts.decision.decision_type == "final_response" {
+            return Ok(response);
+        }
     }
 }

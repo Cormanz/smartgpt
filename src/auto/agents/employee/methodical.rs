@@ -247,9 +247,7 @@ action:
                 }
             },
             Err(err) => {
-                println!("{err}");
-
-                panic!("Error.");
+                return Err(err);
             }
         }
     }
