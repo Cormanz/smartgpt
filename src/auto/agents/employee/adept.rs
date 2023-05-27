@@ -42,6 +42,7 @@ pub struct AssetInfo {
 pub fn get_response(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
+    get_planner_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     thoughts: &BrainThoughts,
     personality: &str
 ) -> Result<String, Box<dyn Error>> {
@@ -60,7 +61,7 @@ pub fn get_response(
                 );
             }
 
-            let out = run_method_agent(context, get_agent, &instruction, data, personality)?;
+            let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, data, personality)?;
             println!("\n{out}\n");
             Ok(out)
         },
@@ -124,7 +125,13 @@ Respond in this exact JSON format exactly, with every field in order:
     log_yaml(&thoughts)?;
 
     drop(agent);
-    let mut response = get_response(context, &|ctx| &mut ctx.agents.static_agent, &thoughts, personality)?;
+    let mut response = get_response(
+        context, 
+        &|ctx| &mut ctx.agents.static_agent, 
+        &|ctx| &mut ctx.agents.planner, 
+        &thoughts, 
+        &personality
+    )?;
     
     loop {
         let cloned_assets = context.assets.clone();
@@ -171,6 +178,12 @@ You may only provide these assets when spawning agents.
 
         log_yaml(&thoughts)?;
 
-        response = get_response(context, &|ctx| &mut ctx.agents.static_agent, &thoughts, &personality)?;
+        response = get_response(
+            context, 
+            &|ctx| &mut ctx.agents.static_agent, 
+            &|ctx| &mut ctx.agents.planner, 
+            &thoughts, 
+            &personality
+        )?;
     }
 }

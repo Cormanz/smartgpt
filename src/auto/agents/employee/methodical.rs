@@ -66,6 +66,8 @@ Respond in this JSON format:
     ]
 }}
 ```
+
+Be concise.
     "#).trim().to_string()));
 
     let memories = try_parse_json::<Memories>(&agent.llm, 2, Some(700), Some(0.5))?.data;
@@ -81,6 +83,7 @@ Respond in this JSON format:
 pub fn run_method_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
+    get_planner_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
     assets: Option<String>,
     personality: &str
@@ -145,7 +148,7 @@ Only use one tool for each step.
 Do not specify arguments.
 Do not "repeat steps".
 
-Be concise with your plan!
+Keep your plan at as low steps as possible.
 
 Use `save_asset` for all information you want to save.
 You can build off of previous assets if needed.
@@ -165,6 +168,8 @@ Respond in this JSON format:
     ]
 }}
 ```
+
+Be concise!
 "#).trim().to_string()));
 
     let plan = try_parse_json::<MethodicalPlan>(&agent.llm, 2, Some(600), Some(0.3))?;

@@ -54,6 +54,7 @@ pub struct AgentInfo {
 
 pub struct Agents {
     pub static_agent: AgentInfo,
+    pub planner: AgentInfo,
     pub dynamic: AgentInfo,
     pub fast: AgentInfo
 }

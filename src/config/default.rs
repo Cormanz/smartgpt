@@ -11,6 +11,14 @@ agents:
                 embedding model: text-embedding-ada-002
         memory:
             local: {}
+    planner:
+        llm:
+            chatgpt:
+                api key: PUT YOUR KEY HERE
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            local: {}
     static:
         llm:
             chatgpt:

@@ -42,6 +42,7 @@ pub struct AgentConfig {
 #[serde(rename_all = "camelCase")]
 pub struct AgentLLMs {
     #[serde(rename = "static")] static_agent: AgentConfig,
+    planner: AgentConfig,
     dynamic: AgentConfig,
     fast: AgentConfig,
 }
@@ -171,6 +172,7 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         disabled_commands: config.disabled_commands,
         agents: Agents {
             static_agent: create_agent(config.agents.static_agent)?,
+            planner: create_agent(config.agents.planner)?,
             dynamic: create_agent(config.agents.dynamic)?,
             fast: create_agent(config.agents.fast)?
         }
