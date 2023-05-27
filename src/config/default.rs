@@ -3,7 +3,15 @@ personality: A superintelligent AI.
 type: !assistant
     assistant token limit: 400
 agents:
-    employee:
+    dynamic:
+        llm:
+            chatgpt:
+                api key: PUT YOUR KEY HERE
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            local: {}
+    static:
         llm:
             chatgpt:
                 api key: PUT YOUR KEY HERE
@@ -19,7 +27,6 @@ agents:
                 embedding model: text-embedding-ada-002
         memory:
             local: {}
-    managers: []
 plugins:
     assets: {}
     browse: {}

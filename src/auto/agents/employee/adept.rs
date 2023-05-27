@@ -2,7 +2,7 @@ use std::{error::Error, ops::Deref};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_yaml, agents::{employee::{log_yaml, run_method_agent}}}, ScriptValue};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{employee::{log_yaml, run_method_agent}}}, ScriptValue};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BrainThoughts {
@@ -19,7 +19,7 @@ pub struct BrainstormArgs {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ActionArgs {
-    pub instruction: String,
+    pub subtask: String,
     pub assets: Vec<String>
 }
 
@@ -47,16 +47,16 @@ pub fn get_response(
 ) -> Result<String, Box<dyn Error>> {
     match thoughts.decision.decision_type.deref() {
         "spawn_agent" => {
-            let ActionArgs { instruction, assets } = thoughts.decision.args.parse()?;
+            let ActionArgs { subtask: instruction, assets } = thoughts.decision.args.parse()?;
 
             let mut data: Option<String> = None;
 
             if assets.len() > 0 {
                 data = Some(
                     assets.iter()
-                    .map(|el| format!("{el}: {}", context.assets[el]))
-                    .collect::<Vec<_>>()
-                    .join("\n")
+                        .map(|el| format!("## Asset `${el}`:\n{}", context.assets[el]))
+                        .collect::<Vec<_>>()
+                        .join("\n")
                 );
             }
 
@@ -87,41 +87,44 @@ pub fn run_brain_agent(
 Here is the task given by the user:
 {task}
 
-Your goal is to appropiately complete the task by spawning agents.
+Your goal is to complete the task by spawning agents to complete smaller subtasks.
 Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
 You make a decision. Here are the types of decisions alongside their `args` schema:
 
-spawn_agent {{ "instruction": "Natural language instruction", "assets": [ "asset_name" ] }} - Delegate a task to the Agent. Keep it simple.
-brainstorm {{ "lines": [] }} - Brainstorm an idea, or generate a response based on the information given yourself.
+spawn_agent {{ "subtask": "subtask in natural language", "assets": [ "asset_name" ] }} - Delegate a task to the Agent. Keep it simple.
+brainstorm {{ "lines": [ "line 1", "line 2" ] }} - Brainstorm an idea, or generate a response based on the information given yourself.
 final_response {{ "response": "response" }} - Give a response to the user.
 
 Assets:
 No assets.
 
-An agent may save assets, and you can give those assets to new agents. You may only pass in assets in the above list.
+An agent may save assets, and you can give those assets to agents you spawn. You may only pass in assets in the above list.
 Only include one `thoughts`, `reasoning`, `decision`.
 
-Respond in this exact YML format exactly, with every field in order:
-```yml
-thoughts: thoughts
-reasoning: reasoning
-decision:
-    type: decision type
-    args: ...
+Respond in this exact JSON format exactly, with every field in order:
+```json
+{{
+    "thoughts": "thoughts",
+    "reasoning": "reasoning",
+    "decision": {{
+        "type": "decision type",
+        "args": "..."
+    }}
+}}
 ```
 "#).trim().to_string()));
 
     println!("{}\n", "Dynamic Agent".blue().bold());
 
-    let thoughts = try_parse_yaml::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.3))?;
+    let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(thoughts.raw));
     let thoughts = thoughts.data;  
 
     log_yaml(&thoughts)?;
 
     drop(agent);
-    let mut response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts, personality)?;
+    let mut response = get_response(context, &|ctx| &mut ctx.agents.static_agent, &thoughts, personality)?;
     
     loop {
         let cloned_assets = context.assets.clone();
@@ -148,23 +151,26 @@ Assets:
 
 You may only provide these assets when spawning agents.
 
-```yml
-thoughts: thoughts
-reasoning: reasoning
-decision:
-    type: decision type
-    args: {{ ... }}
+```json
+{{
+    "thoughts": "thoughts",
+    "reasoning": "reasoning",
+    "decision": {{
+        "type": "decision type",
+        "args": "..."
+    }}
+}}
 ```
         "#).trim().to_string()));
 
         println!("{}\n", "Dynamic Agent".blue().bold());
 
-        let thoughts = try_parse_yaml::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
+        let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));
         let thoughts = thoughts.data; 
 
         log_yaml(&thoughts)?;
 
-        response = get_response(context, &|ctx| &mut ctx.agents.react, &thoughts, &personality)?;
+        response = get_response(context, &|ctx| &mut ctx.agents.static_agent, &thoughts, &personality)?;
     }
 }

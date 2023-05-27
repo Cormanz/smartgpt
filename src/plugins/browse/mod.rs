@@ -102,8 +102,8 @@ pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<
         
                 let chunk_count = chunks.len();
                 let summary_prompt = match chunk_count {
-                    0..=2 => "Create a three-sentence summary of the text below.",
-                    _ => "Create a one-sentence summary of the text below."
+                    0..=2 => "Create a three-sentence summary of the text below. Be concise.",
+                    _ => "Create a one-sentence summary of the text below. Be concise."
                 }.to_string();
         
                 for (ind, chunk) in chunks.iter().enumerate() {

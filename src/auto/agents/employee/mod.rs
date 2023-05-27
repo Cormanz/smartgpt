@@ -20,7 +20,7 @@ pub fn run_employee<T>(program: &mut ProgramInfo, task: &str, personality: &str,
 
     let task = &refine_info.task;*/
 
-    let response = run_brain_agent(&mut context, &|ctx| &mut ctx.agents.planner, task, personality)?;
+    let response = run_brain_agent(&mut context, &|ctx| &mut ctx.agents.dynamic, task, personality)?;
     println!("{response}");
 
     panic!("T");

@@ -6,24 +6,20 @@ use serde::{Serialize, Deserialize};
 use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, ScriptValue, CommandResult, CommandArgument};
 
 #[derive(Serialize, Deserialize)]
-pub struct SaveAssets {
-    pub asset: String,
+pub struct BrainstormArgs {
     pub lines: Vec<String>
 }
 
-pub async fn save_asset(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
-    let SaveAssets { asset, lines } = args.parse()?;
-    ctx.assets.insert(asset, lines.join("\n"));
-
+pub async fn brainstorm() -> Result<ScriptValue, Box<dyn Error>> {
     Ok(ScriptValue::None)
 }
 
-pub struct SaveAssetImpl;
+pub struct BrainstormImpl;
 
 #[async_trait]
-impl CommandImpl for SaveAssetImpl {
+impl CommandImpl for BrainstormImpl {
     async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
-        Ok(CommandResult::ScriptValue(save_asset(ctx, args).await?))
+        Ok(CommandResult::ScriptValue(brainstorm().await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -31,20 +27,19 @@ impl CommandImpl for SaveAssetImpl {
     }
 }
 
-pub fn create_assets() -> Plugin {
+pub fn create_brainstorm() -> Plugin {
     Plugin {
-        name: "Assets".to_string(),
+        name: "Brainstorm".to_string(),
         dependencies: vec![],
         cycle: Box::new(EmptyCycle),
         commands: vec![
             Command {
-                name: "save_asset".to_string(),
-                purpose: "Save an asset.".to_string(),
+                name: "brainstorm".to_string(),
+                purpose: "Think of an idea or generate content manually.".to_string(),
                 args: vec![
-                    CommandArgument::new("asset", r#""asset_name""#),
                     CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
-                run: Box::new(SaveAssetImpl)
+                run: Box::new(BrainstormImpl)
             }
         ]
     }

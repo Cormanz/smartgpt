@@ -20,15 +20,9 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     } = program;
     let context = context.lock().unwrap();
 
-    let has_manager = context.agents.managers.len() >= 1;
-
     drop(context);
 
-    if has_manager {
-        run_employee(program, task.clone(), &program.personality.clone(), ask_for_responses)?
-    } else {
-        run_employee(program, task.clone(), &program.personality.clone(), ask_for_responses)?
-    }
+    run_employee(program, task.clone(), &program.personality.clone(), ask_for_responses)?
 }
 
 pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
@@ -60,8 +54,6 @@ r#"Summarize the conversation."#)));
         } = program;
         let context = context.lock().unwrap();
 
-        let has_manager: bool = context.agents.managers.len() >= 1;
-
         let mut task = request.trim().to_string();
         task = format!(
 "Given this relevant conversation context: {conversation_context}
@@ -70,11 +62,7 @@ r#"Summarize the conversation."#)));
         
         drop(context);
     
-        if has_manager {
-            run_employee(program, &task.clone(), &program.personality.clone(), ask_for_responses)?
-        } else {
-            run_employee(program, &task.clone(), &program.personality.clone(), ask_for_responses)?
-        }
+        run_employee(program, &task.clone(), &program.personality.clone(), ask_for_responses)?
     } else {
         let ProgramInfo { 
             context, ..

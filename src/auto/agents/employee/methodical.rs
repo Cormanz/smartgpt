@@ -3,7 +3,7 @@ use std::{error::Error, collections::{HashSet}};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_yaml, agents::employee::create_tool_list}, Weights, Command};
+use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::employee::create_tool_list}, Weights, Command};
 
 use super::{log_yaml, use_tool};
 
@@ -27,6 +27,7 @@ pub struct MethodicalStep {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MethodicalPlan {
+    pub thoughts: String,
     pub steps: Vec<MethodicalStep>
 }
 
@@ -51,22 +52,23 @@ pub struct Memories {
 
 pub fn add_memories(agent: &mut AgentInfo) -> Result<(), Box<dyn Error>> {
     agent.llm.message_history.push(Message::User(format!(r#"
-Please list all important actions you took out.
-Please also list all observations of information you have collected.
+Please summarize all important actions you took out.
+Please also summarize all observations of information you have collected.
 
-Respond in this YML format:
-```yml
-actions:
-- A
-- B
-
-observations:
-- A
-- B
+Respond in this JSON format:
+```json
+{{
+    "actions": [
+        "what tool you used and why"
+    ],
+    "observations": [
+        "what you learned"
+    ]
+}}
 ```
     "#).trim().to_string()));
 
-    let memories = try_parse_yaml::<Memories>(&agent.llm, 2, Some(1000), Some(0.5))?.data;
+    let memories = try_parse_json::<Memories>(&agent.llm, 2, Some(700), Some(0.5))?.data;
     log_yaml(&memories)?;
 
     for memory in memories.actions.iter().chain(memories.observations.iter()) {
@@ -80,7 +82,7 @@ pub fn run_method_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
-    data: Option<String>,
+    assets: Option<String>,
     personality: &str
 ) -> Result<String, Box<dyn Error>> {
     let commands: Vec<&Command> = context.plugins.iter()
@@ -99,10 +101,6 @@ pub fn run_method_agent(
     agent.llm.prompt.push(Message::System(format!(r#"
 Personality: 
 {personality}
-
-{tools}
-
-You have been given these tools.
 "#).trim().to_string()));
 
     let observations = agent.observations.get_memories_sync(
@@ -122,43 +120,54 @@ You have been given these tools.
             .join("\n")
     };
 
-    let data = data.unwrap_or(format!("No assets."));
+    let data = assets.unwrap_or(format!("No assets."));
 
     println!("{} {}\n", "Static Agent".yellow().bold(), "| Plan".white());
 
     agent.llm.prompt.push(Message::User(format!(r#"
+{tools}
+
+You have been given these tools.
+You may use these tools, and only these tools.
+
 Here is your new task:
 {task}
-
-Here is a list of assets for your task:
-{data}
 
 Here is a list of your memories:
 {observations}
 
-Create a list of steps.
-Start with an idea of what you need to do next and what tool could help.
-Each step will use one tool.
-Then, describe each time you will use the tool.
-You will explain the exact purpose of using that specific tool.
+Here is a list of assets previously saved:
+{data}
+
+Create a list of steps of what you need to do and which tool you will use.
+Only use one tool for each step.
 
 Do not specify arguments.
 Do not "repeat steps".
 
-Ensure you have as few steps as possible. Do not overcomplicate it.
-Save all important output into assets.
+Be concise with your plan!
 
-Respond in this YML format:
-```yml
-steps:
-- idea: idea
-  action:
-    tool: precise tool name
-    purpose: purpose
+Use `save_asset` for all information you want to save.
+You can build off of previous assets if needed.
+
+Respond in this JSON format:
+```json
+{{
+    "thoughts": "thoughts regarding steps and assets",
+    "steps": [
+        {{
+            "idea": "idea",
+            "action": {{
+                "tool": "a single tool name",
+                "purpose": "purpose"
+            }}
+        }}
+    ]
+}}
 ```
 "#).trim().to_string()));
 
-    let plan = try_parse_yaml::<MethodicalPlan>(&agent.llm, 2, Some(600), Some(0.3))?;
+    let plan = try_parse_json::<MethodicalPlan>(&agent.llm, 2, Some(600), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(plan.raw));
     let plan = plan.data;
     log_yaml(&plan)?;
@@ -167,11 +176,6 @@ steps:
 
     for (_ind, step) in plan.steps.iter().enumerate() {
         let agent = get_agent(context);
-        let tokens = agent.llm.get_tokens_remaining(&agent.llm.get_messages())?;
-        if tokens < 1400 {
-            add_memories(agent)?;
-            agent.llm.crop_to_tokens_remaining(2600)?;
-        }
         
         println!();
         println!("{} {}\n", "Static Agent".yellow().bold(), "| Selecting Step".white());
@@ -192,8 +196,15 @@ Include ALL information.
 Assets:
 No assets.
 
-Respond in this YML format:
-```yml
+Respond in this JSON format:
+```json
+{{
+    "thoughts": "thoughts",
+    "action": {{
+        "tool": "tool",
+        "args": {{}}
+    }}
+}}
 thoughts: thoughts
 action:
     tool: tool
@@ -201,7 +212,7 @@ action:
 ```
 "#).trim().to_string()));
 
-        let thoughts = try_parse_yaml::<MethodicalThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
+        let thoughts = try_parse_json::<MethodicalThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));
         let thoughts = thoughts.data;
 
@@ -218,6 +229,17 @@ action:
 
                 println!("{out}");
                 agent.llm.message_history.push(Message::User(out));
+
+                let tokens = agent.llm.get_tokens_remaining(&agent.llm.get_messages())?;
+                if tokens < 1200 {
+                    match add_memories(agent) {
+                        Ok(_) => {},
+                        Err(_) => {
+                            agent.llm.crop_to_tokens_remaining(1000)?;
+                        }
+                    };
+                    agent.llm.crop_to_tokens_remaining(2000)?;
+                }
             },
             Err(err) => {
                 println!("{err}");

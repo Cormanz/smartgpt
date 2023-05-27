@@ -4,7 +4,7 @@ use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, create_assets, PluginStore};
+use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, create_assets, PluginStore, create_brainstorm};
 
 mod default;
 pub use default::*;
@@ -41,9 +41,8 @@ pub struct AgentConfig {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentLLMs {
-    managers: Vec<AgentConfig>,
-    react: AgentConfig,
-    planner: AgentConfig,
+    #[serde(rename = "static")] static_agent: AgentConfig,
+    dynamic: AgentConfig,
     fast: AgentConfig,
 }
 
@@ -91,6 +90,7 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_filesystem(),
         create_wolfram(),
         create_assets(),
+        create_brainstorm(),
         create_news()
     ]
 }
@@ -170,9 +170,8 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         plugins: vec![],
         disabled_commands: config.disabled_commands,
         agents: Agents {
-            managers: config.agents.managers.iter().map(|el| create_agent(el.clone())).collect::<Result<_, _>>()?,
-            react: create_agent(config.agents.react)?,
-            planner: create_agent(config.agents.planner)?,
+            static_agent: create_agent(config.agents.static_agent)?,
+            dynamic: create_agent(config.agents.dynamic)?,
             fast: create_agent(config.agents.fast)?
         }
     };

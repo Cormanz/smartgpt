@@ -53,9 +53,8 @@ pub struct AgentInfo {
 }
 
 pub struct Agents {
-    pub react: AgentInfo,
-    pub planner: AgentInfo,
-    pub managers: Vec<AgentInfo>,
+    pub static_agent: AgentInfo,
+    pub dynamic: AgentInfo,
     pub fast: AgentInfo
 }
 
