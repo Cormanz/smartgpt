@@ -158,7 +158,7 @@ pub fn create_filesystem() -> Plugin {
                 name: "file_write".to_string(),
                 purpose: "Override a file with content. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![
-                    CommandArgument::new("path", "path"),
+                    CommandArgument::new("name", r#""name""#),
                     CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
                 run: Box::new(FileWriteImpl)
@@ -167,7 +167,7 @@ pub fn create_filesystem() -> Plugin {
                 name: "file_append".to_string(),
                 purpose: "Add content to an existing file. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![
-                    CommandArgument::new("path", r#""path""#),
+                    CommandArgument::new("name", r#""name""#),
                     CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
                 run: Box::new(FileAppendImpl)
@@ -182,7 +182,7 @@ pub fn create_filesystem() -> Plugin {
                 name: "file_read".to_string(),
                 purpose: "Read a file.".to_string(),
                 args: vec![
-                    CommandArgument::new("path", r#""path""#)
+                    CommandArgument::new("name", r#""name""#),
                 ],
                 run: Box::new(FileReadImpl)
             }

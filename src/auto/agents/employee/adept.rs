@@ -109,14 +109,16 @@ Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
 You make a decision. Here are the types of decisions alongside their `args` schema:
 
-spawn_agent {{ "subtask": "subtask in natural language", "assets": [ "asset_name" ] }} - Delegate a task to the Agent. Keep it simple.
+spawn_agent {{ "subtask": "subtask in natural language with all context and details", "assets": [ "asset_name" ] }} - Delegate a task to the Agent. Keep it simple.
 brainstorm {{ "lines": [ "line 1", "line 2" ] }} - Brainstorm an idea, or generate a response based on the information given yourself.
 final_response {{ "response": "response" }} - Give a response to the user.
 
 Assets:
 No assets.
 
-An agent may save assets, and you can give those assets to agents you spawn. You may only pass in assets in the above list.
+You may only spawn agents with assets in the above list. 
+As there are no assets, you may only provide an empty list of assets.
+
 Only include one `thoughts`, `reasoning`, `decision`.
 
 Respond in this exact JSON format exactly, with every field in order:
