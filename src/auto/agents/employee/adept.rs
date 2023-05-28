@@ -31,7 +31,8 @@ pub struct BrainstormArgs {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ActionArgs {
     pub subtask: String,
-    pub assets: Vec<String>
+    pub assets: Vec<String>,
+    #[serde(rename = "desired_response")] pub desire: String
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -52,7 +53,7 @@ pub struct AssetInfo {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DynamicPlan {
-    #[serde(rename = "concise plan")]
+    #[serde(rename = "concise plan on how you will complete the task")]
     pub plan: String
 }
 
@@ -65,7 +66,7 @@ pub fn get_response(
 ) -> Result<String, Box<dyn Error>> {
     match thoughts.decision.decision_type.deref() {
         "spawn_agent" => {
-            let ActionArgs { subtask: instruction, assets } = thoughts.decision.args.parse()?;
+            let ActionArgs { subtask: instruction, assets, desire } = thoughts.decision.args.parse()?;
 
             let mut data: Option<String> = None;
 
@@ -78,7 +79,7 @@ pub fn get_response(
                 );
             }
 
-            let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, data, personality)?;
+            let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, &desire, data, personality)?;
             println!("\n{out}\n");
             Ok(out)
         },
@@ -110,12 +111,12 @@ pub fn run_brain_agent(
 This is your task:
 {task}
 
-Make a concise, one-sentence plan on to complete this task.
+Make a concise, one-sentence plan on you can complete this task.
 
 Respond in this JSON format:
 ```json
 {{
-    "concise plan": "plan"
+    "concise plan on how you will complete the task": "plan"
 }}
 ```
 "#).trim().to_string()));
@@ -134,18 +135,19 @@ Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
 You make a decision. Here are the types of decisions alongside their `args` schema:
 
-spawn_agent {{ "subtask": "subtask in natural language with all context and details", "assets": [ "asset_name" ] }} - Delegate a task to the Agent. Keep it simple.
+spawn_agent {{ "subtask": "subtask in natural language with all context and details", "assets": [ "asset_name" ], "desired_response": "all specific information desired" }} - Delegate a task to the Agent. Keep it simple.
 brainstorm {{ "lines": [ "line 1", "line 2" ] }} - Brainstorm an idea, or generate a response based on the information given yourself.
 final_response {{ "response": "response" }} - Give a response to the user.
 
 Assets:
 No assets.
 
+As you have no assets, you must pass "assets" as [] when spawning an agent.
+
 Ensure you adhere to your plan:
 {}
 
-You can only spawn agents with assets in the above list. 
-As there are no assets, you can spawn agents, but include an empty list of assets.
+You should try to spawn agents to complete your task.
 
 Only include one `thoughts`, `reasoning`, `decision`.
 

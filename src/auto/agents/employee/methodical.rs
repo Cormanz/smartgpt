@@ -85,6 +85,7 @@ pub fn run_method_agent(
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     get_planner_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
+    desire: &str,
     assets: Option<String>,
     personality: &str
 ) -> Result<String, Box<dyn Error>> {
@@ -146,6 +147,11 @@ Here is a list of assets previously saved:
 
 Create a list of steps of what you need to do and which tool you will use.
 Only use one tool for each step.
+
+Your goal is to give a response with the following information:
+{desire}
+
+You must save that precise information through assets.
 
 Do not specify arguments.
 Do not "repeat steps".
