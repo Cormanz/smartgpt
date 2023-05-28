@@ -84,7 +84,13 @@ impl Message {
 pub trait LLMModel : Send + Sync {
     async fn get_response(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>>;
     async fn get_base_embed(&self, text: &str) -> Result<Vec<f32>, Box<dyn Error>>;
-    fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
+
+    fn get_token_count(&self, text: &[Message]) -> Result<usize, Box<dyn Error>>;
+    fn get_token_limit(&self) -> usize;
+
+    fn get_tokens_remaining(&self, text: &[Message]) -> Result<usize, Box<dyn Error>> {
+        Ok(self.get_token_limit() - self.get_token_count(text)?)
+    }
 
     fn get_response_sync(&self, messages: &[Message], max_tokens: Option<u16>, temperature: Option<f32>) -> Result<String, Box<dyn Error>> {
         let rt = Runtime::new()?;
@@ -144,6 +150,12 @@ impl LLM {
         messages.extend(additional_history);
         messages.extend(self.end_prompt.clone());
         messages
+    }
+
+    pub fn clear_history(&mut self) {
+        self.prompt.clear();
+        self.end_prompt.clear();
+        self.message_history.clear();
     }
 }
 

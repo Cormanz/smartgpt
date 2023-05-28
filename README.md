@@ -23,9 +23,7 @@ There are many existing solutions to allowing LLMs to perform more complex tasks
 
 - **Flexibility**: SmartGPT has one `config.yml` file that is automatically generated where you can configure everything and anything.
 
-- **Planning and Reasoning**: SmartGPT has an advanced hierarchical system of managers and employees to recursively break down your tasks.
-
-- **Configuration**: SmartGPT is incredibly easy to configure simply by using a simple `config.yml` file both for users, and for developers.
+- **Consistency**: SmartGPT has a smart system of dynamically executing actions and static tool-chaining to provide incredible consistent results.
 
 There are two main shortcomings, however.
 
@@ -64,15 +62,26 @@ If you want more information, [read the documentation](https://corman.gitbook.io
 
 Assistants are highly experimental, so we recommend Runners.
 
-Autos have **agents**. An agent is an LLM that handles planning, reasoning, and task execution. The Auto starts with your **top manager**, and asks it to run the task. Then, that manager will delegate tasks all the way down to your **employee**, which will run the tasks.
+An Auto will under the hood, run agent. An agent has two parts: The Dynamic Agent and The Static Agent.
 
-## Managers
+## Dynamic Agent
 
-Managers are a type of agent that plan and reason. They'll be given a task, and plan out that task into subtasks. Then, one subtask at a time, they'll delegate it down to their employee (a lower-level manager, or the task-running employee.)
+The Dynamic Agent is the base agent. It runs a REACT-esque process, thinking, reasoning, and then making a decision. It can do one of three things:
 
-## Employee
+- Brainstorm.
+- Run an **action**.
+- Give the user a final response.
 
-Employees are the lowest agent in the hierarchy. They're given a task, and they execute it one command at a time. They're much like the core application of AutoGPT, but they have a much more compact thought-loop.
+When it runs an action, the Static Agent is dispatched to run the action.
+
+## Static Agent
+
+The Static Agent runs the subtasks given to it by the Dynamic Agent. Here's how it works:
+
+1. It plans out each tool that is needed in the precise order to complete the task.
+2. One by one, it'll run each step of the plan, filling in the arguments for the tool.
+
+The Static Agent also saves assets that the Dynamic Agent can pass back to the Static Agent for future tasks.
 
 ## Memory
 

@@ -5,7 +5,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument};
+use crate::{CommandContext, CommandImpl, Plugin, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument, CommandResult};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;
@@ -17,6 +17,11 @@ impl Display for WolframNoQueryError {
 }
 
 impl Error for WolframNoQueryError {}
+
+#[derive(Serialize, Deserialize)]
+pub struct WolframArgs {
+    pub query: String
+}
 
 pub fn extract_text_from_wolfram(html: &str) -> String {
     let re = Regex::new(r#"<plaintext>([^<]+)"#).unwrap();
@@ -55,9 +60,15 @@ pub async fn ask_wolfram(ctx: &mut CommandContext, query: &str) -> Result<String
     Ok(extract_text_from_wolfram(&xml))
 }
 
-pub async fn wolfram(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let query: String = args.get(0).ok_or(WolframNoQueryError)?.clone().try_into()?;
+pub async fn wolfram(ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+    let WolframArgs { query } = args.parse()?;
     let response = ask_wolfram(ctx, &query).await?;
+
+    let response = if response.trim().len() > 0 {
+        response
+    } else {
+        "Sorry, but Wolfram Alpha did not understand your query. Please try using another tool.".to_string()
+    };
     
     Ok(response.into())
 }
@@ -66,8 +77,8 @@ pub struct WolframImpl;
 
 #[async_trait]
 impl CommandImpl for WolframImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-        wolfram(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(wolfram(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -118,9 +129,8 @@ pub fn create_wolfram() -> Plugin {
                 name: "wolfram".to_string(),
                 purpose: "Ask WolframAlpha to answer a query.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", "The query to ask Wolfram Alpha", "String")
+                    CommandArgument::new("query", r#""query""#)
                 ],
-                return_type: "String".to_string(),
                 run: Box::new(WolframImpl)
             }
         ]

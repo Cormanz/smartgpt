@@ -1,19 +1,15 @@
-mod none;
-mod shutdown;
 mod google;
 mod filesystem;
 mod browse;
 mod wolfram;
-mod chatgpt;
-mod wikipedia;
+mod assets;
 mod news;
+mod brainstorm;
 
-pub use none::*;
-pub use shutdown::*;
 pub use google::*;
 pub use filesystem::*;
 pub use browse::*;
 pub use wolfram::*;
-pub use chatgpt::*;
+pub use assets::*;
 pub use news::*;
-pub use wikipedia::*;
+pub use brainstorm::*;

@@ -1,6 +1,8 @@
+use base64::{engine::general_purpose::STANDARD, Engine};
+use redis::{RedisError, RedisResult};
 use crate::{EmbeddedMemory};
 
-use std::borrow::Borrow;
+use std::{borrow::Borrow};
 
 pub async fn execute_redis_command<T: redis::FromRedisValue, S: Borrow<str>>(
     con: &mut redis::aio::Connection,
@@ -61,29 +63,33 @@ pub async fn search_vector_field(
     index_name: &str,
     query_blob: &[u8],
     k: usize,
-) -> redis::RedisResult<redis::Value> {
+) -> RedisResult<redis::Value> {
     // check if k can be formatted as a string to prevent panic
     let k_str = k.to_string();
     if k_str.is_empty() {
-        return Err(redis::RedisError::from((redis::ErrorKind::TypeError, "Invalid k value")));
+        return Err(
+            RedisError::from((redis::ErrorKind::TypeError, "Invalid k value"))
+        );
     }
 
-    let query_blob_str = base64::encode(query_blob);
+    let query_blob_str = STANDARD.encode(query_blob);
 
-    execute_redis_command::<redis::Value, _>(
-        con,
-        "FT.SEARCH",
-        &[
-            index_name,
-            &format!("*=>[KNN {} @vec $BLOB]", k_str),
-            "PARAMS",
-            "2",
-            "BLOB",
-            &query_blob_str,
-            "DIALECT",
-            "2",
-        ],
-    ).await
+    Ok(
+        execute_redis_command::<redis::Value, _>(
+            con,
+            "FT.SEARCH",
+            &[
+                index_name,
+                &format!("*=>[KNN {} @vec $BLOB]", k_str),
+                "PARAMS",
+                "2",
+                "BLOB",
+                &query_blob_str,
+                "DIALECT",
+                "2",
+            ],
+        ).await?
+    )
 }
 
 pub async fn set_json_record(

@@ -1,4 +1,6 @@
 use std::{collections::HashMap, fmt::Display, error::Error};
+use serde::de::DeserializeOwned;
+
 
 use crate::{Expression, Primitive};
 
@@ -33,6 +35,13 @@ pub enum ScriptValue {
     List(Vec<ScriptValue>),
     Dict(HashMap<String, ScriptValue>),
     None
+}
+
+impl ScriptValue {
+    pub fn parse<T : DeserializeOwned>(&self) -> Result<T, Box<dyn Error>> {
+        let value = serde_json::to_value(self)?;
+        Ok(serde_json::from_value(value)?)
+    }
 }
 
 impl From<ScriptValue> for Expression {
@@ -122,6 +131,13 @@ impl TryFrom<ScriptValue> for HashMap<String, ScriptValue> {
         }
     }
 }
+
+impl From<&str> for ScriptValue {
+    fn from(string: &str) -> Self {
+        ScriptValue::String(string.to_string())
+    }
+}
+
 
 impl From<String> for ScriptValue {
     fn from(string: String) -> Self {

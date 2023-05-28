@@ -53,8 +53,9 @@ pub struct AgentInfo {
 }
 
 pub struct Agents {
-    pub employee: AgentInfo,
-    pub managers: Vec<AgentInfo>,
+    pub static_agent: AgentInfo,
+    pub planner: AgentInfo,
+    pub dynamic: AgentInfo,
     pub fast: AgentInfo
 }
 
@@ -62,8 +63,11 @@ pub struct CommandContext {
     pub auto_type: AutoType,
     pub plugin_data: PluginStore,
     pub agents: Agents,
+    pub plugins: Vec<Plugin>,
     pub variables: HashMap<String, ScriptValue>,
-    pub command_out: Vec<String>
+    pub command_out: Vec<String>,
+    pub disabled_commands: Vec<String>,
+    pub assets: HashMap<String, String>
 }
 
 
@@ -95,9 +99,14 @@ pub async fn invoke<T : DeserializeOwned>(
     Ok(out)
 }
 
+pub enum CommandResult {
+    ScriptValue(ScriptValue),
+    Text(String)
+}
+
 #[async_trait]
 pub trait CommandImpl : Send + Sync {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>>;
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>>;
 
     fn box_clone(&self) -> Box<dyn CommandImpl>;
 }
@@ -124,16 +133,14 @@ impl PluginCycle for EmptyCycle {
 #[derive(Clone)]
 pub struct CommandArgument {
     pub name: String,
-    pub description: String,
-    pub arg_type: String
+    pub example: String
 }
 
 impl CommandArgument {
-    pub fn new(name: &str, description: &str, arg_type: &str) -> Self {
+    pub fn new(name: &str, example: &str) -> Self {
         Self {
             name: name.to_string(),
-            description: description.to_string(),
-            arg_type: arg_type.to_string()
+            example: example.to_string()
         }
     }
 }
@@ -141,7 +148,6 @@ impl CommandArgument {
 pub struct Command {
     pub name: String,
     pub purpose: String,
-    pub return_type: String,
     pub args: Vec<CommandArgument>,
     pub run: Box<dyn CommandImpl>
 }
@@ -151,7 +157,6 @@ impl Command {
         Self {
             name: self.name.clone(),
             purpose: self.purpose.clone(),
-            return_type: self.return_type.clone(),
             args: self.args.clone(),
             run: self.run.box_clone()
         }

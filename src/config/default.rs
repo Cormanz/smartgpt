@@ -3,7 +3,23 @@ personality: A superintelligent AI.
 type: !assistant
     assistant token limit: 400
 agents:
-    employee:
+    dynamic:
+        llm:
+            chatgpt:
+                api key: PUT YOUR KEY HERE
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            local: {}
+    planner:
+        llm:
+            chatgpt:
+                api key: PUT YOUR KEY HERE
+                model: gpt-3.5-turbo
+                embedding model: text-embedding-ada-002
+        memory:
+            local: {}
+    static:
         llm:
             chatgpt:
                 api key: PUT YOUR KEY HERE
@@ -19,20 +35,17 @@ agents:
                 embedding model: text-embedding-ada-002
         memory:
             local: {}
-    managers: []
 plugins:
+    assets: {}
     browse: {}
     google:
         cse id: PUT YOUR CSE ID HERE
         api key: PUT YOUR KEY HERE
-    file system: {}
     wolfram:
         app id: PUT YOUR APP ID HERE
-    chatgpt:
-        api key: PUT YOUR KEY HERE
     newsapi:
         api key: PUT YOUR KEY HERE
-    wikipedia: {}
-    none: {}
+    brainstorm: {}
+    #file system: {}
 disabled commands: []
 "#;

@@ -7,9 +7,7 @@ use colored::Colorize;
 
 use crate::{LLM, ProgramInfo, Message };
 
-use agents::{employee::run_employee, manager::run_manager};
-
-use self::{responses::{ask_for_responses, ask_for_assistant_response}, classify::is_task, agents::processing::find_text_between_braces};
+use self::{responses::{ask_for_responses}, classify::is_task, agents::{processing::find_text_between_braces, employee::run_employee}};
 
 mod agents;
 mod run;
@@ -22,15 +20,9 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     } = program;
     let context = context.lock().unwrap();
 
-    let has_manager = context.agents.managers.len() >= 1;
-
     drop(context);
 
-    if has_manager {
-        run_manager(program, 0, task.clone(), ask_for_responses)?
-    } else {
-        run_employee(program, task.clone(), ask_for_responses)?
-    }
+    Ok(run_employee(program, task.clone(), &program.personality.clone())?)
 }
 
 pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
@@ -62,21 +54,15 @@ r#"Summarize the conversation."#)));
         } = program;
         let context = context.lock().unwrap();
 
-        let has_manager: bool = context.agents.managers.len() >= 1;
-
         let mut task = request.trim().to_string();
         task = format!(
 "Given this relevant conversation context: {conversation_context}
 
-Generate a response to this request: {task}");
+{task}");
         
         drop(context);
     
-        if has_manager {
-            run_manager(program, 0, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request, token_limit))?
-        } else {
-            run_employee(program, &task.clone(), |llm| ask_for_assistant_response(llm, &conversation_context, &request, token_limit))?
-        }
+        Ok(run_employee(program, &task.clone(), &program.personality.clone())?)
     } else {
         let ProgramInfo { 
             context, ..
@@ -118,13 +104,13 @@ pub struct ParsedResponse<T> {
     raw: String
 }
 
-pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
-    try_parse_base(llm, tries, max_tokens, "yml", |str| serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
+pub fn try_parse_yaml<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, temperature: Option<f32>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+    try_parse_base(llm, tries, max_tokens, temperature, "yml", |str| serde_yaml::from_str(str).map_err(|el| Box::new(el) as Box<dyn Error>))
 }
 
-pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize, max_tokens: Option<u16>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize, max_tokens: Option<u16>, temperature: Option<f32>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
     for i in 0..tries {
-        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
+        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, temperature)?;
         let processed_response = find_text_between_braces(&response).unwrap_or("None".to_string());
 
         // We use JSON5 to allow for more lenient parsing for models like GPT3.5.
@@ -149,9 +135,9 @@ pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize,
     Err(Box::new(CannotParseError))
 }
 
-pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, lang: &str, parse: impl Fn(&str) -> Result<T, Box<dyn Error>>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
+pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens: Option<u16>, temperature: Option<f32>, lang: &str, parse: impl Fn(&str) -> Result<T, Box<dyn Error>>) -> Result<ParsedResponse<T>, Box<dyn Error>> {
     for i in 0..tries {
-        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, None)?;
+        let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, temperature)?;
         let processed_response = response.trim();
         let processed_response = processed_response.strip_prefix("```")
             .unwrap_or(&processed_response)
@@ -162,11 +148,12 @@ pub fn try_parse_base<T : DeserializeOwned>(llm: &LLM, tries: usize, max_tokens:
         let processed_response = processed_response.strip_suffix("```")
             .unwrap_or(&processed_response)
             .to_string();
+        let processed_response = processed_response.trim().to_string();
         match parse(&processed_response) {
             Ok(data) => {
                 return Ok(ParsedResponse {
                     data,
-                    raw: response    
+                    raw: format!("```{lang}\n{processed_response}\n```")  
                 })
             },
             Err(err) => {

@@ -6,9 +6,14 @@ use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument};
+use crate::{CommandContext, CommandImpl, Plugin, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument, CommandResult};
 
 pub use types::*;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NewsRequest {
+    pub query: String
+}
 
 #[derive(Debug, Clone)]
 pub struct NewsNoQueryError;
@@ -21,9 +26,9 @@ impl Display for NewsNoQueryError {
 
 impl Error for NewsNoQueryError {}
 
-pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<ScriptValue, Box<dyn Error>> {
-    let wolfram_info = ctx.plugin_data.get_data("NewsAPI")?;
-    let api_key = invoke::<String>(wolfram_info, "get api key", true).await?;
+pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<String, Box<dyn Error>> {
+    let news_info = ctx.plugin_data.get_data("NewsAPI")?;
+    let api_key = invoke::<String>(news_info, "get api key", true).await?;
     let api_key: &str = &api_key;
 
     let params = [
@@ -41,23 +46,33 @@ pub async fn ask_news(ctx: &mut CommandContext, query: &str) -> Result<ScriptVal
     }).await?;
 
     let json: News = serde_json::from_str(&json)?;
-    let json = serde_json::to_string(&json.articles)?;
 
-    Ok(serde_json::from_str(&json)?)
+    let text = json.articles.iter()
+        .flat_map(|item| vec![
+            format!("# [{}]({})", item.title, item.url),
+            item.description.clone()
+        ])
+        .collect::<Vec<_>>()
+        .join("\n");
+    
+    println!("mhm?: {json:?}");
+    println!("hehe: {text}");
+
+    Ok(text)
 }
 
-pub async fn news(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-    let query: String = args.get(0).ok_or(NewsNoQueryError)?.clone().try_into()?;
+pub async fn news(ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+    let NewsRequest { query } = args.parse()?;
     let response = ask_news(ctx, &query).await?;
     
-    Ok(response)
+    Ok(CommandResult::Text(response))
 }
 
 pub struct NewsImpl;
 
 #[async_trait]
 impl CommandImpl for NewsImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
         news(ctx, args).await
     }
 
@@ -109,9 +124,8 @@ pub fn create_news() -> Plugin {
                 name: "news_search".to_string(),
                 purpose: "Search for news articles.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", "The query to search for.", "String")
+                    CommandArgument::new("query", "query")
                 ],
-                return_type: "{ title: String, description: String, url: String }[]".to_string(),
                 run: Box::new(NewsImpl)
             }
         ]

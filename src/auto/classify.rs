@@ -17,12 +17,11 @@ pub struct Classification {
 
 pub fn is_task(program: &mut ProgramInfo, task: &str) -> Result<bool, Box<dyn Error>> {
     let ProgramInfo { 
-        context, .. 
+        context,  ..
     } = program;
     let mut context = context.lock().unwrap();
     
-    context.agents.fast.llm.prompt.clear();
-    context.agents.fast.llm.message_history.clear();
+    context.agents.fast.llm.clear_history();
     
     context.agents.fast.llm.prompt.push(Message::Assistant(format!(r#"
 Given a message respond with one of the following.
@@ -46,7 +45,7 @@ Respond in this format:
         "Request to Classify: {task}"
     )));
 
-    let classification = try_parse_json::<Classification>(&context.agents.fast.llm, 2, Some(250))?;
+    let classification = try_parse_json::<Classification>(&context.agents.fast.llm, 2, Some(250), None)?;
         
     Ok(classification.data.classification == "task")
 }

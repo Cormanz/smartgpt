@@ -1,4 +1,4 @@
-use std::{error::Error, collections::HashMap, fmt::Display};
+use std::{error::Error, fmt::Display};
 use async_trait::async_trait;
 
 mod types;
@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 pub use types::*;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument};
+use crate::{Plugin, Command, CommandContext, CommandImpl, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument, CommandResult};
 
 #[derive(Debug, Clone)]
 pub struct GoogleNoQueryError;
@@ -20,7 +20,14 @@ impl Display for GoogleNoQueryError {
 
 impl Error for GoogleNoQueryError {}
 
-pub async fn google(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
+#[derive(Serialize, Deserialize)]
+pub struct GoogleArgs {
+    pub query: String
+}
+
+pub async fn google(ctx: &mut CommandContext, args: ScriptValue) -> Result<String, Box<dyn Error>> {
+    let args: GoogleArgs = args.parse()?;
+
     let wolfram_info = ctx.plugin_data.get_data("Google")?;
 
     let api_key = invoke::<String>(wolfram_info, "get api key", true).await?;
@@ -29,13 +36,11 @@ pub async fn google(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<
     let cse_id = invoke::<String>(wolfram_info, "get cse id", true).await?;
     let cse_id: &str = &cse_id;
 
-    let query: String = args.get(0).ok_or(GoogleNoQueryError)?.clone().try_into()?;
-
     let params = [
         ("key", api_key),
         ("cx", cse_id),
-        ("q", &query),
-        ("num", "7")
+        ("q", &args.query),
+        ("num", "4")
     ];
     
     let browse_info = ctx.plugin_data.get_data("Browse")?;
@@ -46,31 +51,25 @@ pub async fn google(ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<
             .collect::<Vec<_>>()
     }).await?;
 
-    // The conversion to JSON and from JSON is to get rid of unnecessary properties.
-    let json_result: Result<SearchResponse, serde_json::Error> = serde_json::from_str(&body);
-    let json = match json_result {
-        Ok(json) => {
-            json
-        }
-        Err(err) => {
-            println!("{:?}", err);
-            println!("{}", body);
-            return Ok(ScriptValue::Dict(HashMap::from_iter([
-                ("error".to_string(), format!("Unable to parse your Google request for \"{query}\" Try modifying your query or waiting a bit.").into())
-            ])));
-        }
-    };
-    let text: String = serde_json::to_string(&json)?;
+    let json: SearchResponse = serde_json::from_str(&body)?;
 
-    Ok(serde_json::from_str(&text)?)
+    let text = json.items.iter()
+        .flat_map(|item| vec![
+            format!("# [{}]({})", item.title, item.link),
+            item.snippet.clone()
+        ])
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    Ok(text)
 }
 
 pub struct GoogleImpl;
 
 #[async_trait]
 impl CommandImpl for GoogleImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: Vec<ScriptValue>) -> Result<ScriptValue, Box<dyn Error>> {
-        google(ctx, args).await
+    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::Text(google(ctx, args).await?))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -123,11 +122,10 @@ pub fn create_google() -> Plugin {
         commands: vec![
             Command {
                 name: "google_search".to_string(),
-                purpose: "Google Search".to_string(),
+                purpose: "Gives you a list of URLs from a query.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", "The request to search. Create a short, direct query with keywords.", "String")
+                    CommandArgument::new("query", r#""query""#)
                 ],
-                return_type: "{ items: { title: String, link: String, snippet: String }[] }".to_string(),
                 run: Box::new(GoogleImpl)
             }
         ]

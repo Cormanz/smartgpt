@@ -22,27 +22,12 @@ pub use runner::*;
 pub use memory::*;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::auto::{run_task_auto, run_assistant_auto};
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
     #[serde(rename = "new end goal")] new_end_goal: String
-}
-
-fn debug_yaml(results: &str) -> Result<(), Box<dyn Error>> {
-    let json: Value = serde_json::from_str(&results)?;
-    let mut yaml: String = serde_yaml::to_string(&json)?;
-    yaml = yaml.trim().to_string();
-
-    if yaml.len() > 1500 {
-        yaml = yaml.chars().take(1500).map(|el| el.to_string()).collect::<Vec<_>>().join("") + "... (chopped off at 1,500 characters)";
-    }
-
-    println!("{yaml}");
-
-    Ok(())
 }
 
 #[derive(Debug, Clone)]
@@ -79,9 +64,12 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     println!("{}:", "Plugins".blue());
     let mut exit_dependency_error = false;
-    for plugin in &program.plugins {
+
+    let context = program.context.lock().unwrap();
+
+    for plugin in &context.plugins {
         for dependency in &plugin.dependencies {
-            let dependency_exists = program.plugins.iter().any(|dep| &dep.name == dependency);
+            let dependency_exists = context.plugins.iter().any(|dep| &dep.name == dependency);
             if !dependency_exists {
                 println!("{}: Cannot run {} without its needed dependency of {}.", "Error".red(), plugin.name, dependency);
                 exit_dependency_error = true;
@@ -94,7 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             plugin.commands.iter()
                 .map(|el| {
                     let command_name = el.name.to_string();
-                    if program.disabled_commands.contains(&command_name) {
+                    if context.disabled_commands.contains(&command_name) {
                         el.name.to_string().red()
                     } else {
                         el.name.to_string().green()
@@ -112,13 +100,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             println!(")");
         }
-
-        // OH NO OH NO OH NO
-        let data = plugin.cycle.create_data(true.into());
-        if let Some(data) = data {
-            let mut context = program.context.lock().unwrap();
-            context.plugin_data.0.insert(plugin.name.clone(), data);
-        }
     }
 
     if exit_dependency_error {
@@ -126,6 +107,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     println!();
+
+    drop(context);
 
     match program.auto_type.clone() {
         AutoType::Assistant { token_limit } => {

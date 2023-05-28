@@ -50,6 +50,16 @@ pub struct Weights {
     pub relevance: f32
 }
 
+impl Default for Weights {
+    fn default() -> Self {
+        Weights {
+            recall: 1.,
+            recency: 1.,
+            relevance: 1.
+        }
+    }
+}
+
 #[async_trait]
 pub trait MemorySystem : Send + Sync {
     async fn store_memory(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>>;
@@ -73,13 +83,20 @@ pub trait MemorySystem : Send + Sync {
                 }
             })
             .collect::<Vec<_>>();
-        memories.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(Equal));
+        memories.sort_by(|a, b| a.memory.recency.partial_cmp(&b.memory.recency).unwrap_or(Equal));
         let memories = memories.iter()
             .map(|el| el.memory.clone())
+            .rev()
             .take(count)
+            .rev()
             .collect::<Vec<_>>();
         Ok(memories)
     }
+
+    async fn decay_recency(
+        &mut self,
+        decay_factor: f32
+    ) -> Result<(), Box<dyn Error>>;
 
     fn store_memory_sync(&mut self, llm: &LLM, memory: &str) -> Result<(), Box<dyn Error>> {
         let runtime = tokio::runtime::Runtime::new().unwrap();
@@ -106,6 +123,14 @@ pub trait MemorySystem : Send + Sync {
     ) -> Result<Vec<Memory>, Box<dyn Error>> {
         let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(self.get_memories(llm, memory, min_count, weights, count))
+    }
+
+    fn decay_recency_sync(
+        &mut self,
+        decay_factor: f32
+    ) -> Result<(), Box<dyn Error>> {
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(self.decay_recency(decay_factor))
     }
 }
 
