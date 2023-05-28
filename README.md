@@ -62,7 +62,7 @@ If you want more information, [read the documentation](https://corman.gitbook.io
 
 Assistants are highly experimental, so we recommend Runners.
 
-An Auto will under the hood, run agent. An agent has two parties: The Dynamic Agent and The Static Agent.
+An Auto will under the hood, run agent. An agent has two parts: The Dynamic Agent and The Static Agent.
 
 ## Dynamic Agent
 
