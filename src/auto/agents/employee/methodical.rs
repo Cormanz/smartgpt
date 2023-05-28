@@ -55,6 +55,8 @@ pub fn add_memories(agent: &mut AgentInfo) -> Result<(), Box<dyn Error>> {
 Please summarize all important actions you took out.
 Please also summarize all observations of information you have collected.
 
+Be cocnise.
+
 Respond in this JSON format:
 ```json
 {{
@@ -66,8 +68,6 @@ Respond in this JSON format:
     ]
 }}
 ```
-
-Be concise.
     "#).trim().to_string()));
 
     let memories = try_parse_json::<Memories>(&agent.llm, 2, Some(700), Some(0.5))?.data;
@@ -85,6 +85,7 @@ pub fn run_method_agent(
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     get_planner_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
+    desire: &str,
     assets: Option<String>,
     personality: &str
 ) -> Result<String, Box<dyn Error>> {
@@ -97,17 +98,19 @@ pub fn run_method_agent(
     let cloned_assets = context.assets.clone();
     let assets_before: HashSet<&String> = cloned_assets.keys().collect();
 
-    let agent = get_agent(context);
+    get_agent(context).llm.clear_history();
 
-    agent.llm.clear_history();
+    let planner = get_planner_agent(context);
 
-    agent.llm.prompt.push(Message::System(format!(r#"
+    planner.llm.clear_history();
+
+    planner.llm.prompt.push(Message::System(format!(r#"
 Personality: 
 {personality}
 "#).trim().to_string()));
 
-    let observations = agent.observations.get_memories_sync(
-        &agent.llm, task, 100, Weights {
+    let observations = planner.observations.get_memories_sync(
+        &planner.llm, task, 100, Weights {
             recall: 1.,
             recency: 1.,
             relevance: 1.
@@ -127,7 +130,7 @@ Personality:
 
     println!("{} {}\n", "Static Agent".yellow().bold(), "| Plan".white());
 
-    agent.llm.prompt.push(Message::User(format!(r#"
+    planner.llm.prompt.push(Message::User(format!(r#"
 {tools}
 
 You have been given these tools.
@@ -144,6 +147,11 @@ Here is a list of assets previously saved:
 
 Create a list of steps of what you need to do and which tool you will use.
 Only use one tool for each step.
+
+Your goal is to give a response with the following information:
+{desire}
+
+You must save that precise information through assets.
 
 Do not specify arguments.
 Do not "repeat steps".
@@ -172,12 +180,19 @@ Respond in this JSON format:
 Be concise!
 "#).trim().to_string()));
 
-    let plan = try_parse_json::<MethodicalPlan>(&agent.llm, 2, Some(600), Some(0.3))?;
-    agent.llm.message_history.push(Message::Assistant(plan.raw));
+    let plan = try_parse_json::<MethodicalPlan>(&planner.llm, 2, Some(600), Some(0.3))?;
+    planner.llm.message_history.push(Message::Assistant(plan.raw));
     let plan = plan.data;
     log_yaml(&plan)?;
 
-    drop(agent);
+    let prompt = planner.llm.prompt.clone();
+    let message_history = planner.llm.message_history.clone();
+
+    drop(planner);
+
+    let agent = get_agent(context);
+    agent.llm.prompt = prompt;
+    agent.llm.message_history = message_history;
 
     for (_ind, step) in plan.steps.iter().enumerate() {
         let agent = get_agent(context);
