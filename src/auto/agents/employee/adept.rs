@@ -50,6 +50,12 @@ pub struct AssetInfo {
     pub assets: Vec<String>
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DynamicPlan {
+    #[serde(rename = "concise plan")]
+    pub plan: String
+}
+
 pub fn get_response(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
@@ -101,9 +107,28 @@ pub fn run_brain_agent(
     agent.llm.prompt.push(Message::System(format!("Personality:\n{personality}")));
 
     agent.llm.prompt.push(Message::User(format!(r#"
-Here is the task given by the user:
+This is your task:
 {task}
 
+Make a concise, one-sentence plan on to complete this task.
+
+Respond in this JSON format:
+```json
+{{
+    "concise plan": "plan"
+}}
+```
+"#).trim().to_string()));
+
+    println!("{}\n", "Dynamic Agent".blue().bold());
+
+    let plan = try_parse_json::<DynamicPlan>(&agent.llm, 2, Some(1000), Some(0.3))?;
+    agent.llm.message_history.push(Message::Assistant(plan.raw));
+    let plan = plan.data;  
+
+    log_yaml(&plan)?;
+
+    agent.llm.message_history.push(Message::User(format!(r#"
 Your goal is to complete the task by spawning agents to complete smaller subtasks.
 Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
@@ -116,8 +141,11 @@ final_response {{ "response": "response" }} - Give a response to the user.
 Assets:
 No assets.
 
-You may only spawn agents with assets in the above list. 
-As there are no assets, you may only provide an empty list of assets.
+Ensure you adhere to your plan:
+{}
+
+You can only spawn agents with assets in the above list. 
+As there are no assets, you can spawn agents, but include an empty list of assets.
 
 Only include one `thoughts`, `reasoning`, `decision`.
 
@@ -131,8 +159,7 @@ Respond in this exact JSON format exactly, with every field in order:
         "args": "..."
     }}
 }}
-```
-"#).trim().to_string()));
+```"#, plan.plan)));
 
     println!("{}\n", "Dynamic Agent".blue().bold());
 
