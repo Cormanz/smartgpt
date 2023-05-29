@@ -2,7 +2,7 @@ use std::{error::Error, ops::Deref, fmt::Display};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{employee::{log_yaml, run_method_agent}}}, ScriptValue};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}}}, ScriptValue};
 
 #[derive(Debug, Clone)]
 pub struct NoDecisionTypeError(pub String);

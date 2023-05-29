@@ -3,7 +3,7 @@ use std::{error::Error, collections::{HashSet}};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::employee::create_tool_list}, Weights, Tool};
+use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::worker::create_tool_list}, Weights, Tool};
 
 use super::{log_yaml, use_tool};
 
