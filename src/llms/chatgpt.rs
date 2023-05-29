@@ -79,6 +79,17 @@ pub struct ChatGPTConfig {
     #[serde(rename = "embedding model")] pub embedding_model: Option<String>,
 }
 
+impl Default for ChatGPTConfig {
+    fn default() -> Self {
+        ChatGPTConfig {
+            api_key: "Invalid API Key".to_string(),
+            model: None,
+            api_base: None,
+            embedding_model: None
+        }
+    }
+}
+
 pub struct ChatGPTProvider;
 
 #[async_trait]

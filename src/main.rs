@@ -1,34 +1,7 @@
-use std::{error::Error, fmt::Display, process, fs, io};
-
+use std::{error::Error, fmt::Display, process, fs};
 use colored::Colorize;
 
-mod plugin;
-mod plugins;
-mod tools;
-mod chunk;
-mod llms;
-mod config;
-mod runner;
-mod memory;
-mod auto;
-
-pub use plugin::*;
-pub use plugins::*;
-pub use tools::*;
-pub use chunk::*;
-pub use llms::*;
-pub use config::*;
-pub use runner::*;
-pub use memory::*;
-
-use serde::{Deserialize, Serialize};
-
-use crate::auto::{run_task_auto, run_assistant_auto};
-
-#[derive(Serialize, Deserialize)]
-pub struct NewEndGoal {
-    #[serde(rename = "new end goal")] new_end_goal: String
-}
+pub use smartgpt::*;
 
 #[derive(Debug, Clone)]
 pub struct NoThoughtError;
@@ -56,16 +29,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let mut program = load_config(&config)?;
+    let mut smartgpt = load_config(&config)?;
 
     print!("\x1B[2J\x1B[1;1H");
-    println!("{}: {}", "Personality".blue(), program.personality);
-    println!("{}: {:?}", "Type".blue(), program.auto_type.clone());
+    println!("{}: {}", "Personality".blue(), smartgpt.personality);
 
     println!("{}:", "Plugins".blue());
     let mut exit_dependency_error = false;
 
-    let context = program.context.lock().unwrap();
+    let context = smartgpt.context.lock().unwrap();
 
     for plugin in &context.plugins {
         for dependency in &plugin.dependencies {
@@ -110,32 +82,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     drop(context);
 
-    match program.auto_type.clone() {
-        AutoType::Assistant { token_limit } => {
-            let mut messages: Vec<Message> = vec![];
-            let stdin = io::stdin();
-            loop {
-                println!("{}", "> User".yellow());
-                
-                let mut input = String::new();
-                stdin.read_line(&mut input).unwrap();
-
-                println!();
-
-                let response = run_assistant_auto(&mut program, &messages, &input, token_limit)?;
-
-                messages.push(Message::User(input));
-                messages.push(Message::Assistant(response.clone()));
-
-                println!("{}", "> Assistant".yellow());
-                println!("{}", response);
-                println!();
-            }
-        },
-        AutoType::Runner { task } => {
-            run_task_auto(&mut program, &task)?;
-        }
-    }
+    smartgpt.run_task( 
+        "Write an essay on the Rust programming language.", 
+        &|_| Ok(()), 
+        &log_update
+    )?;
 
     Ok(())
 }

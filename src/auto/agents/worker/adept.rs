@@ -2,7 +2,9 @@ use std::{error::Error, ops::Deref, fmt::Display};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}}}, ScriptValue};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}}, run::Action, DisallowedAction, DynamicUpdate}, ScriptValue};
+
+use super::Update;
 
 #[derive(Debug, Clone)]
 pub struct NoDecisionTypeError(pub String);
@@ -62,7 +64,9 @@ pub fn get_response(
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     get_planner_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     thoughts: &BrainThoughts,
-    personality: &str
+    personality: &str,
+    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     match thoughts.decision.decision_type.deref() {
         "spawn_agent" => {
@@ -79,8 +83,7 @@ pub fn get_response(
                 );
             }
 
-            let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, &desire, data, personality)?;
-            println!("\n{out}\n");
+            let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, &desire, data, personality, allow_action, listen_to_update)?;
             Ok(out)
         },
         "brainstorm" => {
@@ -101,7 +104,9 @@ pub fn run_brain_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
-    personality: &str
+    personality: &str,
+    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     let agent = get_agent(context);
     
@@ -122,13 +127,11 @@ Respond in this JSON format:
 ```
 "#).trim().to_string()));
 
-    println!("{}\n", "Dynamic Agent".blue().bold());
-
     let plan = try_parse_json::<DynamicPlan>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(plan.raw));
     let plan = plan.data;  
 
-    log_yaml(&plan)?;
+    listen_to_update(&Update::DynamicAgent(DynamicUpdate::Plan(plan.plan.clone())))?;
 
     agent.llm.message_history.push(Message::User(format!(r#"
 Your goal is to complete the task by spawning agents to complete smaller subtasks.
@@ -164,13 +167,11 @@ Respond in this exact JSON format exactly, with every field in order:
 }}
 ```"#, plan.plan)));
 
-    println!("{}\n", "Dynamic Agent".blue().bold());
-
     let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(thoughts.raw));
     let thoughts = thoughts.data;  
 
-    log_yaml(&thoughts)?;
+    listen_to_update(&Update::DynamicAgent(DynamicUpdate::Thoughts(thoughts.clone())))?;
 
     drop(agent);
     let mut response = get_response(
@@ -178,7 +179,9 @@ Respond in this exact JSON format exactly, with every field in order:
         &|ctx| &mut ctx.agents.static_agent, 
         &|ctx| &mut ctx.agents.planner, 
         &thoughts, 
-        &personality
+        &personality,
+        allow_action,
+        listen_to_update
     )?;
 
     if thoughts.decision.decision_type == "final_response" {
@@ -222,20 +225,20 @@ You may only provide these assets when spawning agents.
 ```
         "#).trim().to_string()));
 
-        println!("{}\n", "Dynamic Agent".blue().bold());
-
         let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));
         let thoughts = thoughts.data; 
 
-        log_yaml(&thoughts)?;
+        listen_to_update(&Update::DynamicAgent(DynamicUpdate::Thoughts(thoughts.clone())))?;
 
         response = get_response(
             context, 
             &|ctx| &mut ctx.agents.static_agent, 
             &|ctx| &mut ctx.agents.planner, 
             &thoughts, 
-            &personality
+            &personality,
+            allow_action,
+            listen_to_update
         )?;
 
         if thoughts.decision.decision_type == "final_response" {

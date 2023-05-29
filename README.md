@@ -39,7 +39,7 @@ Currently, testing with SmartGPT is primarily being done with GPT3.5, and occasi
 
 SmartGPT is an **incredibly experimental** application. The goal is to unlock maximum potential out of LLMs, and stability is sacrificed for this. Backwards compatibility is a fever dream here. However, SmartGPT is also housing some of the most innovative ideas and experiments in the AutoGPT space right now, and although most are unsuccessful, a few hit the dart-board and stick.
 
-## Cargo Quickstart
+## Quickstart
 
 1. Install [`cargo`](https://doc.rust-lang.org/cargo/getting-started/installation.html), preferably the latest stable version.
 
@@ -49,7 +49,7 @@ SmartGPT is an **incredibly experimental** application. The goal is to unlock ma
 
 4. Adjust the config to your liking, and execute it once again.
 
-If you want more information, [read the documentation](https://corman.gitbook.io/smartgpt/installation).
+If you want more information, or would like to use SmartGPT as a crate in your own projects, [read the documentation](https://corman.gitbook.io/smartgpt/installation).
 
 # How SmartGPT Works
 

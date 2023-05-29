@@ -3,6 +3,7 @@ mod local;
 
 pub use chatgpt::*;
 pub use local::*;
+use serde::Serialize;
 use tokio::runtime::Runtime;
 
 use std::{error::Error, fmt::Display};
@@ -121,6 +122,21 @@ pub struct LLM {
 }
 
 impl LLM {
+    pub fn from_provider<T : Serialize>(provider: impl LLMProvider, config: T) -> Result<LLM, Box<dyn Error>> {
+        let model = provider.create(serde_json::to_value(config)?)?;
+    
+        Ok(Self::new(model))
+    }
+
+    pub fn new(model: Box<dyn LLMModel>) -> LLM {
+        LLM {
+            prompt: vec![],
+            end_prompt: vec![],
+            message_history: vec![],
+            model
+        }
+    }
+
     pub fn get_tokens_remaining(&self, messages: &[Message]) -> Result<usize, Box<dyn Error>> {
         self.model.get_tokens_remaining(messages)
     }

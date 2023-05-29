@@ -1,10 +1,13 @@
+use std::mem::discriminant;
+
 use crate::{Tool, ToolArgument, ToolType};
 
 pub fn create_filtered_tool_list(header: &str, tools: &[&Tool], tool_type: ToolType) -> String {
     let mut prompt = header.to_string();
 
     for tool in tools {
-        if tool.tool_type != tool_type {
+        // Compares if the tool types are the same, not the values of the tool types
+        if discriminant(&tool.tool_type) == discriminant(&tool_type) {
             continue;
         }
 
@@ -29,6 +32,6 @@ pub fn create_filtered_tool_list(header: &str, tools: &[&Tool], tool_type: ToolT
 pub fn create_tool_list(tools: &[&Tool]) -> String {
     vec![
         create_filtered_tool_list("Resources", tools, ToolType::Resource),
-        create_filtered_tool_list("Resources", tools, ToolType::Action)
+        create_filtered_tool_list("Actions", tools, ToolType::Action { needs_permission: false })
     ].join("\n\n")
 }

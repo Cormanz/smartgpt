@@ -4,7 +4,7 @@ use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, create_assets, PluginStore, create_brainstorm};
+use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, create_assets, PluginStore, create_brainstorm, SmartGPT};
 
 mod default;
 pub use default::*;
@@ -72,16 +72,7 @@ pub struct Llm {
 pub enum AutoType {
     #[serde(rename = "runner")] Runner {
         task: String
-    },
-    #[serde(rename = "assistant")] Assistant {
-        #[serde(rename = "assistant token limit")] token_limit: Option<u16>
-    },
-}
-
-pub struct ProgramInfo {
-    pub personality: String,
-    pub auto_type: AutoType,
-    pub context: Arc<Mutex<CommandContext>>
+    }
 }
 
 pub fn list_plugins() -> Vec<Plugin> {
@@ -111,7 +102,7 @@ pub fn create_memory_providers() -> Vec<Box<dyn MemoryProvider>> {
     ]
 }
 
-pub fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
+fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_llm_providers();
     let llm_provider = providers.iter()
@@ -122,7 +113,7 @@ pub fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMMode
     Ok(llm_provider.create(model_config.clone())?)
 }
 
-pub fn create_memory_model(agent: HashMap<String, Value>) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
+fn create_memory_model(agent: HashMap<String, Value>) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_memory_providers();
     let memory_provider = providers.iter()
@@ -146,7 +137,7 @@ pub fn create_agent(agent: AgentConfig) -> Result<AgentInfo, Box<dyn Error>> {
     })
 }
 
-pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
+pub fn load_config(config: &str) -> Result<SmartGPT, Box<dyn Error>> {
     let config: Config = serde_yaml::from_str(config)?;
 
     let plugins = list_plugins();
@@ -163,11 +154,8 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
     }
 
     let mut context = CommandContext {
-        auto_type: config.auto_type.clone(),
-        tool_out: vec![],
-        variables: HashMap::new(),
         assets: HashMap::new(),
-        plugin_data: PluginStore(HashMap::new()),
+        plugin_data: PluginStore::new(),
         plugins: vec![],
         disabled_tools: config.disabled_tools,
         agents: Agents {
@@ -189,9 +177,8 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
         }
     }
 
-    Ok(ProgramInfo {
+    Ok(SmartGPT {
         personality: config.personality,
-        auto_type: config.auto_type.clone(),
         context: Arc::new(Mutex::new(context))
     })
 }
