@@ -2,6 +2,13 @@
 name = "smartgpt"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "A crate that provides LLMs with the ability to complete complex tasks using plugins."
+homepage = "https://smartgpt.dev"
+repository = "https://github.com/Cormanz/smartgpt"
+documentation = "https://corman.gitbook.io/smartgpt/"
+keywords = [ "llm", "agent", "autogpt" ]
+readme = "README.md"
 
 [dependencies]
 async-openai = "0.10.2"
