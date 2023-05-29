@@ -45,7 +45,7 @@ pub fn create_assets() -> Plugin {
                     ToolArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
                 run: Box::new(SaveAssetImpl),
-                tool_type: ToolType::Action
+                tool_type: ToolType::Action { needs_permission: false }
             }
         ]
     }

@@ -5,24 +5,44 @@ use json5;
 
 use colored::Colorize;
 
-use crate::{LLM, SmartGPT, Message };
+use crate::{LLM, SmartGPT};
 
-use self::{responses::{ask_for_responses}, classify::is_task, agents::{processing::find_text_between_braces, worker::run_employee}};
+use self::{agents::{processing::find_text_between_braces, worker::run_worker}};
 
 mod agents;
 mod run;
 mod responses;
 mod classify;
 
-pub fn run_task_auto(program: &mut SmartGPT, task: &str) -> Result<String, Box<dyn Error>> {
+pub use run::{Action};
+pub use agents::worker::*;
+
+#[derive(Debug)]
+pub struct DisallowedAction(Box<dyn Error>);
+
+impl Error for DisallowedAction {}
+impl Display for DisallowedAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "DisallowedAction(")?;
+        write!(f, "{}", self.0);
+        write!(f, ")")
+    }
+}
+
+pub fn run_auto(
+    smartgpt: &mut SmartGPT, 
+    task: &str,
+    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+) -> Result<String, Box<dyn Error>> {
     let SmartGPT { 
         context, ..
-    } = program;
+    } = smartgpt;
     let context = context.lock().unwrap();
 
     drop(context);
 
-    Ok(run_employee(program, task.clone(), &program.personality.clone())?)
+    Ok(run_worker(smartgpt, task.clone(), &smartgpt.personality.clone(), allow_action, listen_to_update)?)
 }
 
 #[derive(Debug, Clone)]

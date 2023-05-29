@@ -23,7 +23,7 @@ pub use memory::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::auto::run_task_auto;
+use crate::auto::run_auto;
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
@@ -56,15 +56,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let mut program = load_config(&config)?;
+    let mut smartgpt = load_config(&config)?;
 
     print!("\x1B[2J\x1B[1;1H");
-    println!("{}: {}", "Personality".blue(), program.personality);
+    println!("{}: {}", "Personality".blue(), smartgpt.personality);
 
     println!("{}:", "Plugins".blue());
     let mut exit_dependency_error = false;
 
-    let context = program.context.lock().unwrap();
+    let context = smartgpt.context.lock().unwrap();
 
     for plugin in &context.plugins {
         for dependency in &plugin.dependencies {
@@ -109,7 +109,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     drop(context);
 
-    run_task_auto(&mut program, "Write an essay on the Rust programming language.")?;
+    smartgpt.run_task( 
+        "Write an essay on the Rust programming language.", 
+        &|_| Ok(()), 
+        &|_| Ok(())
+    )?;
 
     Ok(())
 }

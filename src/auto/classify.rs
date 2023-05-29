@@ -15,10 +15,10 @@ pub struct Classification {
     classification: String,
 }
 
-pub fn is_task(program: &mut SmartGPT, task: &str) -> Result<bool, Box<dyn Error>> {
+pub fn is_task(smartgpt: &mut SmartGPT, task: &str) -> Result<bool, Box<dyn Error>> {
     let SmartGPT { 
         context,  ..
-    } = program;
+    } = smartgpt;
     let mut context = context.lock().unwrap();
     
     context.agents.fast.llm.clear_history();

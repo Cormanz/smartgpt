@@ -1,26 +1,36 @@
 use std::{error::Error};
-use crate::{SmartGPT, AgentInfo};
+use crate::{SmartGPT, AgentInfo, auto::{run::Action, DisallowedAction}};
 use serde::Serialize;
 
 mod adept;
 mod actor;
 mod methodical;
 mod tools;
+mod updates;
 
 pub use adept::*;
 pub use actor::*;
 pub use methodical::*;
 pub use tools::*;
+pub use updates::*;
 
-pub fn run_employee(program: &mut SmartGPT, task: &str, personality: &str) -> Result<String, Box<dyn Error>> {
-    let mut context = program.context.lock().unwrap();
-    
-    /*let refine_info = refine(&mut context, &|context| &mut context.agents.planner, task)?;
-    log_yaml(&refine_info)?;
+pub fn run_worker(
+    smartgpt: &mut SmartGPT, 
+    task: &str, 
+    personality: &str,
+    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+) -> Result<String, Box<dyn Error>> {
+    let mut context = smartgpt.context.lock().unwrap();
 
-    let task = &refine_info.task;*/
-
-    let response = run_brain_agent(&mut context, &|ctx| &mut ctx.agents.dynamic, task, personality)?;
+    let response = run_brain_agent(
+        &mut context, 
+        &|ctx| &mut ctx.agents.dynamic, 
+        task, 
+        personality,
+        allow_action,
+        listen_to_update
+    )?;
 
     Ok(response)
 }

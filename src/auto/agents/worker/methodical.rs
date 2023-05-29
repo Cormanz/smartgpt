@@ -3,7 +3,7 @@ use std::{error::Error, collections::{HashSet}};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::worker::create_tool_list}, Weights, Tool};
+use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::worker::create_tool_list, DisallowedAction, StaticUpdate, Update, NamedAsset}, Weights, Tool};
 
 use super::{log_yaml, use_tool};
 
@@ -95,7 +95,9 @@ pub fn run_method_agent(
     task: &str,
     desire: &str,
     assets: Option<String>,
-    personality: &str
+    personality: &str,
+    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     let tools: Vec<&Tool> = context.plugins.iter()
         .flat_map(|plugin| &plugin.tools)
@@ -201,6 +203,8 @@ Respond in this JSON format:
     let plan = plan.data;
     log_yaml(&plan)?;
 
+    listen_to_update(&Update::StaticAgent(StaticUpdate::Plan(plan.clone())))?;
+
     let prompt = planner.llm.prompt.clone();
     let message_history = planner.llm.message_history.clone();
 
@@ -258,6 +262,9 @@ action:
 
         drop(agent);
 
+        listen_to_update(&Update::StaticAgent(StaticUpdate::Thoughts(thoughts.clone())))?;
+        allow_action(&thoughts.action)?;
+
         let out = use_tool(context, &|context| &mut context.agents.fast, thoughts.action.clone());
             
         println!();
@@ -266,6 +273,7 @@ action:
                 let agent = get_agent(context);
 
                 println!("{out}");
+                listen_to_update(&Update::StaticAgent(StaticUpdate::ActionResults(out.clone())))?;
                 agent.llm.message_history.push(Message::User(out));
 
                 let tokens = agent.llm.get_tokens_remaining(&agent.llm.get_messages())?;
@@ -297,11 +305,17 @@ action:
         .map(|asset| asset.to_string())
         .collect::<Vec<_>>();
 
+    let changed_assets: Vec<NamedAsset> = changed_assets.iter()
+        .map(|asset| NamedAsset(asset.clone(), context.assets[asset].clone()))
+        .collect();
+
+    listen_to_update(&Update::StaticAgent(StaticUpdate::AddedAssets(changed_assets.clone())))?;
+
     let asset_str = if changed_assets.len() == 0 {
         format!("No assets changed.")
     } else {
         changed_assets .iter()
-            .map(|el| format!("## Asset `{el}`\n{}", context.assets[el]))
+            .map(|el| format!("## Asset `{}`\n{}", el.0, el.1))
             .collect::<Vec<_>>()
             .join("\n")
     };

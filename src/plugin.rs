@@ -164,7 +164,7 @@ impl ToolArgument {
 #[derive(Clone, Eq, PartialEq)]
 pub enum ToolType {
     Resource,
-    Action
+    Action { needs_permission: bool }
 }
 
 pub struct Tool {

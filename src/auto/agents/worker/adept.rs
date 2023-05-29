@@ -2,7 +2,9 @@ use std::{error::Error, ops::Deref, fmt::Display};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}}}, ScriptValue};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}}, run::Action, DisallowedAction, DynamicUpdate}, ScriptValue};
+
+use super::Update;
 
 #[derive(Debug, Clone)]
 pub struct NoDecisionTypeError(pub String);
@@ -62,7 +64,9 @@ pub fn get_response(
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     get_planner_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     thoughts: &BrainThoughts,
-    personality: &str
+    personality: &str,
+    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     match thoughts.decision.decision_type.deref() {
         "spawn_agent" => {
@@ -79,7 +83,7 @@ pub fn get_response(
                 );
             }
 
-            let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, &desire, data, personality)?;
+            let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, &desire, data, personality, allow_action, listen_to_update)?;
             println!("\n{out}\n");
             Ok(out)
         },
@@ -101,7 +105,9 @@ pub fn run_brain_agent(
     context: &mut CommandContext, 
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
-    personality: &str
+    personality: &str,
+    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     let agent = get_agent(context);
     
@@ -127,6 +133,8 @@ Respond in this JSON format:
     let plan = try_parse_json::<DynamicPlan>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(plan.raw));
     let plan = plan.data;  
+
+    listen_to_update(&Update::DynamicAgent(DynamicUpdate::Plan(plan.plan.clone())))?;
 
     log_yaml(&plan)?;
 
@@ -170,6 +178,8 @@ Respond in this exact JSON format exactly, with every field in order:
     agent.llm.message_history.push(Message::Assistant(thoughts.raw));
     let thoughts = thoughts.data;  
 
+    listen_to_update(&Update::DynamicAgent(DynamicUpdate::Thoughts(thoughts.clone())))?;
+
     log_yaml(&thoughts)?;
 
     drop(agent);
@@ -178,7 +188,9 @@ Respond in this exact JSON format exactly, with every field in order:
         &|ctx| &mut ctx.agents.static_agent, 
         &|ctx| &mut ctx.agents.planner, 
         &thoughts, 
-        &personality
+        &personality,
+        allow_action,
+        listen_to_update
     )?;
 
     if thoughts.decision.decision_type == "final_response" {
@@ -228,6 +240,8 @@ You may only provide these assets when spawning agents.
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));
         let thoughts = thoughts.data; 
 
+        listen_to_update(&Update::DynamicAgent(DynamicUpdate::Thoughts(thoughts.clone())))?;
+
         log_yaml(&thoughts)?;
 
         response = get_response(
@@ -235,7 +249,9 @@ You may only provide these assets when spawning agents.
             &|ctx| &mut ctx.agents.static_agent, 
             &|ctx| &mut ctx.agents.planner, 
             &thoughts, 
-            &personality
+            &personality,
+            allow_action,
+            listen_to_update
         )?;
 
         if thoughts.decision.decision_type == "final_response" {
