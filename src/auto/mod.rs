@@ -5,7 +5,7 @@ use json5;
 
 use colored::Colorize;
 
-use crate::{LLM, ProgramInfo, Message };
+use crate::{LLM, SmartGPT, Message };
 
 use self::{responses::{ask_for_responses}, classify::is_task, agents::{processing::find_text_between_braces, worker::run_employee}};
 
@@ -14,8 +14,8 @@ mod run;
 mod responses;
 mod classify;
 
-pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Box<dyn Error>> {
-    let ProgramInfo { 
+pub fn run_task_auto(program: &mut SmartGPT, task: &str) -> Result<String, Box<dyn Error>> {
+    let SmartGPT { 
         context, ..
     } = program;
     let context = context.lock().unwrap();
@@ -23,69 +23,6 @@ pub fn run_task_auto(program: &mut ProgramInfo, task: &str) -> Result<String, Bo
     drop(context);
 
     Ok(run_employee(program, task.clone(), &program.personality.clone())?)
-}
-
-pub fn run_assistant_auto(program: &mut ProgramInfo, messages: &[Message], request: &str, token_limit: Option<u16>) -> Result<String, Box<dyn Error>> {
-    let ProgramInfo { 
-        context, ..
-    } = program;
-
-    let token_limit_final: u16 = token_limit.unwrap_or(400u16);
-
-    let context = context.lock().unwrap();
-
-    let mut new_messages = messages.to_vec();
-    new_messages.push(Message::User(format!(
-r#"Summarize the conversation."#)));
-
-    let conversation_context = match messages.len() {
-        0 => "No conversation context.".to_string(),
-        _ => context.agents.fast.llm.model.get_response_sync(
-            &new_messages, Some(300), None
-        )?
-    };
-
-    drop(context);
-    if is_task(program, request)? {
-        println!("{}", "Running task...".green());
-
-        let ProgramInfo { 
-            context, ..
-        } = program;
-        let context = context.lock().unwrap();
-
-        let mut task = request.trim().to_string();
-        task = format!(
-"Given this relevant conversation context: {conversation_context}
-
-{task}");
-        
-        drop(context);
-    
-        Ok(run_employee(program, &task.clone(), &program.personality.clone())?)
-    } else {
-        let ProgramInfo { 
-            context, ..
-        } = program;
-        let mut context = context.lock().unwrap();
-
-        context.agents.fast.llm.prompt.clear();
-        context.agents.fast.llm.message_history.clear();
-        
-        context.agents.fast.llm.prompt.push(Message::System(format!(
-r#"Respond in this conversation context:
-
-{conversation_context}"#
-        )));
-
-        context.agents.fast.llm.message_history.push(Message::User(request.to_string()));
-
-        context.agents.fast.llm.model.get_response_sync(
-            &context.agents.fast.llm.get_messages(),
-            Some(token_limit_final),
-            None
-        )
-    }
 }
 
 #[derive(Debug, Clone)]

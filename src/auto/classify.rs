@@ -2,7 +2,7 @@ use std::error::Error;
 
 use serde::{Serialize, Deserialize};
 
-use crate::{ProgramInfo, Message};
+use crate::{SmartGPT, Message};
 
 use super::try_parse_json;
 
@@ -15,8 +15,8 @@ pub struct Classification {
     classification: String,
 }
 
-pub fn is_task(program: &mut ProgramInfo, task: &str) -> Result<bool, Box<dyn Error>> {
-    let ProgramInfo { 
+pub fn is_task(program: &mut SmartGPT, task: &str) -> Result<bool, Box<dyn Error>> {
+    let SmartGPT { 
         context,  ..
     } = program;
     let mut context = context.lock().unwrap();

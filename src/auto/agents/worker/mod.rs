@@ -1,5 +1,5 @@
 use std::{error::Error};
-use crate::{ProgramInfo, AgentInfo};
+use crate::{SmartGPT, AgentInfo};
 use serde::Serialize;
 
 mod adept;
@@ -12,7 +12,7 @@ pub use actor::*;
 pub use methodical::*;
 pub use tools::*;
 
-pub fn run_employee(program: &mut ProgramInfo, task: &str, personality: &str) -> Result<String, Box<dyn Error>> {
+pub fn run_employee(program: &mut SmartGPT, task: &str, personality: &str) -> Result<String, Box<dyn Error>> {
     let mut context = program.context.lock().unwrap();
     
     /*let refine_info = refine(&mut context, &|context| &mut context.agents.planner, task)?;

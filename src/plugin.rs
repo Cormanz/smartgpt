@@ -35,6 +35,12 @@ pub trait PluginData: Any + Send + Sync {
 
 pub struct PluginStore(pub HashMap<String, Box<dyn PluginData>>);
 
+impl PluginStore {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+}
+
 pub struct EndGoals {
     pub end_goal: usize,
     pub end_goals: Vec<String>
@@ -59,13 +65,23 @@ pub struct Agents {
     pub fast: AgentInfo
 }
 
+impl Agents {
+    pub fn same(init: impl Fn() -> Result<AgentInfo, Box<dyn Error>>) -> Result<Agents, Box<dyn Error>> {
+        Ok(
+            Agents {
+                static_agent: init()?,
+                planner: init()?,
+                dynamic: init()?,
+                fast: init()?
+            }
+        )
+    }
+}
+
 pub struct CommandContext {
-    pub auto_type: AutoType,
     pub plugin_data: PluginStore,
     pub agents: Agents,
     pub plugins: Vec<Plugin>,
-    pub variables: HashMap<String, ScriptValue>,
-    pub tool_out: Vec<String>,
     pub disabled_tools: Vec<String>,
     pub assets: HashMap<String, String>
 }

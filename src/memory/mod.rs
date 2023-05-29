@@ -134,6 +134,10 @@ pub trait MemorySystem : Send + Sync {
     }
 }
 
+pub fn memory_from_provider<T : Serialize>(provider: impl MemoryProvider, config: T) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
+    provider.create(serde_json::to_value(config)?)
+}
+
 #[async_trait]
 pub trait MemoryProvider {
     fn is_enabled(&self) -> bool;

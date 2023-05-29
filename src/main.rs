@@ -7,7 +7,7 @@ mod plugins;
 mod tools;
 mod chunk;
 mod llms;
-mod config;
+mod api;
 mod runner;
 mod memory;
 mod auto;
@@ -17,13 +17,13 @@ pub use plugins::*;
 pub use tools::*;
 pub use chunk::*;
 pub use llms::*;
-pub use config::*;
+pub use api::*;
 pub use runner::*;
 pub use memory::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::auto::{run_task_auto, run_assistant_auto};
+use crate::auto::run_task_auto;
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
@@ -60,7 +60,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "Personality".blue(), program.personality);
-    println!("{}: {:?}", "Type".blue(), program.auto_type.clone());
 
     println!("{}:", "Plugins".blue());
     let mut exit_dependency_error = false;
@@ -110,32 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     drop(context);
 
-    match program.auto_type.clone() {
-        AutoType::Assistant { token_limit } => {
-            let mut messages: Vec<Message> = vec![];
-            let stdin = io::stdin();
-            loop {
-                println!("{}", "> User".yellow());
-                
-                let mut input = String::new();
-                stdin.read_line(&mut input).unwrap();
-
-                println!();
-
-                let response = run_assistant_auto(&mut program, &messages, &input, token_limit)?;
-
-                messages.push(Message::User(input));
-                messages.push(Message::Assistant(response.clone()));
-
-                println!("{}", "> Assistant".yellow());
-                println!("{}", response);
-                println!();
-            }
-        },
-        AutoType::Runner { task } => {
-            run_task_auto(&mut program, &task)?;
-        }
-    }
+    run_task_auto(&mut program, "Write an essay on the Rust programming language.")?;
 
     Ok(())
 }
