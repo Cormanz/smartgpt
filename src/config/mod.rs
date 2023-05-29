@@ -55,7 +55,7 @@ pub struct Config {
     pub personality: String,
     pub agents: AgentLLMs,
     pub plugins: HashMap<String, Value>,
-    #[serde(rename = "disabled commands")] pub disabled_commands: Vec<String>
+    #[serde(rename = "disabled tools")] pub disabled_tools: Vec<String>
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -164,12 +164,12 @@ pub fn load_config(config: &str) -> Result<ProgramInfo, Box<dyn Error>> {
 
     let mut context = CommandContext {
         auto_type: config.auto_type.clone(),
-        command_out: vec![],
+        tool_out: vec![],
         variables: HashMap::new(),
         assets: HashMap::new(),
         plugin_data: PluginStore(HashMap::new()),
         plugins: vec![],
-        disabled_commands: config.disabled_commands,
+        disabled_tools: config.disabled_tools,
         agents: Agents {
             static_agent: create_agent(config.agents.static_agent)?,
             planner: create_agent(config.agents.planner)?,

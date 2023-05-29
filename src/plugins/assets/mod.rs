@@ -3,7 +3,7 @@ use std::{error::Error};
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, ScriptValue, CommandResult, CommandArgument};
+use crate::{Plugin, Tool, CommandContext, CommandImpl, EmptyCycle, ScriptValue, CommandResult, ToolArgument, ToolType};
 
 #[derive(Serialize, Deserialize)]
 pub struct SaveAssets {
@@ -36,15 +36,16 @@ pub fn create_assets() -> Plugin {
         name: "Assets".to_string(),
         dependencies: vec![],
         cycle: Box::new(EmptyCycle),
-        commands: vec![
-            Command {
+        tools: vec![
+            Tool {
                 name: "save_asset".to_string(),
                 purpose: "Save an asset.".to_string(),
                 args: vec![
-                    CommandArgument::new("asset", r#""asset_name""#),
-                    CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
+                    ToolArgument::new("asset", r#""asset_name""#),
+                    ToolArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
-                run: Box::new(SaveAssetImpl)
+                run: Box::new(SaveAssetImpl),
+                tool_type: ToolType::Action
             }
         ]
     }

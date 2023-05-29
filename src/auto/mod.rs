@@ -7,7 +7,7 @@ use colored::Colorize;
 
 use crate::{LLM, ProgramInfo, Message };
 
-use self::{responses::{ask_for_responses}, classify::is_task, agents::{processing::find_text_between_braces, employee::run_employee}};
+use self::{responses::{ask_for_responses}, classify::is_task, agents::{processing::find_text_between_braces, worker::run_employee}};
 
 mod agents;
 mod run;

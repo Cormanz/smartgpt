@@ -47,5 +47,5 @@ plugins:
         api key: PUT YOUR KEY HERE
     brainstorm: {}
     #file system: {}
-disabled commands: []
+disabled tools: []
 "#;

@@ -3,7 +3,7 @@ use std::{error::Error, collections::HashMap};
 use serde::{Deserialize, Serialize};
 use tokio::runtime::Runtime;
 
-use crate::{ScriptValue, Command, CommandContext, Expression, GPTRunError, CommandResult};
+use crate::{ScriptValue, Tool, CommandContext, Expression, GPTRunError, CommandResult};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Action {
@@ -11,12 +11,12 @@ pub struct Action {
     pub args: Option<ScriptValue>
 }
 
-pub async fn run_command(
+pub async fn run_tool(
     out: &mut String,
-    name: String, command: Command, 
+    name: String, tool: Tool, 
     context: &mut CommandContext, args: ScriptValue
 ) -> Result<CommandResult, Box<dyn Error>> {
-    let result = command.run.invoke(context, args.clone()).await?;
+    let result = tool.run.invoke(context, args.clone()).await?;
     let _args: Expression = args.clone().into();
 
     let json = match &result {
@@ -32,20 +32,20 @@ pub async fn run_command(
 }
 
 pub fn run_action_sync(context: &mut CommandContext, action: Action) -> Result<String, Box<dyn Error>> {
-    let command = context.plugins.iter()
-        .flat_map(|el| &el.commands)
+    let tool = context.plugins.iter()
+        .flat_map(|el| &el.tools)
         .find(|el| el.name == action.tool)
         .map(|el| el.box_clone());
 
     let mut out = String::new();
-    match command {
-        Some(command) => {
+    match tool {
+        Some(tool) => {
             let rt = Runtime::new().unwrap();
             rt.block_on(async {
-                run_command(
+                run_tool(
                     &mut out, 
                     action.tool.clone(), 
-                    command.box_clone(), 
+                    tool.box_clone(), 
                     context, 
                     action.args.unwrap_or(HashMap::new().into())
                 ).await

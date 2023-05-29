@@ -4,7 +4,7 @@ use colored::Colorize;
 
 mod plugin;
 mod plugins;
-mod commands;
+mod tools;
 mod chunk;
 mod llms;
 mod config;
@@ -14,7 +14,7 @@ mod auto;
 
 pub use plugin::*;
 pub use plugins::*;
-pub use commands::*;
+pub use tools::*;
 pub use chunk::*;
 pub use llms::*;
 pub use config::*;
@@ -76,13 +76,13 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        let commands = if plugin.commands.len() == 0 {
-            vec![ "<no commands>".white() ]
+        let tools = if plugin.tools.len() == 0 {
+            vec![ "<no tools>".white() ]
         } else {
-            plugin.commands.iter()
+            plugin.tools.iter()
                 .map(|el| {
-                    let command_name = el.name.to_string();
-                    if context.disabled_commands.contains(&command_name) {
+                    let tool_name = el.name.to_string();
+                    if context.disabled_tools.contains(&tool_name) {
                         el.name.to_string().red()
                     } else {
                         el.name.to_string().green()
@@ -91,10 +91,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         };
 
         if !exit_dependency_error {
-            print!("{} {} (commands: ", "-".black(), plugin.name);
-            for (ind, command) in commands.iter().enumerate() {
-                print!("{}", command);
-                if ind < commands.len() - 1 {
+            print!("{} {} (tools: ", "-".black(), plugin.name);
+            for (ind, tool) in tools.iter().enumerate() {
+                print!("{}", tool);
+                if ind < tools.len() - 1 {
                     print!(", ");
                 }
             }

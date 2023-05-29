@@ -2,7 +2,7 @@ use std::{error::Error, ops::Deref, fmt::Display};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{employee::{log_yaml, run_method_agent}}}, ScriptValue};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}}}, ScriptValue};
 
 #[derive(Debug, Clone)]
 pub struct NoDecisionTypeError(pub String);
@@ -112,6 +112,7 @@ This is your task:
 {task}
 
 Make a concise, one-sentence plan on you can complete this task.
+Remember that you have access to external tools, so you can do any task.
 
 Respond in this JSON format:
 ```json

@@ -3,7 +3,7 @@ use std::{error::Error};
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, EmptyCycle, ScriptValue, CommandResult, CommandArgument};
+use crate::{Plugin, Tool, CommandContext, CommandImpl, EmptyCycle, ScriptValue, CommandResult, ToolArgument, ToolType};
 
 #[derive(Serialize, Deserialize)]
 pub struct BrainstormArgs {
@@ -32,14 +32,15 @@ pub fn create_brainstorm() -> Plugin {
         name: "Brainstorm".to_string(),
         dependencies: vec![],
         cycle: Box::new(EmptyCycle),
-        commands: vec![
-            Command {
+        tools: vec![
+            Tool {
                 name: "brainstorm".to_string(),
                 purpose: "Think of an idea or generate content manually.".to_string(),
                 args: vec![
-                    CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
+                    ToolArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
-                run: Box::new(BrainstormImpl)
+                run: Box::new(BrainstormImpl),
+                tool_type: ToolType::Resource
             }
         ]
     }

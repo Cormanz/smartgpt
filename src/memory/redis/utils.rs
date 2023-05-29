@@ -4,12 +4,12 @@ use crate::{EmbeddedMemory};
 
 use std::{borrow::Borrow};
 
-pub async fn execute_redis_command<T: redis::FromRedisValue, S: Borrow<str>>(
+pub async fn execute_redis_tool<T: redis::FromRedisValue, S: Borrow<str>>(
     con: &mut redis::aio::Connection,
-    command: &str,
+    tool: &str,
     args: &[S],
 ) -> redis::RedisResult<T> {
-    let mut cmd = redis::cmd(command);
+    let mut cmd = redis::cmd(tool);
     for arg in args {
         cmd.arg(arg.borrow());
     }
@@ -31,7 +31,7 @@ pub async fn create_index_if_not_exists(con: &mut redis::aio::Connection, index_
         })?;
 
     if !index_exists {
-        let _ = execute_redis_command::<redis::Value, _>(
+        let _ = execute_redis_tool::<redis::Value, _>(
             con,
             "FT.CREATE",
             &[
@@ -75,7 +75,7 @@ pub async fn search_vector_field(
     let query_blob_str = STANDARD.encode(query_blob);
 
     Ok(
-        execute_redis_command::<redis::Value, _>(
+        execute_redis_tool::<redis::Value, _>(
             con,
             "FT.SEARCH",
             &[
@@ -97,7 +97,7 @@ pub async fn set_json_record(
     point_id: &str,
     embedded_memory: &EmbeddedMemory,
 ) -> redis::RedisResult<()> {
-    execute_redis_command::<(), &str>(
+    execute_redis_tool::<(), &str>(
         con,
         "JSON.SET",
         &[
