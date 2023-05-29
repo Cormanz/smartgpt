@@ -1,36 +1,7 @@
-use std::{error::Error, fmt::Display, process, fs, io};
-
+use std::{error::Error, fmt::Display, process, fs};
 use colored::Colorize;
 
-mod plugin;
-mod plugins;
-mod tools;
-mod chunk;
-mod llms;
-mod api;
-mod runner;
-mod memory;
-mod auto;
-mod log;
-
-pub use plugin::*;
-pub use plugins::*;
-pub use tools::*;
-pub use chunk::*;
-pub use llms::*;
-pub use api::*;
-pub use runner::*;
-pub use memory::*;
-pub use log::*;
-
-use serde::{Deserialize, Serialize};
-
-use crate::auto::{run_auto, DynamicUpdate, Update, log_yaml, StaticUpdate, NamedAsset};
-
-#[derive(Serialize, Deserialize)]
-pub struct NewEndGoal {
-    #[serde(rename = "new end goal")] new_end_goal: String
-}
+pub use smartgpt::*;
 
 #[derive(Debug, Clone)]
 pub struct NoThoughtError;

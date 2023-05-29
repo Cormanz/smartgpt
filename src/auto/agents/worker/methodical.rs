@@ -168,8 +168,9 @@ Do not specify arguments.
 Do not "repeat steps".
 
 Keep your plan at as low steps as possible.
-
 Keep your plan as concise as possible!
+
+Make sure the last step in your plan uses `save_asset`.
 
 Respond in this JSON format:
 ```json
@@ -240,10 +241,6 @@ Respond in this JSON format:
         "args": {{}}
     }}
 }}
-thoughts: thoughts
-action:
-    tool: tool
-    args: {{}}
 ```
 "#).trim().to_string()));
 

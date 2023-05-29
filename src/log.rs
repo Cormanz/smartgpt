@@ -1,7 +1,6 @@
 use std::error::Error;
 
 use colored::Colorize;
-
 use crate::auto::{Update, DynamicUpdate, StaticUpdate, log_yaml, NamedAsset};
 
 pub fn log_update(update: &Update) -> Result<(), Box<dyn Error>> {
