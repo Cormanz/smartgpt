@@ -10,6 +10,28 @@ pub struct SmartGPT {
 }
 
 impl SmartGPT {
+    fn create() -> Result<(), Box<dyn Error>> {
+        let smartgpt = SmartGPT {
+            personality: "A superintelligent AI".to_string(),
+            context: Arc::new(Mutex::new(CommandContext {
+                agents: Agents::same(|| Ok(AgentInfo {
+                    llm: LLM::from_provider(ChatGPTProvider, ChatGPTConfig {
+                        api_key: "X".to_string(),
+                        ..Default::default()
+                    })?,
+                    observations: memory_from_provider(LocalProvider, Value::Null)?,
+                    reflections: memory_from_provider(LocalProvider, Value::Null)?
+                }))?,
+                plugin_data: PluginStore::new(),
+                assets: HashMap::new(),
+                plugins: vec![],
+                disabled_tools: vec![]
+            }))
+        };
+
+        Ok(())
+    }
+
     pub fn run_task(
         &mut self,
         task: &str,

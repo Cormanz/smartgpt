@@ -24,7 +24,7 @@ impl Error for DisallowedAction {}
 impl Display for DisallowedAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "DisallowedAction(")?;
-        write!(f, "{}", self.0);
+        write!(f, "{}", self.0)?;
         write!(f, ")")
     }
 }
