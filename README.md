@@ -13,7 +13,7 @@ SmartGPT is an experimental program meant to provide LLMs (particularly GPT-3.5 
 
 If you're interested in keeping up with the progress of SmartGPT, want to contribute to development, or have issues to discuss, [join the SmartGPT Discord](https://discord.gg/5uezFE2XES).
 
-https://github.com/Cormanz/smartgpt/assets/32941017/53bdcf83-4b2e-4798-b3f2-1a233b43c0e1
+https://github.com/Cormanz/smartgpt/assets/32941017/11d737b4-9c93-4f22-b84f-d9c9d1ee0f9c
 
 ## Why?
 
