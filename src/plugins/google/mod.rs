@@ -7,14 +7,14 @@ use serde::{Serialize, Deserialize};
 use serde_json::Value;
 pub use types::*;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument, CommandResult};
+use crate::{Plugin, Tool, CommandContext, CommandImpl, invoke, BrowseRequest, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, ToolArgument, CommandResult, ToolType};
 
 #[derive(Debug, Clone)]
 pub struct GoogleNoQueryError;
 
 impl Display for GoogleNoQueryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "'google' command did not receive a query.")
+        write!(f, "{}", "'google' tool did not receive a query.")
     }
 }
 
@@ -119,14 +119,15 @@ pub fn create_google() -> Plugin {
         name: "Google".to_string(),
         dependencies: vec![ "Browse".to_string() ],
         cycle: Box::new(GoogleCycle),
-        commands: vec![
-            Command {
+        tools: vec![
+            Tool {
                 name: "google_search".to_string(),
                 purpose: "Gives you a list of URLs from a query.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", r#""query""#)
+                    ToolArgument::new("query", r#""query""#)
                 ],
-                run: Box::new(GoogleImpl)
+                run: Box::new(GoogleImpl),
+                tool_type: ToolType::Resource
             }
         ]
     }

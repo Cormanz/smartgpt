@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginCycle, PluginData, ScriptValue, CommandArgument, CommandResult};
+use crate::{Plugin, Tool, CommandContext, CommandImpl, PluginCycle, PluginData, ScriptValue, ToolArgument, CommandResult, ToolType};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -12,7 +12,7 @@ pub struct FilesNoArgError<'a>(&'a str, &'a str);
 
 impl<'a> Display for FilesNoArgError<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "the '{}' command did not receive the '{}' argument.", self.0, self.1)
+        write!(f, "the '{}' tool did not receive the '{}' argument.", self.0, self.1)
     }
 }
 
@@ -30,7 +30,7 @@ pub struct FileReadArgs {
 }
 
 pub async fn file_write(_ctx: &mut CommandContext, args: ScriptValue, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
-    let _command_name = if append { "file_append" } else { "file_write" };
+    let _tool_name = if append { "file_append" } else { "file_write" };
     let args: FileWriteArgs = args.parse()?;
 
     let path = args.name.strip_prefix("./").unwrap_or(&args.name).to_string();
@@ -153,38 +153,42 @@ pub fn create_filesystem() -> Plugin {
         name: "File System".to_string(),
         dependencies: vec![],
         cycle: Box::new(FileCycle),
-        commands: vec![
-            Command {
+        tools: vec![
+            Tool {
                 name: "file_write".to_string(),
                 purpose: "Override a file with content. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![
-                    CommandArgument::new("name", r#""name""#),
-                    CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
+                    ToolArgument::new("name", r#""name""#),
+                    ToolArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
-                run: Box::new(FileWriteImpl)
+                run: Box::new(FileWriteImpl),
+                tool_type: ToolType::Resource
             },
-            Command {
+            Tool {
                 name: "file_append".to_string(),
                 purpose: "Add content to an existing file. Just use a raw file name, no folders or extensions, like 'cheese salad'.".to_string(),
                 args: vec![
-                    CommandArgument::new("name", r#""name""#),
-                    CommandArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
+                    ToolArgument::new("name", r#""name""#),
+                    ToolArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
                 ],
-                run: Box::new(FileAppendImpl)
+                run: Box::new(FileAppendImpl),
+                tool_type: ToolType::Resource
             },
-            Command {
+            Tool {
                 name: "file_list".to_string(),
                 purpose: "List all of your files.".to_string(),
                 args: vec![],
-                run: Box::new(FileListImpl)
+                run: Box::new(FileListImpl),
+                tool_type: ToolType::Resource
             },
-            Command {
+            Tool {
                 name: "file_read".to_string(),
                 purpose: "Read a file.".to_string(),
                 args: vec![
-                    CommandArgument::new("name", r#""name""#),
+                    ToolArgument::new("name", r#""name""#),
                 ],
-                run: Box::new(FileReadImpl)
+                run: Box::new(FileReadImpl),
+                tool_type: ToolType::Resource
             }
         ]
     }

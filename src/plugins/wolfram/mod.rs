@@ -5,14 +5,14 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, Command, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, CommandArgument, CommandResult};
+use crate::{CommandContext, CommandImpl, Plugin, Tool, BrowseRequest, invoke, PluginData, PluginCycle, PluginDataNoInvoke, ScriptValue, ToolArgument, CommandResult, ToolType};
 
 #[derive(Debug, Clone)]
 pub struct WolframNoQueryError;
 
 impl Display for WolframNoQueryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "one of the 'wolfram' commands did not receive enough info.")
+        write!(f, "{}", "one of the 'wolfram' tools did not receive enough info.")
     }
 }
 
@@ -124,14 +124,15 @@ pub fn create_wolfram() -> Plugin {
         name: "Wolfram".to_string(),
         dependencies: vec![ "Browse".to_string() ],
         cycle: Box::new(WolframCycle),
-        commands: vec![
-            Command {
+        tools: vec![
+            Tool {
                 name: "wolfram".to_string(),
                 purpose: "Ask WolframAlpha to answer a query.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", r#""query""#)
+                    ToolArgument::new("query", r#""query""#)
                 ],
-                run: Box::new(WolframImpl)
+                run: Box::new(WolframImpl),
+                tool_type: ToolType::Resource
             }
         ]
     }

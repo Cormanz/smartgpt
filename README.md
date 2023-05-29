@@ -27,7 +27,7 @@ There are many existing solutions to allowing LLMs to perform more complex tasks
 
 There are two main shortcomings, however.
 
-- **Ecosystem**: Due to its popularity, [AutoGPT](https://github.com/Torantulino/Auto-GPT) is a very polished and refined tool. It has many more commands and integrations with memory systems. To go with this, the codebase has been through large scrutiny, so it is generally less buggy and more tested than SmartGPT.
+- **Ecosystem**: Due to its popularity, [AutoGPT](https://github.com/Torantulino/Auto-GPT) is a very polished and refined tool. It has many more tools and integrations with memory systems. To go with this, the codebase has been through large scrutiny, so it is generally less buggy and more tested than SmartGPT.
 
 - **Memory Management**: Due to the extreme youth of this project, there is only one simple but limited memory system. However, this will change with time.
 
@@ -89,7 +89,7 @@ Agents all have **memory**. After completing a task, the agent will save a list 
 
 ## Plugin System
 
-Autos can use a set of **tools** such as `google_search`, `browse_url`, etc. You define these using plugins. Plugins define their own set of commands, and can have their own data.
+Autos can use a set of **tools** such as `google_search`, `browse_url`, etc. You define these using plugins. Plugins define their own set of tools, and can have their own data.
 
 # License
 

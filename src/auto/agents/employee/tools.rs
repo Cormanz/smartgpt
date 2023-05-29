@@ -1,14 +1,18 @@
-use crate::{Command, CommandArgument};
+use crate::{Tool, ToolArgument, ToolType};
 
-pub fn create_tool_list(commands: &[&Command]) -> String {
-    let mut prompt = format!("Tools:");
+pub fn create_filtered_tool_list(header: &str, tools: &[&Tool], tool_type: ToolType) -> String {
+    let mut prompt = header.to_string();
 
-    for command in commands {
-        let Command { name, purpose, args, .. } = command;
+    for tool in tools {
+        if tool.tool_type != tool_type {
+            continue;
+        }
+
+        let Tool { name, purpose, args, .. } = tool;
 
         let mut schema = format!("{{ ");
         for arg in args {
-            let CommandArgument { name, example } = arg;
+            let ToolArgument { name, example } = arg;
             schema.push_str(&format!(r#""{name}": {example}, "#))
         }
         schema = schema.trim_end_matches(", ").to_string();
@@ -20,4 +24,11 @@ pub fn create_tool_list(commands: &[&Command]) -> String {
     }
 
     return prompt;
+}
+
+pub fn create_tool_list(tools: &[&Tool]) -> String {
+    vec![
+        create_filtered_tool_list("Resources", tools, ToolType::Resource),
+        create_filtered_tool_list("Resources", tools, ToolType::Action)
+    ].join("\n\n")
 }

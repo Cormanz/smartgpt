@@ -11,7 +11,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Command, CommandContext, CommandImpl, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, CommandArgument, Message, CommandResult};
+use crate::{Plugin, Tool, CommandContext, CommandImpl, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, ToolArgument, Message, CommandResult, ToolType};
 
 pub struct BrowseData {
     pub client: Client
@@ -51,7 +51,7 @@ pub struct BrowseNoArgError;
 
 impl Display for BrowseNoArgError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "'browse-article' command did not receive one of its arguments.")
+        write!(f, "{}", "'browse-article' tool did not receive one of its arguments.")
     }
 }
 
@@ -178,14 +178,15 @@ pub fn create_browse() -> Plugin {
         name: "Browse".to_string(),
         dependencies: vec![],
         cycle: Box::new(BrowseCycle),
-        commands: vec![
-            Command {
+        tools: vec![
+            Tool {
                 name: "browse_urls".to_string(),
                 purpose: "Read the text content from a URL.".to_string(),
                 args: vec![
-                    CommandArgument::new("urls", r#"[ "url 1", "url 2" ]"#)
+                    ToolArgument::new("urls", r#"[ "url 1", "url 2" ]"#)
                 ],
-                run: Box::new(BrowseURLs)
+                run: Box::new(BrowseURLs),
+                tool_type: ToolType::Resource
             }
         ]
     }

@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, CommandImpl, Plugin, Command, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, CommandArgument, CommandResult};
+use crate::{CommandContext, CommandImpl, Plugin, Tool, invoke, BrowseRequest, PluginDataNoInvoke, PluginData, PluginCycle, ScriptValue, ToolArgument, CommandResult, ToolType};
 
 pub use types::*;
 
@@ -20,7 +20,7 @@ pub struct NewsNoQueryError;
 
 impl Display for NewsNoQueryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", "one of the 'news' commands did not receive enough info.")
+        write!(f, "{}", "one of the 'news' tools did not receive enough info.")
     }
 }
 
@@ -119,14 +119,15 @@ pub fn create_news() -> Plugin {
         name: "NewsAPI".to_string(),
         dependencies: vec![ "Browse".to_string() ],
         cycle: Box::new(NewsCycle),
-        commands: vec![
-            Command {
+        tools: vec![
+            Tool {
                 name: "news_search".to_string(),
                 purpose: "Search for news articles.".to_string(),
                 args: vec![
-                    CommandArgument::new("query", "query")
+                    ToolArgument::new("query", "query")
                 ],
-                run: Box::new(NewsImpl)
+                run: Box::new(NewsImpl),
+                tool_type: ToolType::Resource
             }
         ]
     }

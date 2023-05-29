@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error, fmt::Display, any::Any};
 
 use async_trait::async_trait;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{Serialize, de::DeserializeOwned, Deserialize};
 use serde_json::Value;
 
 #[derive(Debug, Clone)]
@@ -20,7 +20,7 @@ pub struct CommandNoArgError<'a>(pub &'a str, pub &'a str);
 
 impl<'a> Display for CommandNoArgError<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "the '{}' command did not receive the '{}' argument.", self.0, self.1)
+        write!(f, "the '{}' tool did not receive the '{}' argument.", self.0, self.1)
     }
 }
 
@@ -65,8 +65,8 @@ pub struct CommandContext {
     pub agents: Agents,
     pub plugins: Vec<Plugin>,
     pub variables: HashMap<String, ScriptValue>,
-    pub command_out: Vec<String>,
-    pub disabled_commands: Vec<String>,
+    pub tool_out: Vec<String>,
+    pub disabled_tools: Vec<String>,
     pub assets: HashMap<String, String>
 }
 
@@ -131,12 +131,12 @@ impl PluginCycle for EmptyCycle {
 }
 
 #[derive(Clone)]
-pub struct CommandArgument {
+pub struct ToolArgument {
     pub name: String,
     pub example: String
 }
 
-impl CommandArgument {
+impl ToolArgument {
     pub fn new(name: &str, example: &str) -> Self {
         Self {
             name: name.to_string(),
@@ -145,19 +145,27 @@ impl CommandArgument {
     }
 }
 
-pub struct Command {
+#[derive(Clone, Eq, PartialEq)]
+pub enum ToolType {
+    Resource,
+    Action
+}
+
+pub struct Tool {
     pub name: String,
     pub purpose: String,
-    pub args: Vec<CommandArgument>,
+    pub args: Vec<ToolArgument>,
+    pub tool_type: ToolType,
     pub run: Box<dyn CommandImpl>
 }
 
-impl Command {
+impl Tool {
     pub fn box_clone(&self) -> Self {
         Self {
             name: self.name.clone(),
             purpose: self.purpose.clone(),
             args: self.args.clone(),
+            tool_type: self.tool_type.clone(),
             run: self.run.box_clone()
         }
     }
@@ -167,7 +175,7 @@ pub struct Plugin {
     pub name: String,
     pub cycle: Box<dyn PluginCycle>,
     pub dependencies: Vec<String>,
-    pub commands: Vec<Command>
+    pub tools: Vec<Tool>
 }
 
 #[derive(Debug, Clone)]

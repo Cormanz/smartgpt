@@ -112,6 +112,7 @@ This is your task:
 {task}
 
 Make a concise, one-sentence plan on you can complete this task.
+Remember that you have access to external tools, so you can do any task.
 
 Respond in this JSON format:
 ```json

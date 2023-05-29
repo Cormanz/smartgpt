@@ -3,7 +3,7 @@ use std::{error::Error, collections::{HashSet}};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::employee::create_tool_list}, Weights, Command};
+use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::employee::create_tool_list}, Weights, Tool};
 
 use super::{log_yaml, use_tool};
 
@@ -14,15 +14,23 @@ pub struct MethodicalThoughts {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct MethodicalAction {
-    pub tool: String,
-    pub purpose: String
+pub enum MethodicalAction {
+    #[serde(rename = "resource")]
+    Resource {
+        name: String,
+        question: Option<String>
+    },
+    #[serde(rename = "action")]
+    Action {
+        name: String,
+        purpose: Option<String>
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MethodicalStep {
     pub idea: String,
-    pub action: MethodicalAction
+    pub decision: MethodicalAction
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -55,7 +63,7 @@ pub fn add_memories(agent: &mut AgentInfo) -> Result<(), Box<dyn Error>> {
 Please summarize all important actions you took out.
 Please also summarize all observations of information you have collected.
 
-Be cocnise.
+Be concise.
 
 Respond in this JSON format:
 ```json
@@ -89,11 +97,11 @@ pub fn run_method_agent(
     assets: Option<String>,
     personality: &str
 ) -> Result<String, Box<dyn Error>> {
-    let commands: Vec<&Command> = context.plugins.iter()
-        .flat_map(|plugin| &plugin.commands)
+    let tools: Vec<&Tool> = context.plugins.iter()
+        .flat_map(|plugin| &plugin.tools)
         .collect();
     
-    let tools = create_tool_list(&commands);
+    let tools = create_tool_list(&tools);
     
     let cloned_assets = context.assets.clone();
     let assets_before: HashSet<&String> = cloned_assets.keys().collect();
@@ -133,8 +141,8 @@ Personality:
     planner.llm.prompt.push(Message::User(format!(r#"
 {tools}
 
-You have been given these tools.
-You may use these tools, and only these tools.
+You have been given these resources and actions.
+You may use these resources and actions, and only these.
 
 Here is your new task:
 {task}
@@ -145,21 +153,20 @@ Here is a list of your memories:
 Here is a list of assets previously saved:
 {data}
 
-Create a list of steps of what you need to do and which tool you will use.
-Only use one tool for each step.
+Create a list of steps of what you need to do and which resource or action you will use.
+Only use one resource or action for each step.
 
 Your goal is to give a response with the following information:
 {desire}
 
-You must save that precise information through assets.
+You should try to save that precise information through assets.
 
 Do not specify arguments.
 Do not "repeat steps".
 
 Keep your plan at as low steps as possible.
 
-Use `save_asset` for all information you want to save.
-You can build off of previous assets if needed.
+Keep your plan as concise as possible!
 
 Respond in this JSON format:
 ```json
@@ -168,16 +175,25 @@ Respond in this JSON format:
     "steps": [
         {{
             "idea": "idea",
-            "action": {{
-                "tool": "a single tool name",
-                "purpose": "purpose"
+            "decision": {{
+                "resource": {{
+                    "name": "name",
+                    "question": "what question does using this resource answer"
+                }}
+            }}
+        }},
+        {{
+            "idea": "idea",
+            "decision": {{
+                "action": {{
+                    "name": "name",
+                    "purpose": "why use this action"
+                }}
             }}
         }}
     ]
 }}
 ```
-
-Be concise!
 "#).trim().to_string()));
 
     let plan = try_parse_json::<MethodicalPlan>(&planner.llm, 2, Some(600), Some(0.3))?;
@@ -212,6 +228,8 @@ Now you will carry out the next step:
 
 You must carry out this step with one entire action.
 Include ALL information.
+
+Ensure you don't hallucinate; only give information that you actually have.
 
 Assets:
 No assets.
