@@ -58,7 +58,10 @@ pub struct Memories {
     pub observations: Vec<String>
 }
 
-pub fn add_memories(agent: &mut AgentInfo) -> Result<(), Box<dyn Error>> {
+pub fn add_memories(
+    agent: &mut AgentInfo,
+    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+) -> Result<(), Box<dyn Error>> {
     agent.llm.message_history.push(Message::User(format!(r#"
 Please summarize all important actions you took out.
 Please also summarize all observations of information you have collected.
@@ -79,7 +82,7 @@ Respond in this JSON format:
     "#).trim().to_string()));
 
     let memories = try_parse_json::<Memories>(&agent.llm, 2, Some(700), Some(0.5))?.data;
-    log_yaml(&memories)?;
+    listen_to_update(&Update::StaticAgent(StaticUpdate::SavedMemories(memories.clone())))?;
 
     for memory in memories.actions.iter().chain(memories.observations.iter()) {
         agent.observations.store_memory_sync(&agent.llm, memory)?;
@@ -137,8 +140,6 @@ Personality:
     };
 
     let data = assets.unwrap_or(format!("No assets."));
-
-    println!("{} {}\n", "Static Agent".yellow().bold(), "| Plan".white());
 
     planner.llm.prompt.push(Message::User(format!(r#"
 {tools}
@@ -201,8 +202,6 @@ Respond in this JSON format:
     let plan = try_parse_json::<MethodicalPlan>(&planner.llm, 2, Some(600), Some(0.3))?;
     planner.llm.message_history.push(Message::Assistant(plan.raw));
     let plan = plan.data;
-    log_yaml(&plan)?;
-
     listen_to_update(&Update::StaticAgent(StaticUpdate::Plan(plan.clone())))?;
 
     let prompt = planner.llm.prompt.clone();
@@ -216,15 +215,9 @@ Respond in this JSON format:
 
     for (_ind, step) in plan.steps.iter().enumerate() {
         let agent = get_agent(context);
-        
-        println!();
-        println!("{} {}\n", "Static Agent".yellow().bold(), "| Selecting Step".white());
-
         let step_text = serde_yaml::to_string(&step)?;
-        println!("{}", step_text);
         
-        println!();
-        println!("{} {}\n", "Static Agent".yellow().bold(), "| Running Step".white());
+        listen_to_update(&Update::StaticAgent(StaticUpdate::SelectedStep(step.clone())))?;
 
         agent.llm.message_history.push(Message::User(format!(r#"
 Now you will carry out the next step: 
@@ -258,8 +251,6 @@ action:
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));
         let thoughts = thoughts.data;
 
-        log_yaml(&thoughts)?;
-
         drop(agent);
 
         listen_to_update(&Update::StaticAgent(StaticUpdate::Thoughts(thoughts.clone())))?;
@@ -267,18 +258,16 @@ action:
 
         let out = use_tool(context, &|context| &mut context.agents.fast, thoughts.action.clone());
             
-        println!();
         match out {
             Ok(out) => {
                 let agent = get_agent(context);
 
-                println!("{out}");
                 listen_to_update(&Update::StaticAgent(StaticUpdate::ActionResults(out.clone())))?;
                 agent.llm.message_history.push(Message::User(out));
 
                 let tokens = agent.llm.get_tokens_remaining(&agent.llm.get_messages())?;
                 if tokens < 1200 {
-                    match add_memories(agent) {
+                    match add_memories(agent, listen_to_update) {
                         Ok(_) => {},
                         Err(_) => {
                             agent.llm.crop_to_tokens_remaining(1000)?;
@@ -294,12 +283,10 @@ action:
     }
     
     let agent = get_agent(context);
-    add_memories(agent)?;
+    add_memories(agent, listen_to_update)?;
     
     let cloned_assets = context.assets.clone();
     let assets_after: HashSet<&String> = cloned_assets.keys().collect();
-
-    println!("{assets_before:?}, {assets_after:?}");
 
     let changed_assets = assets_after.difference(&assets_before)
         .map(|asset| asset.to_string())

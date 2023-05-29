@@ -11,6 +11,7 @@ mod api;
 mod runner;
 mod memory;
 mod auto;
+mod log;
 
 pub use plugin::*;
 pub use plugins::*;
@@ -20,10 +21,11 @@ pub use llms::*;
 pub use api::*;
 pub use runner::*;
 pub use memory::*;
+pub use log::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::auto::run_auto;
+use crate::auto::{run_auto, DynamicUpdate, Update, log_yaml, StaticUpdate, NamedAsset};
 
 #[derive(Serialize, Deserialize)]
 pub struct NewEndGoal {
@@ -112,7 +114,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     smartgpt.run_task( 
         "Write an essay on the Rust programming language.", 
         &|_| Ok(()), 
-        &|_| Ok(())
+        &log_update
     )?;
 
     Ok(())

@@ -84,7 +84,6 @@ pub fn get_response(
             }
 
             let out = run_method_agent(context, get_agent, get_planner_agent, &instruction, &desire, data, personality, allow_action, listen_to_update)?;
-            println!("\n{out}\n");
             Ok(out)
         },
         "brainstorm" => {
@@ -128,15 +127,11 @@ Respond in this JSON format:
 ```
 "#).trim().to_string()));
 
-    println!("{}\n", "Dynamic Agent".blue().bold());
-
     let plan = try_parse_json::<DynamicPlan>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(plan.raw));
     let plan = plan.data;  
 
     listen_to_update(&Update::DynamicAgent(DynamicUpdate::Plan(plan.plan.clone())))?;
-
-    log_yaml(&plan)?;
 
     agent.llm.message_history.push(Message::User(format!(r#"
 Your goal is to complete the task by spawning agents to complete smaller subtasks.
@@ -172,15 +167,11 @@ Respond in this exact JSON format exactly, with every field in order:
 }}
 ```"#, plan.plan)));
 
-    println!("{}\n", "Dynamic Agent".blue().bold());
-
     let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(thoughts.raw));
     let thoughts = thoughts.data;  
 
     listen_to_update(&Update::DynamicAgent(DynamicUpdate::Thoughts(thoughts.clone())))?;
-
-    log_yaml(&thoughts)?;
 
     drop(agent);
     let mut response = get_response(
@@ -234,15 +225,11 @@ You may only provide these assets when spawning agents.
 ```
         "#).trim().to_string()));
 
-        println!("{}\n", "Dynamic Agent".blue().bold());
-
         let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));
         let thoughts = thoughts.data; 
 
         listen_to_update(&Update::DynamicAgent(DynamicUpdate::Thoughts(thoughts.clone())))?;
-
-        log_yaml(&thoughts)?;
 
         response = get_response(
             context, 

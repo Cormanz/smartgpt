@@ -1,4 +1,4 @@
-use super::{BrainThoughts, MethodicalPlan, MethodicalThoughts};
+use super::{BrainThoughts, MethodicalPlan, MethodicalThoughts, MethodicalStep, Memories};
 
 #[derive(Clone, Debug)]
 pub struct NamedAsset(pub String, pub String);
@@ -12,9 +12,11 @@ pub enum DynamicUpdate {
 #[derive(Clone, Debug)]
 pub enum StaticUpdate {
     Plan(MethodicalPlan),
+    SelectedStep(MethodicalStep),
     Thoughts(MethodicalThoughts),
     ActionResults(String),
-    AddedAssets(Vec<NamedAsset>)
+    AddedAssets(Vec<NamedAsset>),
+    SavedMemories(Memories)
 }
 
 #[derive(Clone, Debug)]
