@@ -50,8 +50,7 @@ pub struct AgentLLMs {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
-    #[serde(rename = "type")]
-    pub auto_type: AutoType,
+    pub task: String,
     pub personality: String,
     pub agents: AgentLLMs,
     pub plugins: HashMap<String, Value>,
@@ -137,7 +136,7 @@ pub fn create_agent(agent: AgentConfig) -> Result<AgentInfo, Box<dyn Error>> {
     })
 }
 
-pub fn load_config(config: &str) -> Result<SmartGPT, Box<dyn Error>> {
+pub fn load_config(config: &str) -> Result<(String, SmartGPT), Box<dyn Error>> {
     let config: Config = serde_yaml::from_str(config)?;
 
     let plugins = list_plugins();
@@ -177,8 +176,11 @@ pub fn load_config(config: &str) -> Result<SmartGPT, Box<dyn Error>> {
         }
     }
 
-    Ok(SmartGPT {
-        personality: config.personality,
-        context: Arc::new(Mutex::new(context))
-    })
+    Ok((
+        config.task,
+        SmartGPT {
+            personality: config.personality,
+            context: Arc::new(Mutex::new(context))
+        }
+    ))
 }

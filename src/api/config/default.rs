@@ -1,7 +1,6 @@
 pub const DEFAULT_CONFIG: &str = r#"
 personality: A superintelligent AI.
-type: !assistant
-    assistant token limit: 400
+task: Write an essay on the Rust programming language.
 agents:
     dynamic:
         llm:
