@@ -33,6 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "Personality".blue(), smartgpt.personality);
+    println!("{}: {}", "Task".blue(), task);
 
     println!("{}:", "Plugins".blue());
     let mut exit_dependency_error = false;
