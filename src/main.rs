@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let mut smartgpt = load_config(&config)?;
+    let (task, mut smartgpt) = load_config(&config)?;
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "Personality".blue(), smartgpt.personality);
@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     drop(context);
 
     smartgpt.run_task( 
-        "Write an essay on the Rust programming language.", 
+        &task, 
         &|_| Ok(()), 
         &log_update
     )?;
