@@ -86,7 +86,6 @@ pub struct CommandContext {
     pub assets: HashMap<String, String>
 }
 
-
 #[derive(Debug, Clone)]
 pub struct NoPluginDataError(pub String);
 
