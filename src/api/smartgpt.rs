@@ -1,33 +1,45 @@
-use std::{sync::{Mutex, Arc}, collections::HashMap, error::Error, vec};
+use std::{sync::{Mutex, Arc}, collections::HashMap, error::Error, vec, fmt::Display};
 
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{CommandContext, PluginStore, Agents, AgentInfo, LLMProvider, LLMModel, LLM, ChatGPTProvider, ChatGPTConfig, memory_from_provider, LocalProvider, auto::{run_auto, Action, DisallowedAction, Update}};
+use crate::{CommandContext, PluginStore, Agents, AgentInfo, LLMProvider, LLMModel, LLM, ChatGPTProvider, ChatGPTConfig, memory_from_provider, LocalProvider, auto::{run_auto, Action, DisallowedAction, Update}, GoogleData};
+
+#[derive(Debug, Clone)]
+pub struct NoPluginError(pub String);
+
+impl Display for NoPluginError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "NoPluginError({})", self.0)
+    }
+}
+
+impl Error for NoPluginError {}
+
 pub struct SmartGPT {
     pub personality: String,
     pub context: Arc<Mutex<CommandContext>>
 }
 
 impl SmartGPT {
-    fn create() -> Result<(), Box<dyn Error>> {
-        let smartgpt = SmartGPT {
-            personality: "A superintelligent AI".to_string(),
-            context: Arc::new(Mutex::new(CommandContext {
-                agents: Agents::same(|| Ok(AgentInfo {
-                    llm: LLM::from_provider(ChatGPTProvider, ChatGPTConfig {
-                        api_key: "X".to_string(),
-                        ..Default::default()
-                    })?,
-                    observations: memory_from_provider(LocalProvider, Value::Null)?,
-                    reflections: memory_from_provider(LocalProvider, Value::Null)?
-                }))?,
-                plugin_data: PluginStore::new(),
-                assets: HashMap::new(),
-                plugins: vec![],
-                disabled_tools: vec![]
-            }))
-        };
+    pub fn load_plugin_data<T : Serialize>(
+        &mut self,
+        plugin_name: &str,
+        data: T
+    ) -> Result<(), Box<dyn Error>> {
+        let mut context = self.context.lock().unwrap();
+
+        let plugin_name = plugin_name.to_string();
+        let no_plugin_error = Box::new(NoPluginError(plugin_name.clone()));
+
+        let plugin = context.plugins.iter()
+            .find(|plugin| plugin.name == plugin_name.clone())
+            .ok_or(no_plugin_error)?;
+        
+        let data = plugin.cycle.create_data(serde_json::to_value(data)?);
+        if let Some(data) = data {
+            context.plugin_data.0.insert(plugin_name, data);
+        }
 
         Ok(())
     }
