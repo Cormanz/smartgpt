@@ -2,7 +2,7 @@ use std::{error::Error, ops::Deref, fmt::Display};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}}, run::Action, DisallowedAction, DynamicUpdate}, ScriptValue};
+use crate::{CommandContext, AgentInfo, Message, auto::{try_parse_json, agents::{worker::{log_yaml, run_method_agent}, prompt::{CONCISE_PLAN, ConcisePlanInfo, PersonalityInfo, PERSONALITY, THOUGHTS, ThoughtInfo, NewThoughtInfo, NEW_THOUGHTS}}, run::Action, DisallowedAction, DynamicUpdate}, ScriptValue};
 
 use super::Update;
 
@@ -110,22 +110,12 @@ pub fn run_brain_agent(
 ) -> Result<String, Box<dyn Error>> {
     let agent = get_agent(context);
     
-    agent.llm.prompt.push(Message::System(format!("Personality:\n{personality}")));
-
-    agent.llm.prompt.push(Message::User(format!(r#"
-This is your task:
-{task}
-
-Make a concise, one-sentence plan on you can complete this task.
-Remember that you have access to external tools, so you can do any task.
-
-Respond in this JSON format:
-```json
-{{
-    "concise plan on how you will complete the task": "plan"
-}}
-```
-"#).trim().to_string()));
+    agent.llm.prompt.push(Message::System(
+        PERSONALITY.fill(PersonalityInfo { personality: personality.to_string() })?
+    ));
+    agent.llm.prompt.push(Message::User(
+        CONCISE_PLAN.fill(ConcisePlanInfo { task: task.to_string() })?
+    ));
 
     let plan = try_parse_json::<DynamicPlan>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(plan.raw));
@@ -133,39 +123,12 @@ Respond in this JSON format:
 
     listen_to_update(&Update::DynamicAgent(DynamicUpdate::Plan(plan.plan.clone())))?;
 
-    agent.llm.message_history.push(Message::User(format!(r#"
-Your goal is to complete the task by spawning agents to complete smaller subtasks.
-Focus on using thoughts, reasoning, and self-criticism to complete your goals.
-
-You make a decision. Here are the types of decisions alongside their `args` schema:
-
-spawn_agent {{ "subtask": "subtask in natural language with all context and details", "assets": [ "asset_name" ], "desired_response": "all specific information desired" }} - Delegate a task to the Agent. Keep it simple.
-brainstorm {{ "lines": [ "line 1", "line 2" ] }} - Brainstorm an idea, or generate a response based on the information given yourself.
-final_response {{ "response": "response" }} - Give a response to the user.
-
-Assets:
-No assets.
-
-As you have no assets, you must pass "assets" as [] when spawning an agent.
-
-Ensure you adhere to your plan:
-{}
-
-You should try to spawn agents to complete your task.
-
-Only include one `thoughts`, `reasoning`, `decision`.
-
-Respond in this exact JSON format exactly, with every field in order:
-```json
-{{
-    "thoughts": "thoughts",
-    "reasoning": "reasoning",
-    "decision": {{
-        "type": "decision type",
-        "args": "..."
-    }}
-}}
-```"#, plan.plan)));
+    agent.llm.message_history.push(Message::User(
+        THOUGHTS.fill(ThoughtInfo {
+            plan: plan.plan,
+            assets: "None found.".to_string() 
+        })?
+    ));
 
     let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.3))?;
     agent.llm.message_history.push(Message::Assistant(thoughts.raw));
@@ -201,29 +164,12 @@ Respond in this exact JSON format exactly, with every field in order:
         };
         let agent = get_agent(context);
 
-        agent.llm.message_history.push(Message::User(format!(r#"
-Your previous request gave back the response:
-{response}
-
-You may now make another decision, either `spawn_agent`, `brainstorm`, or `final_response`.
-Try to use `thoughts` to think about what your previous response gave you, your long-term ideas, and where to go next.
-
-Assets: 
-{asset_list}
-
-You may only provide these assets when spawning agents.
-
-```json
-{{
-    "thoughts": "thoughts",
-    "reasoning": "reasoning",
-    "decision": {{
-        "type": "decision type",
-        "args": "..."
-    }}
-}}
-```
-        "#).trim().to_string()));
+        agent.llm.message_history.push(Message::User(
+            NEW_THOUGHTS.fill(NewThoughtInfo {
+                response: response.to_string(),
+                assets: "None found.".to_string() 
+            })?
+        ));
 
         let thoughts = try_parse_json::<BrainThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));

@@ -3,7 +3,7 @@ use std::{error::Error, collections::{HashSet}};
 use colored::Colorize;
 use serde::{Serialize, Deserialize};
 
-use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::worker::create_tool_list, DisallowedAction, StaticUpdate, Update, NamedAsset}, Weights, Tool};
+use crate::{CommandContext, AgentInfo, Message, auto::{run::Action, try_parse_json, agents::{worker::create_tool_list, prompt::{SUMMARIZE_MEMORIES, NoData, PERSONALITY, PersonalityInfo, CREATE_PLAN, CreatePlanInfo, NextStepInfo, NEXT_STEP, SAVE_ASSET, SaveAssetInfo}}, DisallowedAction, StaticUpdate, Update, NamedAsset}, Weights, Tool};
 
 use super::{log_yaml, use_tool};
 
@@ -69,24 +69,9 @@ pub fn add_memories(
     agent: &mut AgentInfo,
     listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<(), Box<dyn Error>> {
-    agent.llm.message_history.push(Message::User(format!(r#"
-Please summarize all important actions you took out.
-Please also summarize all observations of information you have collected.
-
-Be concise.
-
-Respond in this JSON format:
-```json
-{{
-    "actions": [
-        "what tool you used and why"
-    ],
-    "observations": [
-        "what you learned"
-    ]
-}}
-```
-    "#).trim().to_string()));
+    agent.llm.message_history.push(Message::User(
+        SUMMARIZE_MEMORIES.fill(NoData)?  
+    ));
 
     let memories = try_parse_json::<Memories>(&agent.llm, 2, Some(700), Some(0.5))?.data;
     listen_to_update(&Update::StaticAgent(StaticUpdate::SavedMemories(memories.clone())))?;
@@ -124,10 +109,9 @@ pub fn run_method_agent(
 
     planner.llm.clear_history();
 
-    planner.llm.prompt.push(Message::System(format!(r#"
-Personality: 
-{personality}
-"#).trim().to_string()));
+    planner.llm.prompt.push(Message::System(
+        PERSONALITY.fill(PersonalityInfo { personality: personality.to_string() })?
+    ));
 
     let observations = planner.observations.get_memories_sync(
         &planner.llm, task, 100, Weights {
@@ -148,70 +132,15 @@ Personality:
 
     let data = assets.unwrap_or(format!("No assets."));
 
-    planner.llm.prompt.push(Message::User(format!(r#"
-{tools}
-
-You have been given these resources and actions.
-You may use these resources and actions, and only these.
-
-Here is your new task:
-{task}
-
-Here is a list of your memories:
-{observations}
-
-Here is a list of assets previously saved:
-{data}
-
-Create a list of steps of what you need to do and which resource or action you will use.
-Only use one resource or action for each step.
-
-Your goal is to give a response with the following information:
-{desire}
-
-You should try to save that precise information through assets.
-
-Do not specify arguments.
-Do not "repeat steps".
-
-Keep your plan at as low steps as possible.
-Keep your plan as concise as possible!
-
-After you are done planning steps, additionally plan to save one or more assets as output.
-
-Respond in this JSON format:
-```json
-{{
-    "thoughts": "thoughts regarding steps and assets",
-    "steps": [
-        {{
-            "idea": "idea",
-            "decision": {{
-                "resource": {{
-                    "name": "name",
-                    "question": "what question does using this resource answer"
-                }}
-            }}
-        }},
-        {{
-            "idea": "idea",
-            "decision": {{
-                "action": {{
-                    "name": "name",
-                    "purpose": "why use this action"
-                }}
-            }}
-        }}
-    ],
-    "assets": [
-        {{
-            "name": "asset_name,
-            "description": "description"
-        }}
-    ]
-}}
-```
-"#).trim().to_string()));
+    planner.llm.prompt.push(Message::User(
+        CREATE_PLAN.fill(CreatePlanInfo {
+            task: task.to_string(),
+            observations,
+            tools,
+            assets: data,
+            desire: desire.to_string()
+        })?
+    ));
 
     let plan = try_parse_json::<MethodicalPlan>(&planner.llm, 2, Some(600), Some(0.3))?;
     planner.llm.message_history.push(Message::Assistant(plan.raw));
@@ -233,29 +162,11 @@ Respond in this JSON format:
         
         listen_to_update(&Update::StaticAgent(StaticUpdate::SelectedStep(step.clone())))?;
 
-        agent.llm.message_history.push(Message::User(format!(r#"
-Now you will carry out the next step: 
-{step_text}
-
-You must carry out this step with one entire action.
-Include ALL information.
-
-Ensure you don't hallucinate; only give information that you actually have.
-
-Assets:
-No assets.
-
-Respond in this JSON format:
-```json
-{{
-    "thoughts": "thoughts",
-    "action": {{
-        "tool": "tool",
-        "args": {{}}
-    }}
-}}
-```
-"#).trim().to_string()));
+        agent.llm.message_history.push(Message::User(
+            NEXT_STEP.fill(NextStepInfo {
+                step: step_text
+            })?
+        ));
 
         let thoughts = try_parse_json::<MethodicalThoughts>(&agent.llm, 2, Some(1000), Some(0.5))?;
         agent.llm.message_history.push(Message::Assistant(thoughts.raw));
@@ -299,15 +210,10 @@ Respond in this JSON format:
 
         let asset_text = serde_yaml::to_string(&asset)?;
 
-        agent.llm.message_history.push(Message::User(format!(r#"
-Now, you will write this asset:
-
-{asset_text}
-
-Respond in pure plaintext format with a detailed markdown response.
-Include all necessary details as the description stated, alongside any necessary sources or explanation of where you got the information.
-"#).trim().to_string()));
-
+        agent.llm.message_history.push(Message::User(
+            SAVE_ASSET.fill(SaveAssetInfo { asset: asset_text })?
+        ));
+    
         let asset_content = agent.llm.model.get_response_sync(&agent.llm.get_messages(), Some(800), Some(0.3))?;
         agent.llm.message_history.pop();
 
