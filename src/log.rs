@@ -47,14 +47,12 @@ pub fn log_update(update: &Update) -> Result<(), Box<dyn Error>> {
                     println!("{out}");
                     println!();
                 },
-                StaticUpdate::AddedAssets(assets) => {
-                    println!("{} | {}", "Static Agent".yellow().bold(), "Added Assets".white());
+                StaticUpdate::AddedAsset(asset) => {
+                    println!("{} | {}", "Static Agent".yellow().bold(), "Added Asset".white());
                     println!();
-                    for NamedAsset(name, content) in assets {
-                        println!("{} {}", ">".white(), name.bold());
-                        println!("{content}");
-                        println!();
-                    }
+                    let NamedAsset(name, content) = asset;
+                    println!("{} {}", ">".white(), name.bold());
+                    println!("{content}");
                     println!();
                 },
                 _ => {}

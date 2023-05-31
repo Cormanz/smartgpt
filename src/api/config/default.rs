@@ -35,7 +35,6 @@ agents:
         memory:
             local: {}
 plugins:
-    assets: {}
     browse: {}
     google:
         cse id: PUT YOUR CSE ID HERE
