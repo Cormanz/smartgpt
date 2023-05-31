@@ -15,7 +15,7 @@ pub enum StaticUpdate {
     SelectedStep(MethodicalStep),
     Thoughts(MethodicalThoughts),
     ActionResults(String),
-    AddedAssets(Vec<NamedAsset>),
+    AddedAsset(NamedAsset),
     SavedMemories(Memories)
 }
 

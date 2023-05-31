@@ -34,9 +34,16 @@ pub struct MethodicalStep {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct MethodicalAsset {
+    pub name: String,
+    pub description: String
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MethodicalPlan {
     pub thoughts: String,
-    pub steps: Vec<MethodicalStep>
+    pub steps: Vec<MethodicalStep>,
+    pub assets: Vec<MethodicalAsset>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -170,7 +177,7 @@ Do not "repeat steps".
 Keep your plan at as low steps as possible.
 Keep your plan as concise as possible!
 
-Make sure the last step in your plan uses `save_asset`.
+After you are done planning steps, additionally plan to save one or more assets as output.
 
 Respond in this JSON format:
 ```json
@@ -195,6 +202,12 @@ Respond in this JSON format:
                 }}
             }}
         }}
+    ],
+    "assets": [
+        {{
+            "name": "asset_name,
+            "description": "description"
+        }}
     ]
 }}
 ```
@@ -214,7 +227,7 @@ Respond in this JSON format:
     agent.llm.prompt = prompt;
     agent.llm.message_history = message_history;
 
-    for (_ind, step) in plan.steps.iter().enumerate() {
+    for step in plan.steps {
         let agent = get_agent(context);
         let step_text = serde_yaml::to_string(&step)?;
         
@@ -278,22 +291,39 @@ Respond in this JSON format:
             }
         }
     }
+
+    let mut changed_assets: Vec<NamedAsset> = vec![];
+
+    for asset in plan.assets {
+        let agent = get_agent(context);
+
+        let asset_text = serde_yaml::to_string(&asset)?;
+
+        agent.llm.message_history.push(Message::User(format!(r#"
+Now, you will write this asset:
+
+{asset_text}
+
+Respond in pure plaintext format with a detailed markdown response.
+Include all necessary details as the description stated, alongside any necessary sources or explanation of where you got the information.
+"#).trim().to_string()));
+
+        let asset_content = agent.llm.model.get_response_sync(&agent.llm.get_messages(), Some(800), Some(0.3))?;
+        agent.llm.message_history.pop();
+
+        drop(agent);
+
+        *context.assets
+            .entry(asset.name.clone())
+            .or_insert(asset_content.clone()) = asset_content.clone();
+
+        let named_asset = NamedAsset(asset.name, asset_content);
+        changed_assets.push(named_asset.clone());
+        listen_to_update(&Update::StaticAgent(StaticUpdate::AddedAsset(named_asset.clone())))?;
+    }
     
     let agent = get_agent(context);
     add_memories(agent, listen_to_update)?;
-    
-    let cloned_assets = context.assets.clone();
-    let assets_after: HashSet<&String> = cloned_assets.keys().collect();
-
-    let changed_assets = assets_after.difference(&assets_before)
-        .map(|asset| asset.to_string())
-        .collect::<Vec<_>>();
-
-    let changed_assets: Vec<NamedAsset> = changed_assets.iter()
-        .map(|asset| NamedAsset(asset.clone(), context.assets[asset].clone()))
-        .collect();
-
-    listen_to_update(&Update::StaticAgent(StaticUpdate::AddedAssets(changed_assets.clone())))?;
 
     let asset_str = if changed_assets.len() == 0 {
         format!("No assets changed.")
