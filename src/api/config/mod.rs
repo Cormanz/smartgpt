@@ -4,7 +4,7 @@ use colored::Colorize;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, create_assets, PluginStore, create_brainstorm, SmartGPT};
+use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, PluginStore, create_brainstorm, SmartGPT};
 
 mod default;
 pub use default::*;
@@ -80,9 +80,7 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_google(),
         create_filesystem(),
         create_wolfram(),
-        create_assets(),
-        create_brainstorm(),
-        create_news()
+        create_brainstorm()
     ]
 }
 
