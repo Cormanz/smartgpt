@@ -2,7 +2,10 @@ use std::{collections::HashMap, error::Error, marker::PhantomData};
 use serde::Serialize;
 
 mod adept;
+mod methodical;
+
 pub use adept::*;
+pub use methodical::*;
 
 pub struct Prompt<'a, T : Serialize>(pub &'a str, pub PhantomData<T>);
 
