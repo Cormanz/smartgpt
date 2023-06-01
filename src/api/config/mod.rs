@@ -80,7 +80,8 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_google(),
         create_filesystem(),
         create_wolfram(),
-        create_brainstorm()
+        create_brainstorm(),
+        create_news()
     ]
 }
 
