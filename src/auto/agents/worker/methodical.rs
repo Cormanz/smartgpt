@@ -67,7 +67,7 @@ pub struct Memories {
 
 pub fn add_memories(
     agent: &mut AgentInfo,
-    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+    listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<(), Box<dyn Error>> {
     agent.llm.message_history.push(Message::User(
         SUMMARIZE_MEMORIES.fill(NoData)?  
@@ -91,8 +91,8 @@ pub fn run_method_agent(
     desire: &str,
     assets: Option<String>,
     personality: &str,
-    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
-    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+    allow_action: &mut impl FnMut(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     let tools: Vec<&Tool> = context.plugins.iter()
         .flat_map(|plugin| &plugin.tools)

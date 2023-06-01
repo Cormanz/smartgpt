@@ -47,8 +47,8 @@ impl SmartGPT {
     pub fn run_task(
         &mut self,
         task: &str,
-        allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
-        listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+        allow_action: &mut impl FnMut(&Action) -> Result<(), DisallowedAction>,
+        listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
     ) -> Result<String, Box<dyn Error>> {
         run_auto(self, task, allow_action, listen_to_update)
     }
