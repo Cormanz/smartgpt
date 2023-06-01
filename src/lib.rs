@@ -17,4 +17,5 @@ pub use llms::*;
 pub use api::*;
 pub use runner::*;
 pub use memory::*;
+pub use auto::*;
 pub use log::*;
