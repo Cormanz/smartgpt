@@ -32,8 +32,8 @@ impl Display for DisallowedAction {
 pub fn run_auto(
     smartgpt: &mut SmartGPT, 
     task: &str,
-    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
-    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+    allow_action: &mut impl FnMut(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     let SmartGPT { 
         context, ..

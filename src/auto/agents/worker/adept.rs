@@ -65,8 +65,8 @@ pub fn get_response(
     get_planner_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     thoughts: &BrainThoughts,
     personality: &str,
-    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
-    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+    allow_action: &mut impl FnMut(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     match thoughts.decision.decision_type.deref() {
         "spawn_agent" => {
@@ -105,8 +105,8 @@ pub fn run_brain_agent(
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     task: &str,
     personality: &str,
-    allow_action: &impl Fn(&Action) -> Result<(), DisallowedAction>,
-    listen_to_update: &impl Fn(&Update) -> Result<(), Box<dyn Error>>
+    allow_action: &mut impl FnMut(&Action) -> Result<(), DisallowedAction>,
+    listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<String, Box<dyn Error>> {
     let agent = get_agent(context);
     

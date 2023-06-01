@@ -85,8 +85,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     smartgpt.run_task( 
         &task, 
-        &|_| Ok(()), 
-        &log_update
+        &mut |_| Ok(()), 
+        &mut log_update
     )?;
 
     Ok(())
