@@ -7,7 +7,9 @@ pub struct NamedAsset(pub String, pub String);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum DynamicUpdate {
+    #[serde(rename = "plan")]
     Plan(String),
+    #[serde(rename = "thoughts")]
     Thoughts(BrainThoughts)
 }
 
@@ -23,6 +25,7 @@ pub enum StaticUpdate {
     ActionResults(String),
     #[serde(rename = "added asset")]
     AddedAsset(NamedAsset),
+    #[serde(rename = "added memories")]
     SavedMemories(Memories)
 }
 
