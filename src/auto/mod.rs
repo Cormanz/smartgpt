@@ -4,6 +4,7 @@ use serde::{ Serialize, de::DeserializeOwned};
 use json5;
 
 use colored::Colorize;
+use serde_json::ser::PrettyFormatter;
 
 use crate::{LLM, SmartGPT};
 
@@ -70,11 +71,17 @@ pub fn try_parse_json<T : DeserializeOwned + Serialize>(llm: &LLM, tries: usize,
         let response = llm.model.get_response_sync(&llm.get_messages(), max_tokens, temperature)?;
         let processed_response = find_text_between_braces(&response).unwrap_or("None".to_string());
 
+        let formatter = PrettyFormatter::with_indent(b"\t");
+
         // We use JSON5 to allow for more lenient parsing for models like GPT3.5.
         match json5::from_str::<T>(&processed_response) {
             Ok(data) => {
                 // We serialize it back to JSON itself to help GPT3.5 maintain consistency.
-                let pretty_response = serde_json::to_string_pretty(&data)?;
+
+                let mut buf = vec![];
+                let mut ser = serde_json::ser::Serializer::with_formatter(&mut buf, formatter);
+                data.serialize(&mut ser).unwrap();
+                let pretty_response = String::from_utf8(buf).unwrap();
 
                 return Ok(ParsedResponse {
                     data,
