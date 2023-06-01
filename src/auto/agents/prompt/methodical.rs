@@ -68,33 +68,33 @@ After you are done planning steps, additionally plan to save one or more assets 
 Respond in this JSON format:
 ```json
 {{
-    "thoughts": "thoughts regarding steps and assets",
-    "steps": [
-        {{
-            "idea": "idea",
-            "decision": {{
-                "resource": {{
-                    "name": "name",
-                    "question": "what question does using this resource answer"
-                }}
-            }}
-        }},
-        {{
-            "idea": "idea",
-            "decision": {{
-                "action": {{
-                    "name": "name",
-                    "purpose": "why use this action"
-                }}
-            }}
-        }}
-    ],
-    "assets": [
-        {{
-            "name": "asset_name,
-            "description": "description"
-        }}
-    ]
+	"thoughts": "thoughts regarding steps and assets",
+	"steps": [
+		{{
+			"idea": "idea",
+			"decision": {{
+				"resource": {{
+					"name": "name",
+					"question": "what question does using this resource answer"
+				}}
+			}}
+		}},
+		{{
+			"idea": "idea",
+			"decision": {{
+				"action": {{
+					"name": "name",
+					"purpose": "why use this action"
+				}}
+			}}
+		}}
+	],
+	"assets": [
+		{{
+			"name": "asset_name,
+			"description": "description"
+		}}
+	]
 }}
 ```
 "#, PhantomData);
@@ -119,11 +119,11 @@ No assets.
 Respond in this JSON format:
 ```json
 {{
-    "thoughts": "thoughts",
-    "action": {{
-        "tool": "tool",
-        "args": {{}}
-    }}
+	"thoughts": "thoughts",
+	"action": {{
+		"tool": "tool",
+		"args": {{}}
+	}}
 }}
 ```
 "#, PhantomData);

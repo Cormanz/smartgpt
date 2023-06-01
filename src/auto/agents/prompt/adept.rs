@@ -26,7 +26,7 @@ Remember that you have access to external tools, so you can do any task.
 Respond in this JSON format:
 ```json
 {{
-    "concise plan on how you will complete the task": "plan"
+	"concise plan on how you will complete the task": "plan"
 }}
 ```
 "#, PhantomData);
@@ -62,12 +62,12 @@ Only include one `thoughts`, `reasoning`, `decision`.
 Respond in this exact JSON format exactly, with every field in order:
 ```json
 {{
-    "thoughts": "thoughts",
-    "reasoning": "reasoning",
-    "decision": {{
-        "type": "decision type",
-        "args": "..."
-    }}
+	"thoughts": "thoughts",
+	"reasoning": "reasoning",
+	"decision": {{
+		"type": "decision type",
+		"args": "..."
+	}}
 }}
 ```
 "#, PhantomData);
@@ -92,12 +92,12 @@ You may only provide these assets when spawning agents.
 
 ```json
 {{
-    "thoughts": "thoughts",
-    "reasoning": "reasoning",
-    "decision": {{
-        "type": "decision type",
-        "args": "..."
-    }}
+	"thoughts": "thoughts",
+	"reasoning": "reasoning",
+	"decision": {{
+		"type": "decision type",
+		"args": "..."
+	}}
 }}  
 ```
 "#, PhantomData);
