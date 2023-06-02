@@ -69,6 +69,7 @@ pub fn add_memories(
     agent: &mut AgentInfo,
     listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
 ) -> Result<(), Box<dyn Error>> {
+    listen_to_update(&Update::StaticAgent(StaticUpdate::SavingMemories()))?;
     agent.llm.message_history.push(Message::User(
         SUMMARIZE_MEMORIES.fill(NoData)?  
     ));

@@ -27,6 +27,8 @@ pub enum StaticUpdate {
     SelectedAsset(String),
     #[serde(rename = "added asset")]
     AddedAsset(NamedAsset),
+    #[serde(rename = "saving memories")]
+    SavingMemories(),
     #[serde(rename = "added memories")]
     SavedMemories(Memories)
 }
