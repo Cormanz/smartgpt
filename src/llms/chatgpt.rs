@@ -4,7 +4,7 @@ use async_openai::{Client, types::{CreateChatCompletionResponse, CreateChatCompl
 use async_trait::async_trait;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
-use tiktoken_rs::{async_openai::{get_chat_completion_max_tokens, num_tokens_from_messages}, model::get_context_size};
+use tiktoken_rs::{async_openai::{get_chat_completion_max_tokens, num_tokens_from_messages}, model::get_context_size, cl100k_base, r50k_base};
 
 use crate::{LLMProvider, Message, LLMModel};
 
@@ -67,6 +67,15 @@ impl LLMModel for ChatGPT {
             .collect::<Vec<_>>();
 
         let tokens = get_chat_completion_max_tokens(&self.model, &messages)?;
+        Ok(tokens)
+    }
+
+    fn get_tokens_from_text(&self, text: &str) -> Result<Vec<String>, Box<dyn Error>> {
+        let bpe = r50k_base()?;
+        let tokens = bpe.encode_ordinary(text).iter()
+            .flat_map(|&token| bpe.decode(vec![ token ]))
+            .collect::<Vec<_>>();
+
         Ok(tokens)
     }
 }

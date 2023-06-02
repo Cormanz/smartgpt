@@ -16,12 +16,12 @@ Be concise.
 Respond in this JSON format:
 ```json
 {{
-    "actions": [
-        "what tool you used and why"
-    ],
-    "observations": [
-        "what you learned"
-    ]
+	"actions": [
+		"what tool you used and why"
+	],
+	"observations": [
+		"what you learned"
+	]
 }}
 ```"#, PhantomData);
 

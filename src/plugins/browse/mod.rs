@@ -11,7 +11,7 @@ pub use extract::*;
 use serde::{Serialize, Deserialize};
 use serde_json::Value;
 
-use crate::{Plugin, Tool, CommandContext, CommandImpl, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, ToolArgument, Message, CommandResult, ToolType};
+use crate::{Plugin, Tool, CommandContext, CommandImpl, PluginData, PluginDataNoInvoke, PluginCycle, ScriptValue, ToolArgument, Message, CommandResult, ToolType, LLM};
 
 pub struct BrowseData {
     pub client: Client
@@ -63,21 +63,14 @@ pub struct NoContentError {
     help: String
 }
 
-fn chunk_text(text: &str, chunk_size: usize) -> Vec<String> {
-    let mut chunks = vec![];
-    let mut current_chunk = String::new();
+fn chunk_text(llm: &LLM, text: &str, chunk_size: usize) -> Result<Vec<String>, Box<dyn Error>> {
+    let tokens = llm.get_tokens_from_text(text)?;
 
-    for word in wrap(text, chunk_size) {
-        if current_chunk.len() + word.len() > chunk_size {
-            chunks.push(current_chunk.trim().to_owned());
-            current_chunk = String::new();
-        }
-        current_chunk.push_str(&word);
-    }
-    if !current_chunk.is_empty() {
-        chunks.push(current_chunk.trim().to_owned());
-    }
-    chunks
+    Ok(
+        tokens.chunks(3500)
+            .map(|token_chunk| token_chunk.join(""))
+            .collect()
+    )
 }
 
 #[derive(Serialize, Deserialize)]
@@ -98,7 +91,7 @@ pub async fn browse_urls(ctx: &mut CommandContext, args: ScriptValue) -> Result<
                 let content = resp.content;
 
                 let mut summarized_content = String::new();
-                let chunks = chunk_text(&content, 8500);
+                let chunks = chunk_text(&ctx.agents.fast.llm, &content, 3700)?;
         
                 let chunk_count = chunks.len();
                 let summary_prompt = match chunk_count {

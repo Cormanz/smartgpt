@@ -23,6 +23,8 @@ pub enum StaticUpdate {
     Thoughts(MethodicalThoughts),
     #[serde(rename = "action results")]
     ActionResults(String),
+    #[serde(rename = "selected asset")]
+    SelectedAsset(String),
     #[serde(rename = "added asset")]
     AddedAsset(NamedAsset),
     #[serde(rename = "added memories")]

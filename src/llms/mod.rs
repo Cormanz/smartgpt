@@ -105,6 +105,8 @@ pub trait LLMModel : Send + Sync {
             self.get_base_embed(text).await
         })
     }
+
+    fn get_tokens_from_text(&self, text: &str) -> Result<Vec<String>, Box<dyn Error>>;
 }
 
 #[async_trait]
@@ -151,6 +153,10 @@ impl LLM {
         }
 
         Ok(())
+    }
+
+    pub fn get_tokens_from_text(&self, text: &str) -> Result<Vec<String>, Box<dyn Error>> {
+        self.model.get_tokens_from_text(text)
     }
 
     pub fn get_messages(&self) -> Vec<Message> {
