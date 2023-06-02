@@ -206,6 +206,8 @@ pub fn run_method_agent(
     let mut changed_assets: Vec<NamedAsset> = vec![];
 
     for asset in plan.assets {
+        listen_to_update(&Update::StaticAgent(StaticUpdate::SelectedAsset(asset.name.clone())))?;
+
         let agent = get_agent(context);
 
         let asset_text = serde_yaml::to_string(&asset)?;
@@ -227,8 +229,9 @@ pub fn run_method_agent(
         changed_assets.push(named_asset.clone());
         listen_to_update(&Update::StaticAgent(StaticUpdate::AddedAsset(named_asset.clone())))?;
     }
-    
+
     let agent = get_agent(context);
+
     add_memories(agent, listen_to_update)?;
 
     let asset_str = if changed_assets.len() == 0 {

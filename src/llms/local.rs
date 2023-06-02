@@ -71,6 +71,10 @@ impl LLMModel for LocalLLM {
     fn get_token_limit(&self) -> usize {
         2048
     }
+
+    fn get_tokens_from_text(&self, text: &str) -> Result<Vec<String>, Box<dyn Error>> {
+        return Ok(vec![])
+    }
 }
 
 #[derive(Serialize, Deserialize)]

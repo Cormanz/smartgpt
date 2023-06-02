@@ -47,6 +47,12 @@ pub fn log_update(update: &Update) -> Result<(), Box<dyn Error>> {
                     println!("{out}");
                     println!();
                 },
+                StaticUpdate::SelectedAsset(asset) => {
+                    println!("{} | {}", "Static Agent".yellow().bold(), "Selected Asset".white());
+                    println!();
+                    println!("{asset}");
+                    println!();
+                },
                 StaticUpdate::AddedAsset(asset) => {
                     println!("{} | {}", "Static Agent".yellow().bold(), "Added Asset".white());
                     println!();
