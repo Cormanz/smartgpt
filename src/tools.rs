@@ -1,11 +1,18 @@
 use std::error::Error;
 
-use crate::{Plugin, CommandContext};
+use crate::{CommandContext, Plugin};
 
-pub async fn generate_context(context: &mut CommandContext, plugins: &[Plugin], previous_prompt: Option<&str>) -> Result<String, Box<dyn Error>> {
+pub async fn generate_context(
+    context: &mut CommandContext,
+    plugins: &[Plugin],
+    previous_prompt: Option<&str>,
+) -> Result<String, Box<dyn Error>> {
     let mut out: Vec<String> = vec![];
     for plugin in plugins {
-        let context = plugin.cycle.create_context(context, previous_prompt).await?;
+        let context = plugin
+            .cycle
+            .create_context(context, previous_prompt)
+            .await?;
         if let Some(context) = context {
             out.push(context);
         }

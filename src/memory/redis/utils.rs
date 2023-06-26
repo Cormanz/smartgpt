@@ -1,8 +1,8 @@
+use crate::EmbeddedMemory;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use redis::{RedisError, RedisResult};
-use crate::{EmbeddedMemory};
 
-use std::{borrow::Borrow};
+use std::borrow::Borrow;
 
 pub async fn execute_redis_tool<T: redis::FromRedisValue, S: Borrow<str>>(
     con: &mut redis::aio::Connection,
@@ -16,7 +16,12 @@ pub async fn execute_redis_tool<T: redis::FromRedisValue, S: Borrow<str>>(
     cmd.query_async(con).await
 }
 
-pub async fn create_index_if_not_exists(con: &mut redis::aio::Connection, index_name: &str, field_path: &str, dimension: usize) -> redis::RedisResult<()> {
+pub async fn create_index_if_not_exists(
+    con: &mut redis::aio::Connection,
+    index_name: &str,
+    field_path: &str,
+    dimension: usize,
+) -> redis::RedisResult<()> {
     let index_exists: bool = redis::cmd("FT.INFO")
         .arg(index_name)
         .query_async(con)
@@ -50,9 +55,10 @@ pub async fn create_index_if_not_exists(con: &mut redis::aio::Connection, index_
                 "DIM",
                 &dimension.to_string(),
                 "DISTANCE_METRIC",
-                "L2"
+                "L2",
             ],
-        ).await;
+        )
+        .await;
     }
 
     Ok(())
@@ -67,29 +73,29 @@ pub async fn search_vector_field(
     // check if k can be formatted as a string to prevent panic
     let k_str = k.to_string();
     if k_str.is_empty() {
-        return Err(
-            RedisError::from((redis::ErrorKind::TypeError, "Invalid k value"))
-        );
+        return Err(RedisError::from((
+            redis::ErrorKind::TypeError,
+            "Invalid k value",
+        )));
     }
 
     let query_blob_str = STANDARD.encode(query_blob);
 
-    Ok(
-        execute_redis_tool::<redis::Value, _>(
-            con,
-            "FT.SEARCH",
-            &[
-                index_name,
-                &format!("*=>[KNN {} @vec $BLOB]", k_str),
-                "PARAMS",
-                "2",
-                "BLOB",
-                &query_blob_str,
-                "DIALECT",
-                "2",
-            ],
-        ).await?
+    Ok(execute_redis_tool::<redis::Value, _>(
+        con,
+        "FT.SEARCH",
+        &[
+            index_name,
+            &format!("*=>[KNN {} @vec $BLOB]", k_str),
+            "PARAMS",
+            "2",
+            "BLOB",
+            &query_blob_str,
+            "DIALECT",
+            "2",
+        ],
     )
+    .await?)
 }
 
 pub async fn set_json_record(
@@ -105,5 +111,6 @@ pub async fn set_json_record(
             "$",
             &serde_json::to_value(&embedded_memory)?.to_string(),
         ],
-    ).await
+    )
+    .await
 }

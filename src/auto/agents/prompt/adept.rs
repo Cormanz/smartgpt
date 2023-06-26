@@ -1,22 +1,23 @@
 use std::marker::PhantomData;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::Prompt;
 
 #[derive(Serialize, Deserialize)]
 pub struct PersonalityInfo {
-    pub personality: String
+    pub personality: String,
 }
 
 pub const PERSONALITY: Prompt<PersonalityInfo> = Prompt("Personality: [personality]", PhantomData);
 
 #[derive(Serialize, Deserialize)]
 pub struct ConcisePlanInfo {
-    pub task: String
+    pub task: String,
 }
 
-pub const CONCISE_PLAN: Prompt<ConcisePlanInfo> = Prompt(r#"
+pub const CONCISE_PLAN: Prompt<ConcisePlanInfo> = Prompt(
+    r#"
 This is your task:
 [task]
 
@@ -29,15 +30,18 @@ Respond in this JSON format:
 	"concise plan on how you will complete the task": "plan"
 }}
 ```
-"#, PhantomData);
+"#,
+    PhantomData,
+);
 
 #[derive(Serialize, Deserialize)]
 pub struct ThoughtInfo {
     pub plan: String,
-    pub assets: String
+    pub assets: String,
 }
 
-pub const THOUGHTS: Prompt<ThoughtInfo> = Prompt(r#"
+pub const THOUGHTS: Prompt<ThoughtInfo> = Prompt(
+    r#"
 Your goal is to complete the task by spawning agents to complete smaller subtasks.
 Focus on using thoughts, reasoning, and self-criticism to complete your goals.
 
@@ -70,15 +74,18 @@ Respond in this exact JSON format exactly, with every field in order:
 	}}
 }}
 ```
-"#, PhantomData);
+"#,
+    PhantomData,
+);
 
 #[derive(Serialize, Deserialize)]
 pub struct NewThoughtInfo {
     pub response: String,
-    pub assets: String
+    pub assets: String,
 }
 
-pub const NEW_THOUGHTS: Prompt<NewThoughtInfo> = Prompt(r#"
+pub const NEW_THOUGHTS: Prompt<NewThoughtInfo> = Prompt(
+    r#"
 Your previous request gave back the response:
 [response]
 
@@ -100,4 +107,6 @@ You may only provide these assets when spawning agents.
 	}}
 }}  
 ```
-"#, PhantomData);
+"#,
+    PhantomData,
+);

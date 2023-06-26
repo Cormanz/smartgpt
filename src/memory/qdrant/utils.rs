@@ -1,15 +1,15 @@
 use std::error::Error;
 
-use crate::{Memory, RelevantMemory, QdrantPayload};
+use crate::{Memory, QdrantPayload, RelevantMemory};
 
 use qdrant_client::prelude::*;
 use qdrant_client::qdrant::vectors::VectorsOptions;
 use qdrant_client::qdrant::vectors_config::Config;
-use qdrant_client::qdrant::{CreateCollection, VectorParams, VectorsConfig, ScoredPoint};
+use qdrant_client::qdrant::{CreateCollection, ScoredPoint, VectorParams, VectorsConfig};
 
 pub async fn init_qdrant_client() -> Result<QdrantClient, Box<dyn Error>> {
-    let qdrant_host = std::env::var("QDRANT_HOST")
-        .unwrap_or_else(|_| String::from("http://localhost:6334"));
+    let qdrant_host =
+        std::env::var("QDRANT_HOST").unwrap_or_else(|_| String::from("http://localhost:6334"));
 
     let config = QdrantClientConfig::from_url(&qdrant_host);
 
@@ -18,24 +18,33 @@ pub async fn init_qdrant_client() -> Result<QdrantClient, Box<dyn Error>> {
     Ok(client)
 }
 
-pub async fn create_collection_if_not_exists(client: &QdrantClient, collection_name: &str) -> Result<(), Box<dyn Error>> {
+pub async fn create_collection_if_not_exists(
+    client: &QdrantClient,
+    collection_name: &str,
+) -> Result<(), Box<dyn Error>> {
     let collection_exists = client.has_collection(collection_name.to_string()).await?;
 
     if !collection_exists {
-        let collection_creation_result = client.create_collection(
-            &create_initial_collection(collection_name.to_string())
-        ).await;
+        let collection_creation_result = client
+            .create_collection(&create_initial_collection(collection_name.to_string()))
+            .await;
         match collection_creation_result {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => {
                 eprintln!("Failed to create collection: {}", e);
-                return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, format!("{}", e))));
+                return Err(Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("{}", e),
+                )));
             }
         };
 
         let collection_exists = client.has_collection(collection_name.to_string()).await?;
         if !collection_exists {
-            return Err(Box::new(std::io::Error::new(std::io::ErrorKind::Other, "Failed to create collection")));
+            return Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Failed to create collection",
+            )));
         }
     }
 
@@ -80,13 +89,9 @@ pub fn convert_to_relevant_memory(point: &ScoredPoint) -> Result<RelevantMemory,
         content: payload.content,
         recall: payload.recall,
         recency: payload.recency,
-        embedding: point_embedding.clone()
+        embedding: point_embedding.clone(),
     };
     let relevance = point.score;
 
-    Ok(RelevantMemory {
-        memory,
-        relevance,
-    })
+    Ok(RelevantMemory { memory, relevance })
 }
-

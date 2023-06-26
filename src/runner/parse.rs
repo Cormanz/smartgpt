@@ -1,6 +1,13 @@
-use std::{error::Error, collections::HashMap, fmt::{Display, Debug}};
-use rustpython_parser::{parser::{parse_program}, ast::{StmtKind, ExprKind, Constant, Located}};
 use num_traits::ToPrimitive;
+use rustpython_parser::{
+    ast::{Constant, ExprKind, Located, StmtKind},
+    parser::parse_program,
+};
+use std::{
+    collections::HashMap,
+    error::Error,
+    fmt::{Debug, Display},
+};
 
 #[derive(Debug)]
 pub struct GPTParseError(pub String);
@@ -19,7 +26,7 @@ pub enum Primitive {
     Int(i64),
     Float(f64),
     Bool(bool),
-    None
+    None,
 }
 
 impl Debug for Primitive {
@@ -27,7 +34,8 @@ impl Debug for Primitive {
         match self {
             Primitive::String(string) => {
                 if string.len() > 100 {
-                    let mut text = format!("{:?}", string).chars()
+                    let mut text = format!("{:?}", string)
+                        .chars()
                         .take(100)
                         .map(|el| el.to_string())
                         .collect::<Vec<_>>()
@@ -61,7 +69,7 @@ pub enum Expression {
     List(Vec<Expression>),
     Dict(HashMap<String, Expression>),
     FunctionCall(String, Vec<Expression>),
-    GetAttr(Box<Expression>, Box<Expression>)
+    GetAttr(Box<Expression>, Box<Expression>),
 }
 
 impl Debug for Expression {
@@ -95,7 +103,7 @@ impl Debug for Expression {
                     }
                 }
                 write!(f, " ")?;
-                write!(f, "}}")                
+                write!(f, "}}")
             }
             Expression::FunctionCall(name, args) => {
                 write!(f, "{}(", name)?;
@@ -143,7 +151,10 @@ pub fn to_expr(node: ExprKind) -> Result<Expression, GPTParseError> {
         ExprKind::Call { func, args, .. } => {
             let func = match func.node {
                 ExprKind::Name { id, .. } => Ok(id),
-                other => Err(GPTParseError(format!("Cannot handle function call applied to {:?}", other)))
+                other => Err(GPTParseError(format!(
+                    "Cannot handle function call applied to {:?}",
+                    other
+                ))),
             }?;
             let mut arguments: Vec<Expression> = vec![];
             for arg in args {
@@ -158,22 +169,20 @@ pub fn to_expr(node: ExprKind) -> Result<Expression, GPTParseError> {
 
             Ok(Expression::GetAttr(Box::new(value), Box::new(slice)))
         }
-        ExprKind::Constant { value, .. } => {
-            match value {
-                Constant::Bool(bool) => Ok(bool.into()),
-                Constant::Int(int) => int.to_i64()
-                    .map(|el| el.into())
-                    .ok_or(GPTParseError(format!("Cannot parse into i64, {:?}", int))),
-                Constant::Float(float) => float.to_f64()
-                    .map(|el| el.into())
-                    .ok_or(GPTParseError(format!("Cannot parse into f64, {:?}", float))),
-                Constant::Str(string) => Ok(string.into()),
-                _ => Err(GPTParseError(format!("Cannot parse constant {:?}", value)))
-            }
-        }
-        ExprKind::Name { id, .. } => {
-            Ok(Expression::Name(id.clone()))
-        }
+        ExprKind::Constant { value, .. } => match value {
+            Constant::Bool(bool) => Ok(bool.into()),
+            Constant::Int(int) => int
+                .to_i64()
+                .map(|el| el.into())
+                .ok_or(GPTParseError(format!("Cannot parse into i64, {:?}", int))),
+            Constant::Float(float) => float
+                .to_f64()
+                .map(|el| el.into())
+                .ok_or(GPTParseError(format!("Cannot parse into f64, {:?}", float))),
+            Constant::Str(string) => Ok(string.into()),
+            _ => Err(GPTParseError(format!("Cannot parse constant {:?}", value))),
+        },
+        ExprKind::Name { id, .. } => Ok(Expression::Name(id.clone())),
         ExprKind::List { elts, .. } => {
             let mut list: Vec<Expression> = vec![];
             for expr in elts {
@@ -187,13 +196,14 @@ pub fn to_expr(node: ExprKind) -> Result<Expression, GPTParseError> {
             for expr in keys {
                 let expr = to_expr(expr.node)?;
                 let name = match expr {
-                    Expression::Primitive(primitive) => {
-                        match primitive {
-                            Primitive::String(text) => Ok(text),
-                            _ => Err(GPTParseError(format!("Cannot handle map key, {:?}", primitive)))
-                        }
+                    Expression::Primitive(primitive) => match primitive {
+                        Primitive::String(text) => Ok(text),
+                        _ => Err(GPTParseError(format!(
+                            "Cannot handle map key, {:?}",
+                            primitive
+                        ))),
                     },
-                    _ => Err(GPTParseError(format!("Cannot handle map key, {:?}", expr)))
+                    _ => Err(GPTParseError(format!("Cannot handle map key, {:?}", expr))),
                 }?;
                 parsed_keys.push(name);
             }
@@ -204,13 +214,17 @@ pub fn to_expr(node: ExprKind) -> Result<Expression, GPTParseError> {
                 parsed_values.push(expr);
             }
 
-            let hash_map: HashMap<String, Expression> = parsed_keys.into_iter()
+            let hash_map: HashMap<String, Expression> = parsed_keys
+                .into_iter()
                 .zip(parsed_values.into_iter())
                 .collect();
 
             Ok(Expression::Dict(hash_map))
-        },
-        other => Err(GPTParseError(format!("Cannot parse expression {:?}", other)))
+        }
+        other => Err(GPTParseError(format!(
+            "Cannot parse expression {:?}",
+            other
+        ))),
     }
 }
 
@@ -220,25 +234,25 @@ pub type Body = Vec<Statement>;
 pub enum Statement {
     Expression(Expression),
     Assign(Expression, Expression),
-    For(Expression, Expression, Body)
+    For(Expression, Expression, Body),
 }
 
 pub fn to_statement(statement: StmtKind) -> Result<Statement, GPTParseError> {
     match statement {
-        StmtKind::Expr { value } => {
-            to_expr(value.node).map(|el| Statement::Expression(el))
-        }
+        StmtKind::Expr { value } => to_expr(value.node).map(|el| Statement::Expression(el)),
         StmtKind::Assign { targets, value, .. } => {
             let target = to_expr(targets[0].node.clone())?;
             let value = to_expr(value.node)?;
             Ok(Statement::Assign(target, value))
         }
-        StmtKind::For { target, iter, body, .. } => {
+        StmtKind::For {
+            target, iter, body, ..
+        } => {
             let target = to_expr(target.node)?;
             let iter = to_expr(iter.node)?;
             Ok(Statement::For(target, iter, to_body(body)?))
-        },
-        other => Err(GPTParseError(format!("Cannot parse statement {:?}", other)))
+        }
+        other => Err(GPTParseError(format!("Cannot parse statement {:?}", other))),
     }
 }
 
@@ -246,7 +260,7 @@ pub fn to_body(body: Vec<Located<StmtKind>>) -> Result<Body, GPTParseError> {
     let mut statements: Vec<Statement> = vec![];
     for statement in body {
         statements.push(to_statement(statement.node)?);
-    } 
+    }
     Ok(statements)
 }
 

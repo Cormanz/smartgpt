@@ -7,7 +7,8 @@ use super::Prompt;
 #[derive(Serialize, Deserialize)]
 pub struct NoData;
 
-pub const SUMMARIZE_MEMORIES: Prompt<NoData> = Prompt(r#"
+pub const SUMMARIZE_MEMORIES: Prompt<NoData> = Prompt(
+    r#"
 Please summarize all important actions you took out.
 Please also summarize all observations of information you have collected.
 
@@ -23,7 +24,9 @@ Respond in this JSON format:
 		"what you learned"
 	]
 }}
-```"#, PhantomData);
+```"#,
+    PhantomData,
+);
 
 #[derive(Serialize, Deserialize)]
 pub struct CreatePlanInfo {
@@ -31,10 +34,11 @@ pub struct CreatePlanInfo {
     pub task: String,
     pub observations: String,
     pub assets: String,
-    pub desire: String
+    pub desire: String,
 }
 
-pub const CREATE_PLAN: Prompt<CreatePlanInfo> = Prompt(r#"
+pub const CREATE_PLAN: Prompt<CreatePlanInfo> = Prompt(
+    r#"
 [tools]
 
 You have been given these resources and actions.
@@ -97,14 +101,17 @@ Respond in this JSON format:
 	]
 }}
 ```
-"#, PhantomData);
+"#,
+    PhantomData,
+);
 
 #[derive(Serialize, Deserialize)]
 pub struct NextStepInfo {
-    pub step: String
+    pub step: String,
 }
 
-pub const NEXT_STEP: Prompt<NextStepInfo> = Prompt(r#"
+pub const NEXT_STEP: Prompt<NextStepInfo> = Prompt(
+    r#"
 Now you will carry out the next step: 
 [step]
 
@@ -126,18 +133,23 @@ Respond in this JSON format:
 	}}
 }}
 ```
-"#, PhantomData);
+"#,
+    PhantomData,
+);
 
 #[derive(Serialize, Deserialize)]
 pub struct SaveAssetInfo {
-    pub asset: String
+    pub asset: String,
 }
 
-pub const SAVE_ASSET: Prompt<SaveAssetInfo> = Prompt(r#"
+pub const SAVE_ASSET: Prompt<SaveAssetInfo> = Prompt(
+    r#"
 Now, you will write this asset:
 
 [asset]
 
 Respond in pure plaintext format with a detailed markdown response.
 Include all necessary details as the description stated, alongside any necessary sources or explanation of where you got the information.
-"#, PhantomData);
+"#,
+    PhantomData,
+);

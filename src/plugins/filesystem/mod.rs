@@ -1,10 +1,13 @@
 use std::{error::Error, fmt::Display, fs::OpenOptions, path::Path};
 
 use async_trait::async_trait;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{Plugin, Tool, CommandContext, CommandImpl, PluginCycle, PluginData, ScriptValue, ToolArgument, CommandResult, ToolType};
+use crate::{
+    CommandContext, CommandImpl, CommandResult, Plugin, PluginCycle, PluginData, ScriptValue, Tool,
+    ToolArgument, ToolType,
+};
 use std::{fs, io::Write};
 
 #[derive(Debug, Clone)]
@@ -12,7 +15,11 @@ pub struct FilesNoArgError<'a>(&'a str, &'a str);
 
 impl<'a> Display for FilesNoArgError<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "the '{}' tool did not receive the '{}' argument.", self.0, self.1)
+        write!(
+            f,
+            "the '{}' tool did not receive the '{}' argument.",
+            self.0, self.1
+        )
     }
 }
 
@@ -21,23 +28,31 @@ impl<'a> Error for FilesNoArgError<'a> {}
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileWriteArgs {
     pub name: String,
-    pub lines: Vec<String>
+    pub lines: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FileReadArgs {
-    pub name: String
+    pub name: String,
 }
 
-pub async fn file_write(_ctx: &mut CommandContext, args: ScriptValue, append: bool) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_write(
+    _ctx: &mut CommandContext,
+    args: ScriptValue,
+    append: bool,
+) -> Result<ScriptValue, Box<dyn Error>> {
     let _tool_name = if append { "file_append" } else { "file_write" };
     let args: FileWriteArgs = args.parse()?;
 
-    let path = args.name.strip_prefix("./").unwrap_or(&args.name).to_string();
+    let path = args
+        .name
+        .strip_prefix("./")
+        .unwrap_or(&args.name)
+        .to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
 
     if !Path::new("./files/").exists() {
-            fs::create_dir("./files/")?;
+        fs::create_dir("./files/")?;
     }
 
     let mut file = OpenOptions::new()
@@ -50,7 +65,10 @@ pub async fn file_write(_ctx: &mut CommandContext, args: ScriptValue, append: bo
     Ok(ScriptValue::None)
 }
 
-pub async fn file_list(_ctx: &mut CommandContext, _args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_list(
+    _ctx: &mut CommandContext,
+    _args: ScriptValue,
+) -> Result<ScriptValue, Box<dyn Error>> {
     let files = fs::read_dir("./files/")?;
     let files = files
         .map(|el| el.map(|el| el.path().display().to_string()))
@@ -58,10 +76,15 @@ pub async fn file_list(_ctx: &mut CommandContext, _args: ScriptValue) -> Result<
         .map(|el| el.unwrap())
         .collect::<Vec<_>>();
 
-    Ok(ScriptValue::List(files.iter().map(|el| el.clone().into()).collect()))
+    Ok(ScriptValue::List(
+        files.iter().map(|el| el.clone().into()).collect(),
+    ))
 }
 
-pub async fn file_read(_ctx: &mut CommandContext, args: ScriptValue) -> Result<ScriptValue, Box<dyn Error>> {
+pub async fn file_read(
+    _ctx: &mut CommandContext,
+    args: ScriptValue,
+) -> Result<ScriptValue, Box<dyn Error>> {
     let FileReadArgs { name: path } = args.parse()?;
     let path = path.strip_prefix("./").unwrap_or(&path).to_string();
     let path = path.strip_prefix("files/").unwrap_or(&path).to_string();
@@ -75,8 +98,14 @@ pub struct FileWriteImpl;
 
 #[async_trait]
 impl CommandImpl for FileWriteImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
-        Ok(CommandResult::ScriptValue(file_write(ctx, args, false).await?))
+    async fn invoke(
+        &self,
+        ctx: &mut CommandContext,
+        args: ScriptValue,
+    ) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(
+            file_write(ctx, args, false).await?,
+        ))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -88,8 +117,14 @@ pub struct FileAppendImpl;
 
 #[async_trait]
 impl CommandImpl for FileAppendImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
-        Ok(CommandResult::ScriptValue(file_write(ctx, args, true).await?))
+    async fn invoke(
+        &self,
+        ctx: &mut CommandContext,
+        args: ScriptValue,
+    ) -> Result<CommandResult, Box<dyn Error>> {
+        Ok(CommandResult::ScriptValue(
+            file_write(ctx, args, true).await?,
+        ))
     }
 
     fn box_clone(&self) -> Box<dyn CommandImpl> {
@@ -97,12 +132,15 @@ impl CommandImpl for FileAppendImpl {
     }
 }
 
-
 pub struct FileListImpl;
 
 #[async_trait]
 impl CommandImpl for FileListImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+    async fn invoke(
+        &self,
+        ctx: &mut CommandContext,
+        args: ScriptValue,
+    ) -> Result<CommandResult, Box<dyn Error>> {
         Ok(CommandResult::ScriptValue(file_list(ctx, args).await?))
     }
 
@@ -115,7 +153,11 @@ pub struct FileReadImpl;
 
 #[async_trait]
 impl CommandImpl for FileReadImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+    async fn invoke(
+        &self,
+        ctx: &mut CommandContext,
+        args: ScriptValue,
+    ) -> Result<CommandResult, Box<dyn Error>> {
         Ok(CommandResult::ScriptValue(file_read(ctx, args).await?))
     }
 
@@ -128,7 +170,11 @@ pub struct FileCycle;
 
 #[async_trait]
 impl PluginCycle for FileCycle {
-    async fn create_context(&self, _context: &mut CommandContext, _previous_prompt: Option<&str>) -> Result<Option<String>, Box<dyn Error>> {
+    async fn create_context(
+        &self,
+        _context: &mut CommandContext,
+        _previous_prompt: Option<&str>,
+    ) -> Result<Option<String>, Box<dyn Error>> {
         let files = fs::read_dir("files")?;
         let files = files
             .map(|el| el.map(|el| el.path().display().to_string()))

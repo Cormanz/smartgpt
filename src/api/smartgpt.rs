@@ -1,9 +1,19 @@
-use std::{sync::{Mutex, Arc}, collections::HashMap, error::Error, vec, fmt::Display};
+use std::{
+    collections::HashMap,
+    error::Error,
+    fmt::Display,
+    sync::{Arc, Mutex},
+    vec,
+};
 
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::{CommandContext, PluginStore, Agents, AgentInfo, LLMProvider, LLMModel, LLM, ChatGPTProvider, ChatGPTConfig, memory_from_provider, LocalProvider, auto::{run_auto, Action, DisallowedAction, Update}, GoogleData};
+use crate::{
+    auto::{run_auto, Action, DisallowedAction, Update},
+    memory_from_provider, AgentInfo, Agents, ChatGPTConfig, ChatGPTProvider, CommandContext,
+    GoogleData, LLMModel, LLMProvider, LocalProvider, PluginStore, LLM,
+};
 
 #[derive(Debug, Clone)]
 pub struct NoPluginError(pub String);
@@ -18,24 +28,26 @@ impl Error for NoPluginError {}
 
 pub struct SmartGPT {
     pub personality: String,
-    pub context: Arc<Mutex<CommandContext>>
+    pub context: Arc<Mutex<CommandContext>>,
 }
 
 impl SmartGPT {
-    pub fn load_plugin_data<T : Serialize>(
+    pub fn load_plugin_data<T: Serialize>(
         &mut self,
         plugin_name: &str,
-        data: T
+        data: T,
     ) -> Result<(), Box<dyn Error>> {
         let mut context = self.context.lock().unwrap();
 
         let plugin_name = plugin_name.to_string();
         let no_plugin_error = Box::new(NoPluginError(plugin_name.clone()));
 
-        let plugin = context.plugins.iter()
+        let plugin = context
+            .plugins
+            .iter()
             .find(|plugin| plugin.name == plugin_name.clone())
             .ok_or(no_plugin_error)?;
-        
+
         let data = plugin.cycle.create_data(serde_json::to_value(data)?);
         if let Some(data) = data {
             context.plugin_data.0.insert(plugin_name, data);
@@ -48,7 +60,7 @@ impl SmartGPT {
         &mut self,
         task: &str,
         allow_action: &mut impl FnMut(&Action) -> Result<(), DisallowedAction>,
-        listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>
+        listen_to_update: &mut impl FnMut(&Update) -> Result<(), Box<dyn Error>>,
     ) -> Result<String, Box<dyn Error>> {
         run_auto(self, task, allow_action, listen_to_update)
     }

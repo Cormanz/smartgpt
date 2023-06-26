@@ -1,10 +1,21 @@
-use std::{collections::HashMap, error::Error, fmt::Display, process, sync::{Mutex, Arc}};
+use std::{
+    collections::HashMap,
+    error::Error,
+    fmt::Display,
+    process,
+    sync::{Arc, Mutex},
+};
 
 use colored::Colorize;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{CommandContext, LLM, Plugin, create_browse, create_google, create_filesystem, create_wolfram, create_news, LLMProvider, create_model_chatgpt, Agents, LLMModel, create_model_llama, AgentInfo, MemoryProvider, create_memory_local, create_memory_qdrant, MemorySystem, create_memory_redis, PluginStore, create_brainstorm, SmartGPT};
+use crate::{
+    create_brainstorm, create_browse, create_filesystem, create_google, create_memory_local,
+    create_memory_qdrant, create_memory_redis, create_model_chatgpt, create_model_llama,
+    create_news, create_wolfram, AgentInfo, Agents, CommandContext, LLMModel, LLMProvider,
+    MemoryProvider, MemorySystem, Plugin, PluginStore, SmartGPT, LLM,
+};
 
 mod default;
 pub use default::*;
@@ -35,13 +46,14 @@ impl<'a> Error for NoMemorySystemError {}
 #[serde(rename_all = "camelCase")]
 pub struct AgentConfig {
     pub llm: HashMap<String, Value>,
-    pub memory: HashMap<String, Value>
+    pub memory: HashMap<String, Value>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentLLMs {
-    #[serde(rename = "static")] static_agent: AgentConfig,
+    #[serde(rename = "static")]
+    static_agent: AgentConfig,
     planner: AgentConfig,
     dynamic: AgentConfig,
     fast: AgentConfig,
@@ -54,7 +66,8 @@ pub struct Config {
     pub personality: String,
     pub agents: AgentLLMs,
     pub plugins: HashMap<String, Value>,
-    #[serde(rename = "disabled tools")] pub disabled_tools: Vec<String>
+    #[serde(rename = "disabled tools")]
+    pub disabled_tools: Vec<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -69,9 +82,8 @@ pub struct Llm {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AutoType {
-    #[serde(rename = "runner")] Runner {
-        task: String
-    }
+    #[serde(rename = "runner")]
+    Runner { task: String },
 }
 
 pub fn list_plugins() -> Vec<Plugin> {
@@ -81,29 +93,27 @@ pub fn list_plugins() -> Vec<Plugin> {
         create_filesystem(),
         create_wolfram(),
         create_brainstorm(),
-        create_news()
+        create_news(),
     ]
 }
 
 pub fn create_llm_providers() -> Vec<Box<dyn LLMProvider>> {
-    vec![
-        create_model_chatgpt(),
-        create_model_llama()
-    ]
+    vec![create_model_chatgpt(), create_model_llama()]
 }
 
 pub fn create_memory_providers() -> Vec<Box<dyn MemoryProvider>> {
     vec![
         create_memory_local(),
         create_memory_qdrant(),
-        create_memory_redis()
+        create_memory_redis(),
     ]
 }
 
 fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, Box<dyn Error>> {
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_llm_providers();
-    let llm_provider = providers.iter()
+    let llm_provider = providers
+        .iter()
         .filter(|el| el.is_enabled())
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoLLMError)?;
@@ -111,10 +121,13 @@ fn create_llm_model(agent: HashMap<String, Value>) -> Result<Box<dyn LLMModel>, 
     Ok(llm_provider.create(model_config.clone())?)
 }
 
-fn create_memory_model(agent: HashMap<String, Value>) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
+fn create_memory_model(
+    agent: HashMap<String, Value>,
+) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
     let (model_name, model_config) = agent.iter().next().ok_or(NoLLMError)?;
     let providers = create_memory_providers();
-    let memory_provider = providers.iter()
+    let memory_provider = providers
+        .iter()
         .filter(|el| el.is_enabled())
         .find(|el| el.get_name().to_ascii_lowercase() == model_name.to_ascii_lowercase())
         .ok_or(NoMemorySystemError)?;
@@ -128,10 +141,10 @@ pub fn create_agent(agent: AgentConfig) -> Result<AgentInfo, Box<dyn Error>> {
             prompt: vec![],
             message_history: vec![],
             end_prompt: vec![],
-            model: create_llm_model(agent.llm)?
+            model: create_llm_model(agent.llm)?,
         },
         observations: create_memory_model(agent.memory.clone())?,
-        reflections: create_memory_model(agent.memory)?
+        reflections: create_memory_model(agent.memory)?,
     })
 }
 
@@ -141,7 +154,9 @@ pub fn load_config(config: &str) -> Result<(String, SmartGPT), Box<dyn Error>> {
     let plugins = list_plugins();
     let mut exit = false;
     for (name, _) in &config.plugins {
-        let plugin = plugins.iter().find(|el| el.name.to_ascii_lowercase() == name.to_ascii_lowercase());
+        let plugin = plugins
+            .iter()
+            .find(|el| el.name.to_ascii_lowercase() == name.to_ascii_lowercase());
         if let None = plugin {
             println!("{}: No plugin named \"{}\".", "Error".red(), name);
             exit = true;
@@ -160,10 +175,10 @@ pub fn load_config(config: &str) -> Result<(String, SmartGPT), Box<dyn Error>> {
             static_agent: create_agent(config.agents.static_agent)?,
             planner: create_agent(config.agents.planner)?,
             dynamic: create_agent(config.agents.dynamic)?,
-            fast: create_agent(config.agents.fast)?
-        }
+            fast: create_agent(config.agents.fast)?,
+        },
     };
-    
+
     for plugin in plugins {
         if let Some(plugin_info) = config.plugins.get(&plugin.name.to_lowercase()) {
             let data = plugin.cycle.create_data(plugin_info.clone());
@@ -179,7 +194,7 @@ pub fn load_config(config: &str) -> Result<(String, SmartGPT), Box<dyn Error>> {
         config.task,
         SmartGPT {
             personality: config.personality,
-            context: Arc::new(Mutex::new(context))
-        }
+            context: Arc::new(Mutex::new(context)),
+        },
     ))
 }

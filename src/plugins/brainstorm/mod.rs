@@ -1,13 +1,16 @@
-use std::{error::Error};
+use std::error::Error;
 
 use async_trait::async_trait;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::{Plugin, Tool, CommandContext, CommandImpl, EmptyCycle, ScriptValue, CommandResult, ToolArgument, ToolType};
+use crate::{
+    CommandContext, CommandImpl, CommandResult, EmptyCycle, Plugin, ScriptValue, Tool,
+    ToolArgument, ToolType,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct BrainstormArgs {
-    pub lines: Vec<String>
+    pub lines: Vec<String>,
 }
 
 pub async fn brainstorm() -> Result<ScriptValue, Box<dyn Error>> {
@@ -18,7 +21,11 @@ pub struct BrainstormImpl;
 
 #[async_trait]
 impl CommandImpl for BrainstormImpl {
-    async fn invoke(&self, ctx: &mut CommandContext, args: ScriptValue) -> Result<CommandResult, Box<dyn Error>> {
+    async fn invoke(
+        &self,
+        ctx: &mut CommandContext,
+        args: ScriptValue,
+    ) -> Result<CommandResult, Box<dyn Error>> {
         Ok(CommandResult::ScriptValue(brainstorm().await?))
     }
 
@@ -32,16 +39,12 @@ pub fn create_brainstorm() -> Plugin {
         name: "Brainstorm".to_string(),
         dependencies: vec![],
         cycle: Box::new(EmptyCycle),
-        tools: vec![
-            Tool {
-                name: "brainstorm".to_string(),
-                purpose: "Think of an idea or generate content manually.".to_string(),
-                args: vec![
-                    ToolArgument::new("lines", r#"[ "line 1", "line 2" ]"#)
-                ],
-                run: Box::new(BrainstormImpl),
-                tool_type: ToolType::Resource
-            }
-        ]
+        tools: vec![Tool {
+            name: "brainstorm".to_string(),
+            purpose: "Think of an idea or generate content manually.".to_string(),
+            args: vec![ToolArgument::new("lines", r#"[ "line 1", "line 2" ]"#)],
+            run: Box::new(BrainstormImpl),
+            tool_type: ToolType::Resource,
+        }],
     }
 }

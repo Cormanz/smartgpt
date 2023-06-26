@@ -1,12 +1,12 @@
 use std::error::Error;
 
-
-
-
-use crate::{AgentInfo, CommandContext, auto::run::{run_action_sync, Action}};
+use crate::{
+    auto::run::{run_action_sync, Action},
+    AgentInfo, CommandContext,
+};
 
 pub fn use_tool(
-    context: &mut CommandContext, 
+    context: &mut CommandContext,
     get_agent: &impl Fn(&mut CommandContext) -> &mut AgentInfo,
     action: Action,
 ) -> Result<String, Box<dyn Error>> {

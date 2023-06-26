@@ -11,7 +11,12 @@ pub fn create_filtered_tool_list(header: &str, tools: &[&Tool], tool_type: ToolT
             continue;
         }
 
-        let Tool { name, purpose, args, .. } = tool;
+        let Tool {
+            name,
+            purpose,
+            args,
+            ..
+        } = tool;
 
         let mut schema = format!("{{ ");
         for arg in args {
@@ -32,6 +37,13 @@ pub fn create_filtered_tool_list(header: &str, tools: &[&Tool], tool_type: ToolT
 pub fn create_tool_list(tools: &[&Tool]) -> String {
     vec![
         create_filtered_tool_list("Resources", tools, ToolType::Resource),
-        create_filtered_tool_list("Actions", tools, ToolType::Action { needs_permission: false })
-    ].join("\n\n")
+        create_filtered_tool_list(
+            "Actions",
+            tools,
+            ToolType::Action {
+                needs_permission: false,
+            },
+        ),
+    ]
+    .join("\n\n")
 }

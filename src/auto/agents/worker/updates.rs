@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{BrainThoughts, MethodicalPlan, MethodicalThoughts, MethodicalStep, Memories};
+use super::{BrainThoughts, Memories, MethodicalPlan, MethodicalStep, MethodicalThoughts};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NamedAsset(pub String, pub String);
@@ -10,7 +10,7 @@ pub enum DynamicUpdate {
     #[serde(rename = "plan")]
     Plan(String),
     #[serde(rename = "thoughts")]
-    Thoughts(BrainThoughts)
+    Thoughts(BrainThoughts),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -30,7 +30,7 @@ pub enum StaticUpdate {
     #[serde(rename = "saving memories")]
     SavingMemories(),
     #[serde(rename = "added memories")]
-    SavedMemories(Memories)
+    SavedMemories(Memories),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -38,5 +38,5 @@ pub enum Update {
     #[serde(rename = "dynamic agent")]
     DynamicAgent(DynamicUpdate),
     #[serde(rename = "static agent")]
-    StaticAgent(StaticUpdate)
+    StaticAgent(StaticUpdate),
 }

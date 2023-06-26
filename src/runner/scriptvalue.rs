@@ -1,6 +1,5 @@
-use std::{collections::HashMap, fmt::Display, error::Error};
 use serde::de::DeserializeOwned;
-
+use std::{collections::HashMap, error::Error, fmt::Display};
 
 use crate::{Expression, Primitive};
 
@@ -34,11 +33,11 @@ pub enum ScriptValue {
     Bool(bool),
     List(Vec<ScriptValue>),
     Dict(HashMap<String, ScriptValue>),
-    None
+    None,
 }
 
 impl ScriptValue {
-    pub fn parse<T : DeserializeOwned>(&self) -> Result<T, Box<dyn Error>> {
+    pub fn parse<T: DeserializeOwned>(&self) -> Result<T, Box<dyn Error>> {
         let value = serde_json::to_value(self)?;
         Ok(serde_json::from_value(value)?)
     }
@@ -51,17 +50,15 @@ impl From<ScriptValue> for Expression {
             ScriptValue::Int(int) => Expression::Primitive(Primitive::Int(int)),
             ScriptValue::Float(float) => Expression::Primitive(Primitive::Float(float)),
             ScriptValue::Bool(bool) => Expression::Primitive(Primitive::Bool(bool)),
-            ScriptValue::List(list) => Expression::List(
-                list.iter()
-                    .map(|el| el.clone().into())
-                    .collect::<Vec<_>>()
-            ),
+            ScriptValue::List(list) => {
+                Expression::List(list.iter().map(|el| el.clone().into()).collect::<Vec<_>>())
+            }
             ScriptValue::Dict(dict) => Expression::Dict(
                 dict.iter()
                     .map(|(key, value)| (key.clone(), value.clone().into()))
-                    .collect::<HashMap<_, _>>()
+                    .collect::<HashMap<_, _>>(),
             ),
-            ScriptValue::None => Expression::Primitive(Primitive::None)
+            ScriptValue::None => Expression::Primitive(Primitive::None),
         }
     }
 }
@@ -72,7 +69,7 @@ impl TryFrom<ScriptValue> for String {
     fn try_from(value: ScriptValue) -> Result<Self, Self::Error> {
         match value {
             ScriptValue::String(text) => Ok(text),
-            _ => Err(CannotConvertError("String".to_string()))
+            _ => Err(CannotConvertError("String".to_string())),
         }
     }
 }
@@ -83,7 +80,7 @@ impl TryFrom<ScriptValue> for bool {
     fn try_from(value: ScriptValue) -> Result<Self, Self::Error> {
         match value {
             ScriptValue::Bool(bool) => Ok(bool),
-            _ => Err(CannotConvertError("bool".to_string()))
+            _ => Err(CannotConvertError("bool".to_string())),
         }
     }
 }
@@ -94,7 +91,7 @@ impl TryFrom<ScriptValue> for i64 {
     fn try_from(value: ScriptValue) -> Result<Self, Self::Error> {
         match value {
             ScriptValue::Int(int) => Ok(int),
-            _ => Err(CannotConvertError("i64".to_string()))
+            _ => Err(CannotConvertError("i64".to_string())),
         }
     }
 }
@@ -105,7 +102,7 @@ impl TryFrom<ScriptValue> for f64 {
     fn try_from(value: ScriptValue) -> Result<Self, Self::Error> {
         match value {
             ScriptValue::Float(float) => Ok(float),
-            _ => Err(CannotConvertError("f64".to_string()))
+            _ => Err(CannotConvertError("f64".to_string())),
         }
     }
 }
@@ -116,7 +113,7 @@ impl TryFrom<ScriptValue> for Vec<ScriptValue> {
     fn try_from(value: ScriptValue) -> Result<Self, Self::Error> {
         match value {
             ScriptValue::List(list) => Ok(list),
-            _ => Err(CannotConvertError("Vec<ScriptValue>".to_string()))
+            _ => Err(CannotConvertError("Vec<ScriptValue>".to_string())),
         }
     }
 }
@@ -127,7 +124,9 @@ impl TryFrom<ScriptValue> for HashMap<String, ScriptValue> {
     fn try_from(value: ScriptValue) -> Result<Self, Self::Error> {
         match value {
             ScriptValue::Dict(dict) => Ok(dict),
-            _ => Err(CannotConvertError("HashMap<String, ScriptValue>".to_string()))
+            _ => Err(CannotConvertError(
+                "HashMap<String, ScriptValue>".to_string(),
+            )),
         }
     }
 }
@@ -137,7 +136,6 @@ impl From<&str> for ScriptValue {
         ScriptValue::String(string.to_string())
     }
 }
-
 
 impl From<String> for ScriptValue {
     fn from(string: String) -> Self {

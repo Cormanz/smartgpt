@@ -13,7 +13,8 @@ pub fn apply_chunks(content: &str, chunk: usize, chunk_size: usize) -> (String, 
         None
     };
 
-    let content = content.chars()
+    let content = content
+        .chars()
         .skip((chunk - 1) * chunk_size)
         .take(chunk_size)
         .map(|el| el.to_string())

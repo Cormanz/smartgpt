@@ -1,21 +1,24 @@
-use std::cmp::Ordering;
-use std::{sync::Arc};
-use std::error::Error;
-use redis::{Client};
-use serde::{Deserialize, Serialize};
-use tokio::runtime::Runtime;
+use redis::Client;
 use redis::Value::*;
+use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+use std::error::Error;
+use std::sync::Arc;
+use tokio::runtime::Runtime;
 
-use crate::{LLM, Memory, MemoryProvider, RelevantMemory, MemorySystem, set_json_record, search_vector_field, create_index_if_not_exists};
+use crate::{
+    create_index_if_not_exists, search_vector_field, set_json_record, Memory, MemoryProvider,
+    MemorySystem, RelevantMemory, LLM,
+};
 
-use tokio::{sync::Mutex};
+use tokio::sync::Mutex;
 
 use async_trait::async_trait;
 
 #[derive(Serialize, Deserialize)]
 pub struct EmbeddedMemory {
     memory: RedisPayload,
-    embedding: Vec<f32>
+    embedding: Vec<f32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -43,7 +46,7 @@ impl MemorySystem for RedisMemorySystem {
                 recency: 1.,
                 recall: 1.,
             },
-            embedding: embedding
+            embedding: embedding,
         };
 
         let mut latest_point_id = self.latest_point_id.lock().await;
@@ -55,7 +58,12 @@ impl MemorySystem for RedisMemorySystem {
         Ok(())
     }
 
-    async fn get_memory_pool(&mut self, llm: &LLM, memory: &str, min_count: usize) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
+    async fn get_memory_pool(
+        &mut self,
+        llm: &LLM,
+        memory: &str,
+        min_count: usize,
+    ) -> Result<Vec<RelevantMemory>, Box<dyn Error>> {
         let embedding = llm.model.get_base_embed(memory).await?;
         let mut con = self.client.get_tokio_connection().await?;
 
@@ -64,23 +72,20 @@ impl MemorySystem for RedisMemorySystem {
             .flat_map(|&value| value.to_le_bytes().to_vec())
             .collect();
 
-        let result: redis::Value = search_vector_field(&mut con, &self.index_name, &query_blob, min_count).await?;
+        let result: redis::Value =
+            search_vector_field(&mut con, &self.index_name, &query_blob, min_count).await?;
 
         let result_pairs: Vec<(String, f32)> = match result {
-            Bulk(items) => {
-                items
-                    .chunks_exact(2)
-                    .filter_map(|chunk| match (chunk.get(0), chunk.get(1)) {
-                        (Some(Data(key)), Some(Data(value))) => {
-                            let score: f32 = String::from_utf8_lossy(value)
-                                .parse()
-                                .unwrap_or_default();
-                            Some((String::from_utf8_lossy(key).into_owned(), score))
-                        }
-                        _ => None,
-                    })
-                    .collect()
-            }
+            Bulk(items) => items
+                .chunks_exact(2)
+                .filter_map(|chunk| match (chunk.get(0), chunk.get(1)) {
+                    (Some(Data(key)), Some(Data(value))) => {
+                        let score: f32 = String::from_utf8_lossy(value).parse().unwrap_or_default();
+                        Some((String::from_utf8_lossy(key).into_owned(), score))
+                    }
+                    _ => None,
+                })
+                .collect(),
             _ => vec![],
         };
 
@@ -91,7 +96,8 @@ impl MemorySystem for RedisMemorySystem {
                 .query_async(&mut con)
                 .await?;
 
-            let data: EmbeddedMemory = serde_json::from_value(serde_json::Value::String(json_data))?;
+            let data: EmbeddedMemory =
+                serde_json::from_value(serde_json::Value::String(json_data))?;
 
             relevant_memories.push(RelevantMemory {
                 memory: Memory {
@@ -105,7 +111,11 @@ impl MemorySystem for RedisMemorySystem {
         }
 
         // Sort the relevant memories by relevance and return the top min_count memories
-        relevant_memories.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap_or(Ordering::Equal));
+        relevant_memories.sort_by(|a, b| {
+            b.relevance
+                .partial_cmp(&a.relevance)
+                .unwrap_or(Ordering::Equal)
+        });
         Ok(relevant_memories.into_iter().take(min_count).collect())
     }
 
@@ -120,7 +130,7 @@ pub struct RedisProvider;
 
 #[derive(Serialize, Deserialize)]
 pub struct RedisMemoryConfig {
-    pub index: String
+    pub index: String,
 }
 
 impl MemoryProvider for RedisProvider {
@@ -132,7 +142,7 @@ impl MemoryProvider for RedisProvider {
         "redis".to_string()
     }
 
-    fn create(&self, config: serde_json::Value) -> Result<Box<dyn MemorySystem> ,Box<dyn Error> > {
+    fn create(&self, config: serde_json::Value) -> Result<Box<dyn MemorySystem>, Box<dyn Error>> {
         let client = Client::open("redis://127.0.0.1/")?;
 
         let rt = Runtime::new().expect("Failed to create Tokio runtime");
@@ -143,7 +153,7 @@ impl MemoryProvider for RedisProvider {
         rt.block_on(async {
             let mut con = client.get_tokio_connection().await?;
             match create_index_if_not_exists(&mut con, &index_name, "$.embedding", 1536).await {
-                Ok(()) => {Ok(())}
+                Ok(()) => Ok(()),
                 Err(err) => {
                     eprintln!("Failed to create vector index: {}", err);
                     return Err(Box::new(err));

@@ -1,5 +1,5 @@
-use std::{error::Error, fmt::Display, process, fs};
 use colored::Colorize;
+use std::{error::Error, fmt::Display, fs, process};
 
 pub use smartgpt::*;
 
@@ -44,15 +44,22 @@ fn main() -> Result<(), Box<dyn Error>> {
         for dependency in &plugin.dependencies {
             let dependency_exists = context.plugins.iter().any(|dep| &dep.name == dependency);
             if !dependency_exists {
-                println!("{}: Cannot run {} without its needed dependency of {}.", "Error".red(), plugin.name, dependency);
+                println!(
+                    "{}: Cannot run {} without its needed dependency of {}.",
+                    "Error".red(),
+                    plugin.name,
+                    dependency
+                );
                 exit_dependency_error = true;
             }
         }
 
         let tools = if plugin.tools.len() == 0 {
-            vec![ "<no tools>".white() ]
+            vec!["<no tools>".white()]
         } else {
-            plugin.tools.iter()
+            plugin
+                .tools
+                .iter()
                 .map(|el| {
                     let tool_name = el.name.to_string();
                     if context.disabled_tools.contains(&tool_name) {
@@ -60,7 +67,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     } else {
                         el.name.to_string().green()
                     }
-                }).collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>()
         };
 
         if !exit_dependency_error {
@@ -83,11 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     drop(context);
 
-    smartgpt.run_task( 
-        &task, 
-        &mut |_| Ok(()), 
-        &mut log_update
-    )?;
+    smartgpt.run_task(&task, &mut |_| Ok(()), &mut log_update)?;
 
     Ok(())
 }

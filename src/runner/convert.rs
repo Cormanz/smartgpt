@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use serde::{de::{Visitor, SeqAccess, MapAccess}, Deserializer, Deserialize, Serialize, Serializer, ser::{SerializeMap, SerializeSeq}};
+use serde::{
+    de::{MapAccess, SeqAccess, Visitor},
+    ser::{SerializeMap, SerializeSeq},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 
 use crate::ScriptValue;
 
@@ -20,15 +24,15 @@ impl Serialize for ScriptValue {
                     seq.serialize_element(item)?;
                 }
                 seq.end()
-            },
+            }
             ScriptValue::Dict(dict) => {
                 let mut map = serializer.serialize_map(Some(dict.len()))?;
                 for (key, value) in dict {
                     map.serialize_entry(key, value)?;
                 }
                 map.end()
-            },
-            ScriptValue::None => serializer.serialize_none()
+            }
+            ScriptValue::None => serializer.serialize_none(),
         }
     }
 }
