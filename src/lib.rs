@@ -8,6 +8,7 @@ mod runner;
 mod memory;
 mod auto;
 mod log;
+mod run;
 
 pub use plugin::*;
 pub use plugins::*;
@@ -19,3 +20,4 @@ pub use runner::*;
 pub use memory::*;
 pub use auto::*;
 pub use log::*;
+pub use run::*;
