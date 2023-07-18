@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = match config_from_yaml(&yaml_str) {
         Ok(config) => config,
         Err(err) => {
-            eprintln!("Error: {}", err);
+            println!("{}", "failed to parse config from yaml".red());
             return Err(err);
         }
     };
