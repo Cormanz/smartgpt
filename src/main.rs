@@ -1,6 +1,5 @@
-use std::{error::Error, fmt::Display, process, fs};
+use std::{error::Error, fmt::Display, process, fs, collections::HashMap};
 use colored::Colorize;
-
 pub use smartgpt::*;
 
 #[derive(Debug, Clone)]
@@ -15,9 +14,7 @@ impl Display for NoThoughtError {
 impl Error for NoThoughtError {}
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = fs::read_to_string("config.yml");
-
-    let config = match config {
+    let yaml_str = match fs::read_to_string("config.yml") {
         Ok(config) => config,
         Err(_) => {
             println!("{}", "Could not find 'config.yml'.".red());
@@ -29,7 +26,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let (task, mut smartgpt) = load_config(&config)?;
+
+    let config = match config_from_yaml(&yaml_str) {
+        Ok(config) => config,
+        Err(err) => {
+            eprintln!("Error: {}", err);
+            return Err(err);
+        }
+    };
+
+    let (task, mut smartgpt) = load_config(config)?;
 
     print!("\x1B[2J\x1B[1;1H");
     println!("{}: {}", "Personality".blue(), smartgpt.personality);

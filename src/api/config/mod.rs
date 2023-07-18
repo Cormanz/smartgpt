@@ -47,7 +47,7 @@ pub struct AgentLLMs {
     fast: AgentConfig,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Config {
     pub task: String,
@@ -135,9 +135,12 @@ pub fn create_agent(agent: AgentConfig) -> Result<AgentInfo, Box<dyn Error>> {
     })
 }
 
-pub fn load_config(config: &str) -> Result<(String, SmartGPT), Box<dyn Error>> {
-    let config: Config = serde_yaml::from_str(config)?;
+pub fn config_from_yaml(yaml: &str) -> Result<Config, Box<dyn Error>>{
+    let config: Config = serde_yaml::from_str(yaml)?;
+    return Ok(config)
+}
 
+pub fn load_config(config: Config) -> Result<(String, SmartGPT), Box<dyn Error>> {
     let plugins = list_plugins();
     let mut exit = false;
     for (name, _) in &config.plugins {
