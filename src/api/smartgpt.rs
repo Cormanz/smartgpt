@@ -1,9 +1,9 @@
-use std::{sync::{Mutex, Arc}, collections::HashMap, error::Error, vec, fmt::Display};
+use std::{sync::{Mutex, Arc}, error::Error, fmt::Display};
 
 use serde::Serialize;
-use serde_json::Value;
 
-use crate::{CommandContext, PluginStore, Agents, AgentInfo, LLMProvider, LLMModel, LLM, ChatGPTProvider, ChatGPTConfig, memory_from_provider, LocalProvider, auto::{run_auto, Action, DisallowedAction, Update}, GoogleData};
+
+use crate::{CommandContext, auto::{run_auto, Action, DisallowedAction, Update}};
 
 #[derive(Debug, Clone)]
 pub struct NoPluginError(pub String);
